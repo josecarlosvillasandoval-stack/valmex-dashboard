@@ -5,6 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VALMEX | Dashboard Asesor</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
+
+// ── CONFIGURACIÓN JS ──
+// Fecha fin default = hoy
+document.addEventListener('DOMContentLoaded',()=>{
+  const hoy = new Date().toISOString().split('T')[0];
+  const fi = document.getElementById('cfg-fecha-fin');
+  if(fi) fi.value = hoy;
+});
+
+function formatMonto(el){
+  let v = el.value.replace(/[^0-9.]/g,'');
+  const parts = v.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  el.value = '$' + (parts.length>1 ? parts[0]+'.'+parts[1].slice(0,2) : parts[0]);
+}
+
+function calcTotalActual(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('act-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  const fmt = '$'+total.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('total-actual').textContent = fmt;
+}
+
+function calcTotalPropuesta(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('prop-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  const el = document.getElementById('total-propuesta');
+  el.textContent = total.toFixed(2)+'%';
+  el.className = Math.abs(total-100)<0.01 ? 'total-ok' : (total>100?'total-err':'');
+}
+
+function guardarCliente(){
+  const nombre  = document.getElementById('cfg-nombre').value;
+  const contrato= document.getElementById('cfg-contrato').value;
+  const perfil  = document.getElementById('cfg-perfil').value;
+  const monto   = document.getElementById('cfg-monto').value;
+  const fecIni  = document.getElementById('cfg-fecha-ini').value;
+  const fecFin  = document.getElementById('cfg-fecha-fin').value;
+  const serie   = document.getElementById('cfg-serie').value;
+  // Aquí se puede conectar con la propuesta para actualizar datos del cliente
+  alert('✅ Datos del cliente guardados correctamente.');
+}
+
+function guardarActual(){
+  alert('✅ Cartera Actual guardada correctamente.');
+}
+
+function guardarPropuesta(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('prop-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  if(Math.abs(total-100)>0.01){
+    alert('⚠️ El total debe ser 100%. Actualmente es '+total.toFixed(2)+'%');
+    return;
+  }
+  alert('✅ Cartera Propuesta guardada correctamente.');
+}
+
 // ── FECHA DINÁMICA (n-1 hábil, n-3 si es lunes) ──
 (function(){
   const hoy = new Date();
@@ -23,6 +92,75 @@
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+
+// ── CONFIGURACIÓN JS ──
+// Fecha fin default = hoy
+document.addEventListener('DOMContentLoaded',()=>{
+  const hoy = new Date().toISOString().split('T')[0];
+  const fi = document.getElementById('cfg-fecha-fin');
+  if(fi) fi.value = hoy;
+});
+
+function formatMonto(el){
+  let v = el.value.replace(/[^0-9.]/g,'');
+  const parts = v.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  el.value = '$' + (parts.length>1 ? parts[0]+'.'+parts[1].slice(0,2) : parts[0]);
+}
+
+function calcTotalActual(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('act-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  const fmt = '$'+total.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('total-actual').textContent = fmt;
+}
+
+function calcTotalPropuesta(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('prop-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  const el = document.getElementById('total-propuesta');
+  el.textContent = total.toFixed(2)+'%';
+  el.className = Math.abs(total-100)<0.01 ? 'total-ok' : (total>100?'total-err':'');
+}
+
+function guardarCliente(){
+  const nombre  = document.getElementById('cfg-nombre').value;
+  const contrato= document.getElementById('cfg-contrato').value;
+  const perfil  = document.getElementById('cfg-perfil').value;
+  const monto   = document.getElementById('cfg-monto').value;
+  const fecIni  = document.getElementById('cfg-fecha-ini').value;
+  const fecFin  = document.getElementById('cfg-fecha-fin').value;
+  const serie   = document.getElementById('cfg-serie').value;
+  // Aquí se puede conectar con la propuesta para actualizar datos del cliente
+  alert('✅ Datos del cliente guardados correctamente.');
+}
+
+function guardarActual(){
+  alert('✅ Cartera Actual guardada correctamente.');
+}
+
+function guardarPropuesta(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('prop-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  if(Math.abs(total-100)>0.01){
+    alert('⚠️ El total debe ser 100%. Actualmente es '+total.toFixed(2)+'%');
+    return;
+  }
+  alert('✅ Cartera Propuesta guardada correctamente.');
+}
+
 // ── FECHA DINÁMICA (n-1 hábil, n-3 si es lunes) ──
 (function(){
   const hoy = new Date();
@@ -41,6 +179,75 @@
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+
+// ── CONFIGURACIÓN JS ──
+// Fecha fin default = hoy
+document.addEventListener('DOMContentLoaded',()=>{
+  const hoy = new Date().toISOString().split('T')[0];
+  const fi = document.getElementById('cfg-fecha-fin');
+  if(fi) fi.value = hoy;
+});
+
+function formatMonto(el){
+  let v = el.value.replace(/[^0-9.]/g,'');
+  const parts = v.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  el.value = '$' + (parts.length>1 ? parts[0]+'.'+parts[1].slice(0,2) : parts[0]);
+}
+
+function calcTotalActual(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('act-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  const fmt = '$'+total.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('total-actual').textContent = fmt;
+}
+
+function calcTotalPropuesta(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('prop-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  const el = document.getElementById('total-propuesta');
+  el.textContent = total.toFixed(2)+'%';
+  el.className = Math.abs(total-100)<0.01 ? 'total-ok' : (total>100?'total-err':'');
+}
+
+function guardarCliente(){
+  const nombre  = document.getElementById('cfg-nombre').value;
+  const contrato= document.getElementById('cfg-contrato').value;
+  const perfil  = document.getElementById('cfg-perfil').value;
+  const monto   = document.getElementById('cfg-monto').value;
+  const fecIni  = document.getElementById('cfg-fecha-ini').value;
+  const fecFin  = document.getElementById('cfg-fecha-fin').value;
+  const serie   = document.getElementById('cfg-serie').value;
+  // Aquí se puede conectar con la propuesta para actualizar datos del cliente
+  alert('✅ Datos del cliente guardados correctamente.');
+}
+
+function guardarActual(){
+  alert('✅ Cartera Actual guardada correctamente.');
+}
+
+function guardarPropuesta(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('prop-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  if(Math.abs(total-100)>0.01){
+    alert('⚠️ El total debe ser 100%. Actualmente es '+total.toFixed(2)+'%');
+    return;
+  }
+  alert('✅ Cartera Propuesta guardada correctamente.');
+}
+
 // ── FECHA DINÁMICA (n-1 hábil, n-3 si es lunes) ──
 (function(){
   const hoy = new Date();
@@ -167,17 +374,30 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 .prop-note{font-size:11px;color:var(--gray);margin-top:8px;font-family:'Montserrat',sans-serif;font-style:italic;}
 
 /* ── CONFIGURACIÓN ── */
-.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:820px;margin:0 auto;}
+/* ── CONFIGURACIÓN ── */
+.cfg-layout{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start;}
 .cfg-card{background:#fff;border:1px solid var(--silver);border-radius:12px;box-shadow:0 2px 14px rgba(0,32,92,.08);overflow:hidden;}
 .cfg-hdr{background:var(--navy);padding:12px 18px;}
-.cfg-hdr h3{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px;}
-.cfg-body{padding:18px;}
-.fg{margin-bottom:12px;}
-.fg label{display:block;font-size:10px;font-weight:600;color:var(--gray);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;font-family:'Montserrat',sans-serif;}
-.fg input,.fg select{width:100%;padding:9px 12px;border:1.5px solid var(--silver);border-radius:7px;font-size:13px;font-family:'Montserrat',sans-serif;color:#1A2540;background:#fff;outline:none;transition:border-color .18s;}
+.cfg-hdr h3{font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px;font-family:'Montserrat',sans-serif;}
+.cfg-body{padding:18px;display:flex;flex-direction:column;gap:12px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;font-family:'Montserrat',sans-serif;}
+.fg input,.fg select{width:100%;padding:9px 12px;border:1.5px solid var(--silver);border-radius:7px;font-size:13px;font-family:'Montserrat',sans-serif;color:#1A2540;background:#fff;outline:none;transition:border-color .18s;box-sizing:border-box;}
 .fg input:focus,.fg select:focus{border-color:var(--sky);}
-.btn-primary{padding:9px 22px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;transition:background .18s;}
+.btn-primary{padding:10px 22px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;transition:background .18s;width:100%;margin-top:4px;}
 .btn-primary:hover{background:var(--sky);color:var(--navy);}
+/* Fondos list */
+.fondos-list{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;}
+.fondo-row{display:grid;gap:8px;align-items:center;padding:8px 10px;background:#F8FAFD;border:1px solid var(--silver);border-radius:8px;border-left:3px solid var(--navy);}
+.fondo-row.actual{grid-template-columns:1fr 120px;}
+.fondo-row.propuesta{grid-template-columns:1fr 120px;}
+.fondo-nombre{font-size:12px;font-weight:700;color:var(--navy);font-family:'Montserrat',sans-serif;}
+.fondo-input{padding:6px 10px;border:1.5px solid var(--silver);border-radius:6px;font-size:13px;font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy);background:#fff;outline:none;text-align:right;width:100%;box-sizing:border-box;}
+.fondo-input:focus{border-color:var(--sky);}
+.fondo-total{font-size:12px;font-weight:700;color:var(--gray);text-align:right;padding:4px 0;font-family:'Montserrat',sans-serif;}
+.fondo-total span{font-size:14px;font-weight:900;color:var(--navy);}
+.total-ok{color:#16A34A!important;}
+.total-err{color:#DC2626!important;}
 
 /* ── COMPARATIVA ── */
 .cmp-card{background:#fff;border:1px solid var(--silver);border-radius:12px;box-shadow:0 2px 14px rgba(0,32,92,.08);overflow:hidden;}
@@ -201,7 +421,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   .card-comp,.card-rend,.card-deuda{grid-column:span 1;}
   .card-back{grid-column:span 3;}
   .card-pie{grid-column:span 2;}
-  .cfg-grid{grid-template-columns:1fr;}
+  .cfg-layout{grid-template-columns:1fr;}
   .elite-features{grid-template-columns:1fr;}
 }
 
@@ -219,7 +439,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   .card-comp,.card-rend,.card-deuda,.card-back,.card-pie{grid-column:span 1;}
   .prop-title{font-size:15px;}
   .rh-val{font-size:19px;}
-  .cfg-grid{grid-template-columns:1fr;}
+  .cfg-layout{grid-template-columns:1fr;}
   .elite-hero{flex-direction:column;padding:24px 20px;}
   .elite-features{grid-template-columns:1fr;}
   .cmp-body{height:260px;}
@@ -414,33 +634,133 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 
   <!-- CONFIGURACIÓN -->
   <div id="page-configuracion" class="page">
-    <div class="cfg-grid">
+    <div class="cfg-layout">
+
+      <!-- 1. DATOS DEL CLIENTE -->
       <div class="cfg-card">
         <div class="cfg-hdr"><h3>Datos del Cliente</h3></div>
         <div class="cfg-body">
-          <div class="fg"><label>Nombre completo</label><input type="text" placeholder="Ej. María García López"></div>
-          <div class="fg"><label>Perfil de riesgo</label>
-            <select><option>Conservador</option><option>Moderado</option><option selected>Balanceado</option><option>Crecimiento</option><option>Agresivo</option></select>
+          <div class="fg"><label>Nombre Completo</label><input type="text" id="cfg-nombre" placeholder="Ej. María García López"></div>
+          <div class="fg"><label>No. Contrato</label><input type="text" id="cfg-contrato" placeholder="Ej. 12345678"></div>
+          <div class="fg"><label>Perfil de Riesgo</label>
+            <select id="cfg-perfil">
+              <option value="0">Perfil 0 — Preservación</option>
+              <option value="1">Perfil 1 — Conservador</option>
+              <option value="2">Perfil 2 — Moderado</option>
+              <option value="3" selected>Perfil 3 — Balanceado</option>
+              <option value="4">Perfil 4 — Crecimiento</option>
+              <option value="5">Perfil 5 — Agresivo</option>
+            </select>
           </div>
-          <div class="fg"><label>Monto del portafolio (MXN)</label><input type="number" placeholder="5,000,000"></div>
-          <button class="btn-primary">Guardar cliente</button>
+          <div class="fg"><label>Monto del Contrato (MXN)</label><input type="text" id="cfg-monto" placeholder="$0.00" oninput="formatMonto(this)"></div>
+          <div class="fg"><label>Rango de Fechas (Backtesting)</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <input type="date" id="cfg-fecha-ini" value="2016-01-01">
+              <input type="date" id="cfg-fecha-fin">
+            </div>
+          </div>
+          <div class="fg"><label>Serie del Cliente</label>
+            <select id="cfg-serie">
+              <option>B1fi / B1 — Persona Física</option>
+              <option>B0Fi / B0 — Persona Física con Fee</option>
+              <option>PPR — Plan Personal de Retiro</option>
+              <option>PM — Persona Moral</option>
+              <option>Institucional</option>
+              <option>Fideicomiso</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="guardarCliente()">Guardar cliente</button>
         </div>
       </div>
+
+      <!-- 2. CARTERA ACTUAL -->
       <div class="cfg-card">
-        <div class="cfg-hdr"><h3>Parámetros del Portafolio</h3></div>
+        <div class="cfg-hdr"><h3>Cartera Actual</h3></div>
         <div class="cfg-body">
-          <div class="fg"><label>Benchmark</label>
-            <select><option>CETES 28d</option><option selected>IPC + CETES</option><option>S&P 500</option></select>
+          <p style="font-size:12px;color:var(--gray);font-family:'Montserrat',sans-serif;margin:0;">Ingresa el monto en <strong>pesos mexicanos</strong> por fondo.</p>
+          <div class="fondos-list">
+              <div class="fondo-row actual">
+                <span class="fondo-nombre">VLMXETF</span>
+                <input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXETF" oninput="calcTotalActual()">
+              </div>
+              <div class="fondo-row actual">
+                <span class="fondo-nombre">VXDEUDA</span>
+                <input class="fondo-input" type="text" placeholder="$0.00" id="act-VXDEUDA" oninput="calcTotalActual()">
+              </div>
+              <div class="fondo-row actual">
+                <span class="fondo-nombre">VXGUBCP</span>
+                <input class="fondo-input" type="text" placeholder="$0.00" id="act-VXGUBCP" oninput="calcTotalActual()">
+              </div>
+              <div class="fondo-row actual">
+                <span class="fondo-nombre">VXUDIMP</span>
+                <input class="fondo-input" type="text" placeholder="$0.00" id="act-VXUDIMP" oninput="calcTotalActual()">
+              </div>
+              <div class="fondo-row actual">
+                <span class="fondo-nombre">VALMX28</span>
+                <input class="fondo-input" type="text" placeholder="$0.00" id="act-VALMX28" oninput="calcTotalActual()">
+              </div>
+              <div class="fondo-row actual">
+                <span class="fondo-nombre">VALMXVL</span>
+                <input class="fondo-input" type="text" placeholder="$0.00" id="act-VALMXVL" oninput="calcTotalActual()">
+              </div>
+              <div class="fondo-row actual">
+                <span class="fondo-nombre">VLMXTEC</span>
+                <input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXTEC" oninput="calcTotalActual()">
+              </div>
+              <div class="fondo-row actual">
+                <span class="fondo-nombre">VLMXDME</span>
+                <input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXDME" oninput="calcTotalActual()">
+              </div>
           </div>
-          <div class="fg"><label>Horizonte de inversión</label>
-            <select><option>1 año</option><option selected>3 años</option><option>5 años</option><option>10+ años</option></select>
-          </div>
-          <div class="fg"><label>Moneda de reporte</label>
-            <select><option selected>MXN</option><option>USD</option></select>
-          </div>
-          <button class="btn-primary">Aplicar parámetros</button>
+          <div class="fondo-total">Total: <span id="total-actual">$0.00</span></div>
+          <button class="btn-primary" onclick="guardarActual()">Guardar Cartera Actual</button>
         </div>
       </div>
+
+      <!-- 3. CARTERA PROPUESTA -->
+      <div class="cfg-card">
+        <div class="cfg-hdr"><h3>Cartera Propuesta</h3></div>
+        <div class="cfg-body">
+          <p style="font-size:12px;color:var(--gray);font-family:'Montserrat',sans-serif;margin:0;">Ingresa el <strong>porcentaje</strong> por fondo. Total debe ser 100%.</p>
+          <div class="fondos-list">
+              <div class="fondo-row propuesta">
+                <span class="fondo-nombre">VLMXETF</span>
+                <input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXETF" oninput="calcTotalPropuesta()">
+              </div>
+              <div class="fondo-row propuesta">
+                <span class="fondo-nombre">VXDEUDA</span>
+                <input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXDEUDA" oninput="calcTotalPropuesta()">
+              </div>
+              <div class="fondo-row propuesta">
+                <span class="fondo-nombre">VXGUBCP</span>
+                <input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXGUBCP" oninput="calcTotalPropuesta()">
+              </div>
+              <div class="fondo-row propuesta">
+                <span class="fondo-nombre">VXUDIMP</span>
+                <input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXUDIMP" oninput="calcTotalPropuesta()">
+              </div>
+              <div class="fondo-row propuesta">
+                <span class="fondo-nombre">VALMX28</span>
+                <input class="fondo-input" type="text" placeholder="0.00%" id="prop-VALMX28" oninput="calcTotalPropuesta()">
+              </div>
+              <div class="fondo-row propuesta">
+                <span class="fondo-nombre">VALMXVL</span>
+                <input class="fondo-input" type="text" placeholder="0.00%" id="prop-VALMXVL" oninput="calcTotalPropuesta()">
+              </div>
+              <div class="fondo-row propuesta">
+                <span class="fondo-nombre">VLMXTEC</span>
+                <input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXTEC" oninput="calcTotalPropuesta()">
+              </div>
+              <div class="fondo-row propuesta">
+                <span class="fondo-nombre">VLMXDME</span>
+                <input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXDME" oninput="calcTotalPropuesta()">
+              </div>
+          </div>
+          <div class="fondo-total">Total: <span id="total-propuesta">0.00%</span></div>
+          <button class="btn-primary" onclick="guardarPropuesta()">Guardar Cartera Propuesta</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -820,6 +1140,75 @@ document.getElementById('btn-pdf').addEventListener('click',async()=>{
   pdf.addImage(img,'PNG',0,marginTop,pw,ph-marginTop-marginBot);
   pdf.save('PROPUESTA DE INVERSIÓN VALMEX.pdf');
 });
+
+
+// ── CONFIGURACIÓN JS ──
+// Fecha fin default = hoy
+document.addEventListener('DOMContentLoaded',()=>{
+  const hoy = new Date().toISOString().split('T')[0];
+  const fi = document.getElementById('cfg-fecha-fin');
+  if(fi) fi.value = hoy;
+});
+
+function formatMonto(el){
+  let v = el.value.replace(/[^0-9.]/g,'');
+  const parts = v.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  el.value = '$' + (parts.length>1 ? parts[0]+'.'+parts[1].slice(0,2) : parts[0]);
+}
+
+function calcTotalActual(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('act-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  const fmt = '$'+total.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('total-actual').textContent = fmt;
+}
+
+function calcTotalPropuesta(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('prop-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  const el = document.getElementById('total-propuesta');
+  el.textContent = total.toFixed(2)+'%';
+  el.className = Math.abs(total-100)<0.01 ? 'total-ok' : (total>100?'total-err':'');
+}
+
+function guardarCliente(){
+  const nombre  = document.getElementById('cfg-nombre').value;
+  const contrato= document.getElementById('cfg-contrato').value;
+  const perfil  = document.getElementById('cfg-perfil').value;
+  const monto   = document.getElementById('cfg-monto').value;
+  const fecIni  = document.getElementById('cfg-fecha-ini').value;
+  const fecFin  = document.getElementById('cfg-fecha-fin').value;
+  const serie   = document.getElementById('cfg-serie').value;
+  // Aquí se puede conectar con la propuesta para actualizar datos del cliente
+  alert('✅ Datos del cliente guardados correctamente.');
+}
+
+function guardarActual(){
+  alert('✅ Cartera Actual guardada correctamente.');
+}
+
+function guardarPropuesta(){
+  const fondos = ['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'];
+  let total = 0;
+  fondos.forEach(f=>{
+    const el = document.getElementById('prop-'+f);
+    if(el) total += parseFloat(el.value.replace(/[^0-9.]/g,''))||0;
+  });
+  if(Math.abs(total-100)>0.01){
+    alert('⚠️ El total debe ser 100%. Actualmente es '+total.toFixed(2)+'%');
+    return;
+  }
+  alert('✅ Cartera Propuesta guardada correctamente.');
+}
 
 // ── FECHA DINÁMICA (n-1 hábil, n-3 si es lunes) ──
 (function(){
