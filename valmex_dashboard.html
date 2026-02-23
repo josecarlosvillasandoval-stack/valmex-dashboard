@@ -297,7 +297,22 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
     <div class="prop-titlebar" id="prop-toolbar">
       <div></div>
       <div class="prop-right">
-        
+        <select id="prop-selector"
+          style="padding:7px 12px;border:1.5px solid #D3DDE6;border-radius:7px;
+                 font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;
+                 color:#00205C;background:#fff;outline:none;cursor:pointer;
+                 transition:border-color .18s;max-width:270px;"
+          onfocus="this.style.borderColor='#41BBC9'"
+          onblur="this.style.borderColor='#D3DDE6'"
+          onchange="cargarPortafolio()">
+          <option value="perfil_0">Perfil 0 - 100% RF low risk</option>
+          <option value="perfil_1">Perfil 1 - 100% RF high risk</option>
+          <option value="perfil_2">Perfil 2 - 80% RF / 20% RV</option>
+          <option value="perfil_3" selected>Perfil 3 - 60% RF / 40% RV</option>
+          <option value="perfil_4">Perfil 4 - 40% RF / 60% RV</option>
+          <option value="actual">Cartera Actual</option>
+          <option value="propuesta">Cartera Propuesta</option>
+        </select>
         <button class="btn-dl" id="btn-pdf" title="Descargar PDF">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </button>
@@ -389,12 +404,11 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
           <div class="fg"><label>No. Contrato</label><input type="text" id="cfg-contrato" placeholder="Ej. 123456"></div>
           <div class="fg"><label>Perfil de Riesgo</label>
             <select id="cfg-perfil">
-              <option value="0">Perfil 0</option>
-              <option value="1">Perfil 1</option>
-              <option value="2">Perfil 2</option>
-              <option value="3" selected>Perfil 3</option>
-              <option value="4">Perfil 4</option>
-              <option value="5">Perfil 5</option>
+              <option value="0">Perfil 0 - 100% RF low risk</option>
+              <option value="1">Perfil 1 - 100% RF high risk</option>
+              <option value="2">Perfil 2 - 80% RF / 20% RV</option>
+              <option value="3" selected>Perfil 3 - 60% RF / 40% RV</option>
+              <option value="4">Perfil 4 - 40% RF / 60% RV</option>
             </select>
           </div>
           <div class="fg"><label>Monto del Contrato (MXN)</label><input type="text" id="cfg-monto" placeholder="$0.00" oninput="formatMonto(this)"></div>
@@ -408,9 +422,9 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
             <select id="cfg-serie">
               <option>Persona Física - B1FI/B1</option>
               <option>Persona Física con Fee - B0FI/B0</option>
-              <option>Plan Personal de Retiro - PPR</option>
-              <option>Persona Moral - PM</option>
-              
+              <option>Plan Personal de Retiro - B1NC/B1CF</option>
+              <option>Persona Moral - B1CO</option>
+              <option>Persona Moral con Fee - B0CO</option>
             </select>
           </div>
           <button class="btn-primary" onclick="guardarCliente()">Guardar Cliente</button>
@@ -990,6 +1004,183 @@ document.getElementById('btn-pdf').addEventListener('click',async()=>{
   pdf.addImage(img,'PNG',0,marginTop,pw,ph-marginTop-marginBot);
   pdf.save('PROPUESTA DE INVERSIÓN VALMEX.pdf');
 });
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// PROPUESTA DINÁMICA — Morningstar
+// ══════════════════════════════════════════════════════════════════════════
+
+function showSpinner(show) {
+  let sp = document.getElementById('_vx_spinner');
+  if (!sp) {
+    sp = document.createElement('div');
+    sp.id = '_vx_spinner';
+    sp.innerHTML = `
+      <div style="position:fixed;inset:0;z-index:9999;background:rgba(0,32,92,.52);
+                  display:flex;flex-direction:column;align-items:center;
+                  justify-content:center;gap:16px;">
+        <div style="width:52px;height:52px;border-radius:50%;
+                    border:5px solid rgba(255,255,255,.2);
+                    border-top-color:#41BBC9;
+                    animation:_vxspin .85s linear infinite;"></div>
+        <p style="color:#fff;font-family:'Montserrat',sans-serif;
+                  font-weight:700;font-size:14px;letter-spacing:.4px;margin:0;">
+          Consultando Morningstar…</p>
+      </div>
+      <style>@keyframes _vxspin{to{transform:rotate(360deg);}}</style>`;
+    document.body.appendChild(sp);
+  }
+  sp.style.display = show ? 'block' : 'none';
+}
+
+async function cargarPortafolio() {
+  const sel   = document.getElementById('prop-selector');
+  const valor = sel ? sel.value : 'perfil_3';
+  const tipoCliente = document.getElementById('cfg-serie')?.value || 'Persona Física - B1FI/B1';
+  let body = { tipo_cliente: tipoCliente };
+
+  if (valor.startsWith('perfil_')) {
+    body.modo = 'perfil';
+    body.perfil_id = valor.replace('perfil_', '');
+
+  } else if (valor === 'actual') {
+    const fondos = {}; let total = 0;
+    ALL_FUNDS.forEach(f => {
+      const el = document.getElementById('act-' + f);
+      const v  = parseFloat((el?.value || '').replace(/[^0-9.]/g, '')) || 0;
+      if (v > 0) { fondos[f] = v; total += v; }
+    });
+    if (total === 0) {
+      alert('⚠️ Cartera Actual vacía.\nLlena los montos en Configuración → Cartera Actual.');
+      if (sel) sel.value = 'perfil_3'; return;
+    }
+    const pcts = {};
+    Object.entries(fondos).forEach(([f, v]) => { pcts[f] = (v / total) * 100; });
+    body.modo = 'actual'; body.fondos = pcts;
+
+  } else {
+    const fondos = {}; let total = 0;
+    ALL_FUNDS.forEach(f => {
+      const el = document.getElementById('prop-' + f);
+      const v  = parseFloat((el?.value || '').replace(/[^0-9.%]/g, '')) || 0;
+      if (v > 0) { fondos[f] = v; total += v; }
+    });
+    if (total === 0) {
+      alert('⚠️ Cartera Propuesta vacía.\nLlena los porcentajes en Configuración → Cartera Propuesta.');
+      if (sel) sel.value = 'perfil_3'; return;
+    }
+    if (Math.abs(total - 100) > 0.5) {
+      alert(`⚠️ Cartera Propuesta suma ${total.toFixed(2)}%.\nDebe ser 100% para continuar.`);
+      if (sel) sel.value = 'perfil_3'; return;
+    }
+    body.modo = 'propuesta'; body.fondos = fondos;
+  }
+
+  showSpinner(true);
+  try {
+    const resp = await fetch('/api/propuesta', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    showSpinner(false);
+    if (!data.ok) { alert('Error: ' + (data.error || 'respuesta inválida')); return; }
+    aplicarDatos(data, valor);
+  } catch (e) {
+    showSpinner(false);
+    alert('Error de conexión: ' + e.message);
+  }
+}
+
+function aplicarDatos(data, valor) {
+  // Rendimientos
+  const r = data.rendimientos;
+  const fmtR = v => (v == null) ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+  const orden = [r.mtd, r.r3m, r.ytd, r.r1y, r.r2y, r.r3y];
+  document.querySelectorAll('#page-propuesta .rh-val').forEach((el, i) => {
+    if (i < orden.length) {
+      el.textContent = fmtR(orden[i]);
+      el.className   = 'rh-val ' + ((orden[i] ?? 0) >= 0 ? 'pos' : 'neg');
+    }
+  });
+
+  // Composición (barras horizontales)
+  if (charts.comp && data.composicion?.length) {
+    const top8 = data.composicion.slice(0, 8);
+    charts.comp.data.labels           = top8.map(f => `${f.fondo} ${f.serie}`);
+    charts.comp.data.datasets[0].data = top8.map(f => f.pct);
+    charts.comp.options.scales.x.max  = Math.max(...top8.map(f => f.pct)) * 1.18;
+    charts.comp.update('none');
+  }
+
+  // Clase de activos (donut)
+  if (charts.clase && data.clase_activos) {
+    const c = data.clase_activos;
+    const lbls = [], vals = [];
+    c.labels.forEach((l, i) => { if (c.values[i] > 0) { lbls.push(l); vals.push(c.values[i]); } });
+    charts.clase.data.labels           = lbls;
+    charts.clase.data.datasets[0].data = vals;
+    charts.clase.update('none');
+  }
+
+  // Exposición geográfica (donut)
+  if (charts.geo && data.geo?.labels?.length) {
+    charts.geo.data.labels           = data.geo.labels;
+    charts.geo.data.datasets[0].data = data.geo.values;
+    charts.geo.update('none');
+  }
+
+  // Exposición sectorial (donut)
+  if (charts.sector && data.sectores?.labels?.length) {
+    charts.sector.data.labels           = data.sectores.labels;
+    charts.sector.data.datasets[0].data = data.sectores.values;
+    charts.sector.update('none');
+  }
+
+  // Drilldown Deuda
+  if (data.deuda) {
+    const rows = document.querySelectorAll('#page-propuesta .deuda-row');
+    const d = data.deuda;
+    if (rows[0]) { const v = rows[0].querySelector('.deuda-val'); if (v) v.textContent = d.duracion > 0 ? d.duracion.toFixed(2) + ' años' : '—'; }
+    if (rows[1]) { const v = rows[1].querySelector('.deuda-val'); if (v) v.textContent = d.ytm > 0 ? (d.ytm * 100).toFixed(2) + '%' : '—'; }
+    if (rows[2]) {
+      const v = rows[2].querySelector('.deuda-val');
+      if (v && d.credito?.labels?.length)
+        v.textContent = d.credito.labels.slice(0, 2).map((l, i) => `${l}: ${d.credito.values[i].toFixed(0)}%`).join(' / ');
+    }
+  }
+
+  // Título dentro del dashboard
+  const propTitle = document.querySelector('.prop-title');
+  if (propTitle) {
+    const labelMap = {
+      perfil_0:'Perfil 0 · 100% RF low risk', perfil_1:'Perfil 1 · 100% RF high risk',
+      perfil_2:'Perfil 2 · 80% RF / 20% RV',  perfil_3:'Perfil 3 · 60% RF / 40% RV',
+      perfil_4:'Perfil 4 · 40% RF / 60% RV',  actual:'Cartera Actual', propuesta:'Cartera Propuesta',
+    };
+    const nombre = document.getElementById('cfg-nombre')?.value?.trim() || '';
+    const lbl = labelMap[valor] || 'Estrategia Portafolio';
+    propTitle.textContent = nombre ? `${lbl} · ${nombre}` : lbl;
+  }
+}
+
+function guardarPropuesta() {
+  const sel = document.getElementById('prop-selector');
+  if (sel) sel.value = 'propuesta';
+  cargarPortafolio();
+}
+
+(function () {
+  const _orig = window.showPage;
+  let _cargado = false;
+  window.showPage = function (name, el) {
+    _orig(name, el);
+    if (name === 'propuesta' && !_cargado) {
+      _cargado = true;
+      setTimeout(() => cargarPortafolio(), 300);
+    }
+  };
+})();
 
 
 // ── FECHA DINÁMICA (n-1 hábil, n-3 si es lunes) ──
