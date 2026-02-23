@@ -1013,24 +1013,25 @@ document.getElementById('btn-pdf').addEventListener('click',async()=>{
 function showSpinner(show) {
   let sp = document.getElementById('_vx_spinner');
   if (!sp) {
+    if (!document.getElementById('_vxcss')) {
+      var css = document.createElement('style');
+      css.id = '_vxcss';
+      css.textContent = '@keyframes _vxspin { to { transform: rotate(360deg); } }';
+      document.head.appendChild(css);
+    }
     sp = document.createElement('div');
     sp.id = '_vx_spinner';
-    sp.innerHTML = `
-      <div style="position:fixed;inset:0;z-index:9999;background:rgba(0,32,92,.52);
-                  display:flex;flex-direction:column;align-items:center;
-                  justify-content:center;gap:16px;">
-        <div style="width:52px;height:52px;border-radius:50%;
-                    border:5px solid rgba(255,255,255,.2);
-                    border-top-color:#41BBC9;
-                    animation:_vxspin .85s linear infinite;"></div>
-        <p style="color:#fff;font-family:'Montserrat',sans-serif;
-                  font-weight:700;font-size:14px;letter-spacing:.4px;margin:0;">
-          Consultando Morningstar…</p>
-      </div>
-      <style>@keyframes _vxspin{to{transform:rotate(360deg);}}</style>`;
+    sp.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,32,92,.52);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+    var ring = document.createElement('div');
+    ring.style.cssText = 'width:52px;height:52px;border-radius:50%;border:5px solid rgba(255,255,255,.2);border-top-color:#41BBC9;animation:_vxspin .85s linear infinite;';
+    var txt = document.createElement('p');
+    txt.style.cssText = 'color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:14px;letter-spacing:.4px;margin:0;';
+    txt.textContent = 'Consultando Morningstar…';
+    sp.appendChild(ring);
+    sp.appendChild(txt);
     document.body.appendChild(sp);
   }
-  sp.style.display = show ? 'block' : 'none';
+  sp.style.display = show ? 'flex' : 'none';
 }
 
 async function cargarPortafolio() {
