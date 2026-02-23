@@ -1,7 +1,8 @@
 import os
 import requests
-from flask import (Flask, render_template, request, jsonify,
-                   redirect, url_for, session, send_from_directory)
+from flask import Flask, send_file, request, jsonify, redirect, url_for, session, send_from_directory
+
+BASE = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "valmex-secret-2024")
@@ -277,7 +278,7 @@ def login():
             session["usuario"] = u
             return jsonify({"ok":True,"nombre":user["nombre"],"iniciales":user["iniciales"],"rol":user["rol"]})
         return jsonify({"ok": False}), 401
-    return render_template("login.html")
+    return send_file(os.path.join(BASE, "login.html"))
 
 @app.route("/logout")
 def logout():
@@ -308,7 +309,7 @@ def valmex_logo2():
 def index():
     if "usuario" not in session:
         return redirect(url_for("login"))
-    return render_template("dashboard.html")
+    return send_file(os.path.join(BASE, "valmex_dashboard.html"))
 
 
 @app.route("/api/propuesta", methods=["POST"])
