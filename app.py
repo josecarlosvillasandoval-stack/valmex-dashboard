@@ -58,11 +58,8 @@ ISIN_MAP = {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SERIES POR TIPO DE CLIENTE — exactamente según SERIES.pdf
-# 5 tipos de cliente × 25 fondos (fondo → tipo_cliente → serie)
-# Tipos: PF | PF_fee | PPR | PM | PM_fee
+# SERIES POR TIPO DE CLIENTE
 # ─────────────────────────────────────────────────────────────────────────────
-# Mapa: valor del select → clave interna
 TIPO_KEY = {
     "Persona Física - B1FI/B1":           "PF",
     "Persona Física con Fee - B0FI/B0":    "PF_fee",
@@ -71,9 +68,7 @@ TIPO_KEY = {
     "Persona Moral con Fee - B0CO":        "PM_fee",
 }
 
-# Serie por fondo × tipo (None = no disponible, usar fallback)
 SERIE_MAP = {
-    # fondo        PF      PF_fee  PPR     PM      PM_fee
     "VXREPO1": {"PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
     "VXGUBCP": {"PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
     "VXUDIMP": {"PF":"B1FI","PF_fee":"B0FI","PPR":"B1NC","PM":"B1CO","PM_fee":"B0CO"},
@@ -92,7 +87,6 @@ SERIE_MAP = {
     "VLMXESG": {"PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
     "VALMXHC": {"PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
     "VXINFRA": {"PF":"B1FI","PF_fee":"B0FI","PPR":"B1FI","PM":None,  "PM_fee":"B0CO"},
-    # Ciclo de Vida — sin Persona Moral en el PDF, usar fallback
     "VLMXJUB": {"PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":None,  "PM_fee":None},
     "VLMXP24": {"PF":"B1FI","PF_fee":"B0FI","PPR":"B1NC","PM":None,  "PM_fee":None},
     "VLMXP31": {"PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":None,  "PM_fee":None},
@@ -131,17 +125,12 @@ def safe_float(val, default=0.0):
 
 
 def resolve_serie(fondo, tipo_cliente):
-    """Devuelve la serie correcta según SERIES.pdf, con fallback si no está disponible."""
     tipo_key    = TIPO_KEY.get(tipo_cliente, "PF")
     fondo_map   = SERIE_MAP.get(fondo, {})
     deseada     = fondo_map.get(tipo_key)
     disponibles = ISIN_MAP.get(fondo, {})
-
-    # Si la serie deseada existe en el ISIN_MAP, úsala
     if deseada and deseada in disponibles:
         return deseada
-
-    # Fallback en orden de preferencia
     for fb in ["B1FI", "B0FI", "B1CF", "B1NC", "B1CO", "B0CO", "B1", "B0", "A"]:
         if fb in disponibles:
             return fb
@@ -293,17 +282,18 @@ def me():
     user = USERS[u]
     return jsonify({"ok":True,"nombre":user["nombre"],"iniciales":user["iniciales"],"rol":user["rol"]})
 
+# ── Archivos estáticos desde la raíz del proyecto ──
 @app.route("/PC.pdf")
 def pc_pdf():
-    return send_from_directory("static", "PC.pdf")
+    return send_from_directory(BASE, "PC.pdf")
 
 @app.route("/VALMEX.png")
 def valmex_logo():
-    return send_from_directory("static", "VALMEX.png")
+    return send_from_directory(BASE, "VALMEX.png")
 
 @app.route("/VALMEX2.png")
 def valmex_logo2():
-    return send_from_directory("static", "VALMEX2.png")
+    return send_from_directory(BASE, "VALMEX2.png")
 
 @app.route("/")
 def index():
