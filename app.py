@@ -27,7 +27,27 @@ PERFILES = {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAPA ISIN: fondo → serie → ISIN
+# FONDOS USD para drilldown separado
+# ─────────────────────────────────────────────────────────────────────────────
+FONDOS_USD = {"VXTBILL", "VXCOBER", "VLMXDME"}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ESCALA CREDITICIA S&P — ponderación numérica global
+# ─────────────────────────────────────────────────────────────────────────────
+CREDIT_SCALE = ["AAA", "AA", "A", "BBB", "BB", "B", "<B", "NR"]
+CREDIT_SCORE = {r: i for i, r in enumerate(CREDIT_SCALE)}
+
+def weighted_credit_rating(cred_acc: dict) -> str:
+    total_weight = sum(cred_acc.values())
+    if total_weight <= 0:
+        return "—"
+    score = sum(CREDIT_SCORE.get(r, len(CREDIT_SCALE)-1) * v for r, v in cred_acc.items()) / total_weight
+    idx = round(score)
+    idx = max(0, min(idx, len(CREDIT_SCALE) - 1))
+    return CREDIT_SCALE[idx]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAPA ISIN
 # ─────────────────────────────────────────────────────────────────────────────
 ISIN_MAP = {
   "VXREPO1": {"A":"MXP800461008","B0CF":"MX51VA2J00C5","B0CO":"MX51VA2J0058","B0FI":"MX51VA2J0074","B0NC":"MX51VA2J0041","B1CF":"MX51VA2J00D3","B1CO":"MX51VA2J0082","B1FI":"MX51VA2J00F8","B1NC":"MX51VA2J0066","B2FI":"MX51VA2J0090"},
@@ -142,9 +162,14 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str) -> dict:
 
     r1m = r3m = r6m = ytd = r1y = r2y = r3y = 0.0
     stock_t = bond_t = cash_t = 0.0
-    gov_t = corp_t = dur_t = ytm_t = 0.0
-    geo_acc = {}; sec_acc = {}; cred_acc = {}
+    geo_acc = {}; sec_acc = {}
     lista = []
+
+    # Acumuladores separados MXN / USD
+    # Ponderamos dur y ytm por (bond_fraction * w) para normalizar correctamente
+    dur_mxn_num = ytm_mxn_num = bond_mxn_denom = 0.0
+    dur_usd_num = ytm_usd_num = bond_usd_denom = 0.0
+    cred_mxn = {}; cred_usd = {}
 
     for fondo, pct in fondos_pct.items():
         if pct <= 0:
@@ -176,20 +201,36 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str) -> dict:
         bond_t  += bond  * w
         cash_t  += cash  * w
 
-        gov_t  += safe_float(d.get("GBSR-SuperSectorGovernmentNet")) * w
-        corp_t += safe_float(d.get("GBSR-SuperSectorCorporateNet"))  * w
-        if bond > 0:
-            dur_t += safe_float(d.get("PS-EffectiveDuration")) * w
-            ytm_t += safe_float(d.get("PS-YieldToMaturity"))   * w
+        # ── Drilldown deuda separado MXN / USD ──
+        # Peso real de la parte de deuda de este fondo en el portafolio
+        bond_w = (bond / 100.0) * w  # fracción del portafolio que es deuda de este fondo
+        is_usd = fondo in FONDOS_USD
 
+        if bond > 0 and bond_w > 0:
+            dur_val = safe_float(d.get("PS-EffectiveDuration"))
+            ytm_val = safe_float(d.get("PS-YieldToMaturity"))  # ya viene en % ej: 7.96
+            if is_usd:
+                dur_usd_num   += dur_val * bond_w
+                ytm_usd_num   += ytm_val * bond_w
+                bond_usd_denom += bond_w
+            else:
+                dur_mxn_num   += dur_val * bond_w
+                ytm_mxn_num   += ytm_val * bond_w
+                bond_mxn_denom += bond_w
+
+        # Calificación crediticia ponderada por deuda
         for cq_key, cq_lbl in [
             ("CQB-AAA","AAA"),("CQB-AA","AA"),("CQB-A","A"),
             ("CQB-BBB","BBB"),("CQB-BB","BB"),("CQB-B","B"),
             ("CQB-BelowB","<B"),("CQB-NotRated","NR"),
         ]:
             v = safe_float(d.get(cq_key))
-            if v > 0:
-                cred_acc[cq_lbl] = cred_acc.get(cq_lbl, 0) + v * w
+            if v > 0 and bond_w > 0:
+                contribution = v * bond_w
+                if is_usd:
+                    cred_usd[cq_lbl] = cred_usd.get(cq_lbl, 0) + contribution
+                else:
+                    cred_mxn[cq_lbl] = cred_mxn.get(cq_lbl, 0) + contribution
 
         if stock > 0:
             geo_raw = d.get("RE-RegionalExposure", [])
@@ -226,9 +267,8 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str) -> dict:
         items = sorted(d.items(), key=lambda x: -x[1])[:n]
         return {"labels":[i[0] for i in items],"values":[round(i[1]/t*100,2) for i in items]}
 
-    def top_raw(d, n=6):
-        items = sorted(d.items(), key=lambda x: -x[1])[:n]
-        return {"labels":[i[0] for i in items],"values":[round(i[1],2) for i in items]}
+    has_mxn = bond_mxn_denom > 0
+    has_usd = bond_usd_denom > 0
 
     return {
         "ok": True,
@@ -238,16 +278,21 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str) -> dict:
             "r2y":round(r2y,2),"r3y":round(r3y,2),
         },
         "clase_activos": {
-            "labels":["Deuda","Renta Variable","Efectivo"],
+            "labels":["Deuda","Renta Variable","Reporto"],
             "values":[round(bond_t,2),round(stock_t,2),round(cash_t,2)],
         },
         "composicion": sorted(lista, key=lambda x: -x["pct"]),
         "geo":      top_n(geo_acc),
         "sectores": top_n(sec_acc),
         "deuda": {
-            "gov_bond": round(gov_t,2), "corp_bond":round(corp_t,2),
-            "duracion": round(dur_t,4), "ytm":round(ytm_t,4),
-            "credito":  top_raw(cred_acc),
+            "has_mxn":  has_mxn,
+            "dur_mxn":  round(dur_mxn_num / bond_mxn_denom, 2) if has_mxn else 0,
+            "ytm_mxn":  round(ytm_mxn_num / bond_mxn_denom, 2) if has_mxn else 0,
+            "cred_mxn": weighted_credit_rating(cred_mxn) if cred_mxn else "—",
+            "has_usd":  has_usd,
+            "dur_usd":  round(dur_usd_num / bond_usd_denom, 2) if has_usd else 0,
+            "ytm_usd":  round(ytm_usd_num / bond_usd_denom, 2) if has_usd else 0,
+            "cred_usd": weighted_credit_rating(cred_usd) if cred_usd else "—",
         },
     }
 
@@ -282,7 +327,6 @@ def me():
     user = USERS[u]
     return jsonify({"ok":True,"nombre":user["nombre"],"iniciales":user["iniciales"],"rol":user["rol"]})
 
-# ── Archivos estáticos desde la raíz del proyecto ──
 @app.route("/PC.pdf")
 def pc_pdf():
     return send_from_directory(BASE, "PC.pdf")
