@@ -106,7 +106,8 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 .dd-hdr-usd{background:var(--navy);color:#fff;}
 .dd-block{background:#fff;border:1px solid var(--silver);border-radius:7px;padding:6px 10px;border-left:4px solid var(--navy);display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
 .dd-block.empty{background:#F8FAFD;border-left-color:var(--silver);}
-.dd-block .rh-val{font-size:20px;white-space:pre-line;line-height:1.15;}
+.dd-block .rh-val{font-size:16px;white-space:pre-line;line-height:1.2;color:var(--navy);}
+.dd-block .rh-pill{color:var(--navy);}
 
 /* Nota */
 .prop-note{font-size:11px;color:var(--gray);margin-top:8px;font-family:'Montserrat',sans-serif;font-style:italic;}
@@ -358,8 +359,8 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
               <div class="dd-block" id="dd-ytm-mxn"><span class="rh-pill">YTM</span><span class="rh-val" id="dd-val-ytm-mxn">—</span></div>
               <div class="dd-block" id="dd-ytm-usd"><span class="rh-pill">YTM</span><span class="rh-val" id="dd-val-ytm-usd">—</span></div>
               <!-- Calificación -->
-              <div class="dd-block" id="dd-cred-mxn"><span class="rh-pill">Calificación</span><span class="rh-val" id="dd-val-cred-mxn">—</span></div>
-              <div class="dd-block" id="dd-cred-usd"><span class="rh-pill">Calificación</span><span class="rh-val" id="dd-val-cred-usd">—</span></div>
+              <div class="dd-block" id="dd-cred-mxn"><span class="rh-pill">Calif. Global</span><span class="rh-val" id="dd-val-cred-mxn">—</span></div>
+              <div class="dd-block" id="dd-cred-usd"><span class="rh-pill">Calif. Global</span><span class="rh-val" id="dd-val-cred-usd">—</span></div>
             </div>
           </div>
         </div>
@@ -993,22 +994,35 @@ function aplicarDatos(data, valor) {
       if (block) block.classList.toggle('empty', !!empty);
     };
 
+    // Helper especial para duración — número grande + "años" pequeño misma línea
+    const setDur = (id, val, empty) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (empty || !val || val === '—') {
+        el.innerHTML = '—';
+      } else {
+        el.innerHTML = val + '<span style="font-size:11px;font-weight:700;margin-left:3px;color:var(--navy)"> años</span>';
+      }
+      const block = el.closest('.dd-block');
+      if (block) block.classList.toggle('empty', !!empty);
+    };
+
     if (d.has_mxn) {
-      setVal('dd-val-dur-mxn',  d.dur_mxn > 0  ? d.dur_mxn.toFixed(2) + '\naños' : '—', !d.dur_mxn);
+      setDur('dd-val-dur-mxn',  d.dur_mxn > 0  ? d.dur_mxn.toFixed(2) : null, !d.dur_mxn);
       setVal('dd-val-ytm-mxn',  d.ytm_mxn > 0  ? d.ytm_mxn.toFixed(2) + '%'     : '—', !d.ytm_mxn);
       setVal('dd-val-cred-mxn', d.cred_mxn || '—', !d.cred_mxn || d.cred_mxn === '—');
     } else {
-      setVal('dd-val-dur-mxn',  '—', true);
+      setDur('dd-val-dur-mxn',  null, true);
       setVal('dd-val-ytm-mxn',  '—', true);
       setVal('dd-val-cred-mxn', '—', true);
     }
 
     if (d.has_usd) {
-      setVal('dd-val-dur-usd',  d.dur_usd > 0  ? d.dur_usd.toFixed(2) + '\naños' : '—', !d.dur_usd);
+      setDur('dd-val-dur-usd',  d.dur_usd > 0  ? d.dur_usd.toFixed(2) : null, !d.dur_usd);
       setVal('dd-val-ytm-usd',  d.ytm_usd > 0  ? d.ytm_usd.toFixed(2) + '%'     : '—', !d.ytm_usd);
       setVal('dd-val-cred-usd', d.cred_usd || '—', !d.cred_usd || d.cred_usd === '—');
     } else {
-      setVal('dd-val-dur-usd',  '—', true);
+      setDur('dd-val-dur-usd',  null, true);
       setVal('dd-val-ytm-usd',  '—', true);
       setVal('dd-val-cred-usd', '—', true);
     }
