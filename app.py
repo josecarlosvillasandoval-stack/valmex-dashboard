@@ -257,7 +257,7 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str) -> dict:
 
         if stock > 0:
             geo_raw = d.get("RE-RegionalExposure", [])
-            GEO_EXCLUDE = {"emerging market", "developed country"}
+            GEO_EXCLUDE = {"emerging market", "developed country", "emerging markets", "developed countries"}
             if isinstance(geo_raw, list):
                 for item in geo_raw:
                     region = item.get("Region", "")
@@ -306,7 +306,7 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str) -> dict:
             "values":[round(bond_t,2),round(stock_t,2),round(cash_t,2)],
         },
         "composicion": sorted(lista, key=lambda x: -x["pct"]),
-        "geo":      top_n(geo_acc),
+        "geo":      top_n(geo_acc, 13),
         "sectores": top_n(sec_acc),
         "deuda": {
             "has_mxn":  has_mxn,
