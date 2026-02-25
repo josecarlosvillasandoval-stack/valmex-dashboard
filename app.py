@@ -291,6 +291,11 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str) -> dict:
         items = sorted(d.items(), key=lambda x: -x[1])[:n]
         return {"labels":[i[0] for i in items],"values":[round(i[1]/t*100,2) for i in items]}
 
+    def filter_pct(d, min_pct=1.0):
+        t = sum(d.values()) or 1
+        items = sorted([(k, v) for k, v in d.items() if v/t*100 >= min_pct], key=lambda x: -x[1])
+        return {"labels":[i[0] for i in items],"values":[round(i[1]/t*100,2) for i in items]}
+
     has_mxn = bond_mxn_denom > 0
     has_usd = bond_usd_denom > 0
 
@@ -306,7 +311,7 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str) -> dict:
             "values":[round(bond_t,2),round(stock_t,2),round(cash_t,2)],
         },
         "composicion": sorted(lista, key=lambda x: -x["pct"]),
-        "geo":      top_n(geo_acc, 13),
+        "geo":      filter_pct(geo_acc),
         "sectores": top_n(sec_acc),
         "deuda": {
             "has_mxn":  has_mxn,
