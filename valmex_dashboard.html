@@ -379,7 +379,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
           <div class="pb" style="padding:6px;"><canvas id="c-clase"></canvas></div>
         </div>
         <div class="pcard card-pie">
-          <div class="ph">Exposición geográfica RV</div>
+          <div class="ph">Tipo de Deuda</div>
           <div class="pb" style="padding:6px;"><canvas id="c-geo"></canvas></div>
         </div>
         <div class="pcard card-pie">
@@ -956,14 +956,14 @@ function aplicarDatos(data, valor) {
     charts.clase.update();
   }
 
-  // ── Geo ──
+  // ── Tipo de Deuda (supersectores) ──
   if (charts.geo) {
     charts.geo.data.labels = [];
     charts.geo.data.datasets[0].data = [];
     charts.geo.update('none');
-    if (data.geo?.labels?.length) {
-      charts.geo.data.labels = data.geo.labels;
-      charts.geo.data.datasets[0].data = data.geo.values;
+    if (data.supersectores?.labels?.length) {
+      charts.geo.data.labels = data.supersectores.labels;
+      charts.geo.data.datasets[0].data = data.supersectores.values;
     }
     charts.geo.update();
   }
