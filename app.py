@@ -257,11 +257,12 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str) -> dict:
 
         if stock > 0:
             geo_raw = d.get("RE-RegionalExposure", [])
+            GEO_EXCLUDE = {"developed markets", "emerging markets", "developed", "emerging"}
             if isinstance(geo_raw, list):
                 for item in geo_raw:
                     region = item.get("Region", "")
                     val    = safe_float(item.get("Value", 0))
-                    if region and val > 0:
+                    if region and val > 0 and region.lower() not in GEO_EXCLUDE:
                         geo_acc[region] = geo_acc.get(region, 0) + val * (stock * w / 100)
 
         if stock > 0:
