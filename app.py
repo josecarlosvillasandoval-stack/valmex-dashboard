@@ -475,6 +475,203 @@ def api_propuesta():
     return jsonify(calcular_portafolio(fondos_pct, tipo_cliente))
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# MACRO — Banxico SIE API
+# ─────────────────────────────────────────────────────────────────────────────
+BANXICO_TOKEN = os.environ.get("BANXICO_TOKEN", "")  # Configura tu token en variable de entorno
+BANXICO_BASE  = "https://www.banxico.org.mx/SieAPIRest/service/v1/series"
+
+# IDs de series
+SERIE_TIIE28  = "SF43783"   # TIIE 28 días
+SERIE_USDMXN  = "SF43718"   # USD/MXN FIX
+SERIE_CETES28 = "SF60633"   # Cetes 28 días (proxy T-Bill MX)
+
+_macro_cache = {}
+_macro_ts    = 0
+
+def get_banxico_dato(serie_id: str) -> str | None:
+    """Obtiene el dato oportuno de una serie Banxico."""
+    try:
+        url  = f"{BANXICO_BASE}/{serie_id}/datos/oportuno"
+        hdrs = {"Bmx-Token": BANXICO_TOKEN, "Accept": "application/json"}
+        resp = requests.get(url, headers=hdrs, timeout=10)
+        resp.raise_for_status()
+        datos = resp.json()["bmx"]["series"][0]["datos"]
+        return datos[0]["dato"] if datos else None
+    except Exception as e:
+        print(f"[BANXICO ERROR] {serie_id}: {e}")
+        return None
+
+def get_macro() -> dict:
+    """Devuelve datos macro con caché de 1 hora."""
+    global _macro_cache, _macro_ts
+    import time
+    if _macro_cache and (time.time() - _macro_ts) < 3600:
+        return _macro_cache
+
+    tiie  = get_banxico_dato(SERIE_TIIE28)
+    usdmx = get_banxico_dato(SERIE_USDMXN)
+    cetes = get_banxico_dato(SERIE_CETES28)
+
+    _macro_cache = {
+        "tiie28":  round(float(tiie),  4) if tiie  else None,
+        "usdmxn":  round(float(usdmx), 4) if usdmx else None,
+        "cetes28": round(float(cetes), 4) if cetes else None,
+    }
+    _macro_ts = time.time()
+    return _macro_cache
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RIESGO — calcular métricas del portafolio desde Morningstar
+# ─────────────────────────────────────────────────────────────────────────────
+MATURITY_MAP = {
+    "MPF-Maturity1": "< 1 año",
+    "MPF-Maturity3": "1-3 años",
+    "MPF-Maturity5": "3-5 años",
+    "MPF-Maturity7": "5-7 años",
+    "MPF-Maturity10": "7-10 años",
+    "MPF-Maturity15": "10-15 años",
+    "MPF-Maturity20": "15-20 años",
+    "MPF-Maturity20Plus": "> 20 años",
+}
+
+def calcular_riesgo(fondos_pct: dict, tipo_cliente: str) -> dict:
+    universe = load_ms_universe()
+
+    std1 = std3 = sharpe1 = sharpe3 = beta1 = beta3 = 0.0
+    mat_acc = {}
+
+    for fondo, pct in fondos_pct.items():
+        if pct <= 0:
+            continue
+        serie  = resolve_serie(fondo, tipo_cliente)
+        ticker = f"{fondo} {serie}"
+        d      = universe.get(ticker, {})
+        if not d:
+            for s in ["B1FI","B0FI","B1CF","B1NC","B1CO","B0CO","B1","B0","A"]:
+                t2 = f"{fondo} {s}"
+                if t2 in universe:
+                    d = universe[t2]; break
+
+        w    = pct / 100.0
+        bond = safe_float(d.get("AAB-BondNet"))
+        is_deuda_fondo = fondo in FONDOS_DEUDA or fondo in FONDOS_CICLO
+
+        std1    += safe_float(d.get("RK-StandardDeviation1Yr"))  * w
+        std3    += safe_float(d.get("RK-StandardDeviation3Yr"))  * w
+        sharpe1 += safe_float(d.get("RK-SharpeRatio1Yr"))        * w
+        sharpe3 += safe_float(d.get("RK-SharpeRatio3Yr"))        * w
+        beta1   += safe_float(d.get("RK-Beta1Yr"))               * w
+        beta3   += safe_float(d.get("RK-Beta3Yr"))               * w
+
+        # Maturity profile — solo fondos de deuda
+        if is_deuda_fondo and bond > 0:
+            bond_w = (bond / 100.0) * w
+            for mpf_key, mpf_lbl in MATURITY_MAP.items():
+                v = safe_float(d.get(mpf_key))
+                if v > 0:
+                    mat_acc[mpf_lbl] = mat_acc.get(mpf_lbl, 0) + v * bond_w
+
+    # Normalizar maturity a %
+    mat_total = sum(mat_acc.values()) or 1
+    maturity = {
+        "labels": list(MATURITY_MAP.values()),
+        "values": [round(mat_acc.get(lbl, 0) / mat_total * 100, 2) for lbl in MATURITY_MAP.values()],
+    }
+
+    # Semáforo por fondo: rendimiento 1A vs benchmark
+    macro    = get_macro()
+    tiie28   = macro.get("tiie28")   or 0
+    cetes28  = macro.get("cetes28")  or 0
+    ACWI_1Y  = 18.5  # placeholder — actualizar si tienes feed de ACWI
+
+    semaforo = []
+    for fondo, pct in sorted(fondos_pct.items(), key=lambda x: -x[1]):
+        if pct <= 0:
+            continue
+        serie  = resolve_serie(fondo, tipo_cliente)
+        ticker = f"{fondo} {serie}"
+        d      = universe.get(ticker, {})
+        if not d:
+            for s in ["B1FI","B0FI","B1CF","B1NC","B1CO","B0CO","B1","B0","A"]:
+                t2 = f"{fondo} {s}"
+                if t2 in universe:
+                    d = universe[t2]; break
+
+        r1y = safe_float(d.get("TTR-Return1Yr"))
+
+        # Elegir benchmark según tipo de fondo
+        if fondo in FONDOS_DEUDA_USD:
+            bench     = cetes28   # proxy T-Bill USD en MXN context
+            bench_lbl = "T-Bill"
+        elif fondo in FONDOS_RV or fondo in FONDOS_CICLO:
+            bench     = ACWI_1Y
+            bench_lbl = "ACWI"
+        else:
+            bench     = tiie28
+            bench_lbl = "TIIE 28d"
+
+        diff = r1y - bench
+        color = "green" if diff >= 0.5 else ("yellow" if diff >= -0.5 else "red")
+
+        semaforo.append({
+            "fondo":     fondo,
+            "pct":       round(pct, 2),
+            "r1y":       round(r1y, 2),
+            "bench":     round(bench, 2),
+            "bench_lbl": bench_lbl,
+            "diff":      round(diff, 2),
+            "color":     color,
+        })
+
+    return {
+        "ok":      True,
+        "riesgo": {
+            "std1":    round(std1,    2),
+            "std3":    round(std3,    2),
+            "sharpe1": round(sharpe1, 4),
+            "sharpe3": round(sharpe3, 4),
+            "beta1":   round(beta1,   4),
+            "beta3":   round(beta3,   4),
+        },
+        "maturity":  maturity,
+        "semaforo":  semaforo,
+        "macro":     macro,
+    }
+
+
+@app.route("/api/macro")
+def api_macro():
+    if "usuario" not in session:
+        return jsonify({"ok": False}), 401
+    m = get_macro()
+    return jsonify({"ok": True, **m})
+
+
+@app.route("/api/comparativa", methods=["POST"])
+def api_comparativa():
+    if "usuario" not in session:
+        return jsonify({"ok": False, "error": "No autenticado"}), 401
+
+    body         = request.get_json(force=True)
+    tipo_cliente = body.get("tipo_cliente", "Serie A")
+    modo         = body.get("modo", "propuesta")
+
+    if modo == "perfil":
+        pid = str(body.get("perfil_id", "3"))
+        fondos_pct = PERFILES.get(pid)
+        if not fondos_pct:
+            return jsonify({"ok": False, "error": f"Perfil {pid} no existe"}), 400
+    else:
+        raw = body.get("fondos", {})
+        fondos_pct = {k: float(v) for k, v in raw.items() if float(v) > 0}
+        if not fondos_pct:
+            return jsonify({"ok": False, "error": "Sin fondos con % > 0"}), 400
+
+    return jsonify(calcular_riesgo(fondos_pct, tipo_cliente))
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
