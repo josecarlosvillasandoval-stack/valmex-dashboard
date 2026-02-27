@@ -685,13 +685,14 @@ function onPropRepo(moneda){ onPropRepoPct(moneda); }
 function calcTotalActual(){
   let t=0;
   ALL_FUNDS.forEach(f=>{const el=document.getElementById('act-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.]/g,''))||0;});
-  // incluir reporto
   t+=getRepoActualMonto('MXN')+getRepoActualMonto('USD');
   const el=document.getElementById('total-actual');
   el.textContent='$'+t.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
   const contrato=getMonto();
   if(t===0) el.className='';
-  else el.className=contrato>0&&Math.abs(t-contrato)<0.01?'total-ok':'total-err';
+  else if(contrato>0 && Math.abs(t-contrato)<1) el.className='total-ok';
+  else if(contrato>0) el.className='total-err';
+  else el.className='';
 }
 
 function calcTotalPropuesta(){
