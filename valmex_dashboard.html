@@ -936,14 +936,18 @@ async function cargarPortafolio() {
     const repoMXNTasa  = getRepoActualTasa('MXN');
     const repoUSDTasa  = getRepoActualTasa('USD');
     // Validación: monto sin tasa → bloquear
+    const tasaMXNEl = document.getElementById('act-REPO-MXN-tasa');
+    const tasaUSDEl = document.getElementById('act-REPO-USD-tasa');
     if (repoMXNMonto > 0 && repoMXNTasa <= 0) {
+      if (tasaMXNEl) { tasaMXNEl.style.border = '2px solid #EF4444'; tasaMXNEl.focus(); }
       alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
       if (sel) sel.value = 'perfil_3'; return;
-    }
+    } else if (tasaMXNEl) tasaMXNEl.style.border = '';
     if (repoUSDMonto > 0 && repoUSDTasa <= 0) {
+      if (tasaUSDEl) { tasaUSDEl.style.border = '2px solid #EF4444'; tasaUSDEl.focus(); }
       alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
       if (sel) sel.value = 'perfil_3'; return;
-    }
+    } else if (tasaUSDEl) tasaUSDEl.style.border = '';
     total += repoMXNMonto + repoUSDMonto;
     if (total === 0) { alert('⚠️ Cartera Actual vacía.\nLlena los montos en Configuración → Cartera Actual.'); if (sel) sel.value = 'perfil_3'; return; }
     const pcts = {};
@@ -964,14 +968,18 @@ async function cargarPortafolio() {
     const repoMXNTasa = getRepoPropTasa('MXN');
     const repoUSDTasa = getRepoPropTasa('USD');
     // Validación: % sin tasa → bloquear
+    const tasaMXNPEl = document.getElementById('prop-REPO-MXN-tasa');
+    const tasaUSDPEl = document.getElementById('prop-REPO-USD-tasa');
     if (repoMXNPct > 0 && repoMXNTasa <= 0) {
+      if (tasaMXNPEl) { tasaMXNPEl.style.border = '2px solid #EF4444'; tasaMXNPEl.focus(); }
       alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
       if (sel) sel.value = 'perfil_3'; return;
-    }
+    } else if (tasaMXNPEl) tasaMXNPEl.style.border = '';
     if (repoUSDPct > 0 && repoUSDTasa <= 0) {
+      if (tasaUSDPEl) { tasaUSDPEl.style.border = '2px solid #EF4444'; tasaUSDPEl.focus(); }
       alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
       if (sel) sel.value = 'perfil_3'; return;
-    }
+    } else if (tasaUSDPEl) tasaUSDPEl.style.border = '';
     total += repoMXNPct + repoUSDPct;
     if (total === 0) { alert('⚠️ Cartera Propuesta vacía.\nLlena los porcentajes en Configuración → Cartera Propuesta.'); if (sel) sel.value = 'perfil_3'; return; }
     if (Math.abs(total - 100) > 0.5) { alert(`⚠️ Cartera Propuesta suma ${total.toFixed(2)}%.\nDebe ser 100% para continuar.`); if (sel) sel.value = 'perfil_3'; return; }
