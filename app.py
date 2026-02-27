@@ -197,10 +197,12 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
     lista = []
 
     # Acumuladores separados MXN / USD
-    # Ponderamos dur y ytm por (bond_fraction * w) para normalizar correctamente
     dur_mxn_num = ytm_mxn_num = bond_mxn_denom = 0.0
     dur_usd_num = ytm_usd_num = bond_usd_denom = 0.0
     cred_mxn = {}; cred_usd = {}
+
+    # Backtesting reporto: {fecha: valor_acum_ponderado}
+    bt_repo: dict = {}
 
     for fondo, pct in fondos_pct.items():
         if pct <= 0:
@@ -344,6 +346,11 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
         r2y += rend["r2y"] * w
         r3y += rend["r3y"] * w
 
+        # Acumular backtesting ponderado
+        for pt in rend.get("backtesting", []):
+            f = pt["fecha"]
+            bt_repo[f] = bt_repo.get(f, 0.0) + pt["valor"] * w
+
         # Clase activos: 100% deuda
         bond_t += 1.0 * w
         # Drilldown deuda: dur=0 (overnight), ytm=tasa neta
@@ -440,6 +447,10 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
         "sectores":      filter_pct(sec_acc, translate=SEC_TRANSLATE),
         "supersectores": filter_pct(supersec_acc),
         "has_rv":        stock_t > 0,
+        "bt_repo":       sorted(
+            [{"fecha": f, "valor": round(v, 4)} for f, v in bt_repo.items()],
+            key=lambda x: x["fecha"]
+        ) if bt_repo else [],
         "deuda": {
             "has_mxn":  has_mxn,
             "dur_mxn":  round(dur_mxn_num / bond_mxn_denom, 2) if has_mxn else 0,
@@ -617,113 +628,156 @@ def _parse_fecha(s: str) -> date | None:
         return None
 
 
-def get_repo_rendimientos(tasa_neta: float, es_usd: bool) -> dict:
+def _get_datos_hist(es_usd: bool) -> list:
     """
-    Calcula rendimientos históricos del reporto con composición diaria overnight.
-
-    Lógica:
-      1. Baja serie diaria de TIIE 28d (Banxico) o Fed Funds (FRED)
-      2. spread = tasa_ref_hoy - tasa_neta_cliente  (constante)
-      3. Para cada día del período: tasa_cliente_dia = tasa_ref_dia - spread
-      4. Rendimiento = ∏(1 + tasa_cliente_dia/360) - 1  (composición diaria)
+    Descarga y cachea serie histórica de tasa overnight desde 2000.
+    MXN: SF43936 (Fondeo bancario overnight, Banxico)
+    USD: SOFR → fallback DFF (Fed Funds, FRED)
+    Cache de 4 horas.
     """
     global _hist_cache, _hist_cache_ts
-
     cache_key = "usd" if es_usd else "mxn"
     now = time.time()
 
     if cache_key in _hist_cache and (now - _hist_cache_ts) < 14400:
-        datos = _hist_cache[cache_key]
-    else:
-        hoy = date.today()
-        ini = (hoy - timedelta(days=365 * 4)).isoformat()
-        fin = hoy.isoformat()
+        return _hist_cache[cache_key]
 
-        if es_usd:
-            # FRED: DFF = Fed Funds efectiva diaria
+    hoy  = date.today()
+    ini  = "2000-01-01"          # desde año 2000 para backtesting completo
+    fin  = hoy.isoformat()
+
+    if es_usd:
+        # Intentar SOFR primero (disponible desde 2018), luego DFF (desde 1954)
+        datos = []
+        for serie in [SERIE_USD_REPO, "DFF"]:
             try:
                 params = {
-                    "series_id": "DFF",
+                    "series_id":        serie,
                     "observation_start": ini,
                     "observation_end":   fin,
-                    "api_key":    FRED_API_KEY,
-                    "file_type":  "json",
+                    "api_key":           FRED_API_KEY,
+                    "file_type":         "json",
                 }
                 r = requests.get(FRED_BASE, params=params, timeout=15)
                 r.raise_for_status()
-                datos = []
-                for o in r.json().get("observations", []):
-                    try:
-                        if o["value"] != ".":
-                            datos.append({"fecha": _parse_fecha(o["date"]), "valor": float(o["value"])})
-                    except Exception:
-                        pass
+                obs = [o for o in r.json().get("observations", []) if o["value"] != "."]
+                datos = [{"fecha": _parse_fecha(o["date"]), "valor": float(o["value"])} for o in obs]
+                if len(datos) > 100:
+                    print(f"[FRED] {serie}: {len(datos)} registros OK")
+                    break
             except Exception as e:
-                print(f"[FRED DFF ERROR] {e}")
-                datos = []
-        else:
-            # Banxico: TIIE 28d diaria
-            raw = _banxico_serie_rango(SERIE_TIIE28, ini, fin)
-            datos = [{"fecha": _parse_fecha(d["fecha"]), "valor": d["valor"]}
-                     for d in raw if _parse_fecha(d["fecha"])]
+                print(f"[FRED {serie} ERROR] {e}")
+    else:
+        # Fondeo bancario overnight diario Banxico (SF43936)
+        raw   = _banxico_serie_rango(SERIE_FONDEO, ini, fin)
+        datos = [{"fecha": _parse_fecha(d["fecha"]), "valor": d["valor"]}
+                 for d in raw if _parse_fecha(d["fecha"])]
 
-        # Filtrar Nones y ordenar por fecha
-        datos = sorted([d for d in datos if d["fecha"] is not None], key=lambda x: x["fecha"])
-        _hist_cache[cache_key] = datos
-        _hist_cache_ts = now
+    datos = sorted([d for d in datos if d["fecha"] is not None], key=lambda x: x["fecha"])
+    _hist_cache[cache_key]  = datos
+    _hist_cache_ts          = now
+    print(f"[HIST {'USD' if es_usd else 'MXN'}] {len(datos)} registros desde {datos[0]['fecha'] if datos else 'N/A'}")
+    return datos
+
+
+def get_repo_rendimientos(tasa_neta: float, es_usd: bool) -> dict:
+    """
+    Rendimientos históricos por composición diaria overnight.
+    - MTD, 3M, 6M, YTD  → efectivos (< 1 año)
+    - 12M, 24M, 36M      → anualizados  (1 + r)^(1/n) - 1
+    spread = tasa_ref_hoy - tasa_neta_cliente  (constante en el tiempo)
+    """
+    datos = _get_datos_hist(es_usd)
 
     if not datos:
-        # Fallback lineal si no hay datos
+        # Fallback si no hay conectividad
+        anual = tasa_neta
         return {
-            "r1m": round(tasa_neta / 12, 2),
-            "r3m": round(tasa_neta / 4,  2),
-            "r6m": round(tasa_neta / 2,  2),
-            "ytd": round(tasa_neta / 12, 2),
-            "r1y": round(tasa_neta,      2),
-            "r2y": round(tasa_neta,      2),
-            "r3y": round(tasa_neta,      2),
+            "r1m":  round(anual / 12, 2),
+            "r3m":  round(anual / 4,  2),
+            "r6m":  round(anual / 2,  2),
+            "ytd":  round(anual / 12, 2),
+            "r1y":  round(anual,      2),
+            "r2y":  round(anual,      2),
+            "r3y":  round(anual,      2),
+            "backtesting": [],
         }
 
-    hoy = date.today()
-
-    # Spread constante: diferencia entre tasa ref hoy y tasa neta al cliente
+    hoy          = date.today()
     tasa_ref_hoy = datos[-1]["valor"]
-    spread = tasa_ref_hoy - tasa_neta   # pp que quita el asesor
+    spread       = tasa_ref_hoy - tasa_neta
 
-    def componer(desde: date) -> float:
-        """Composición diaria: ∏(1 + (tasa_ref_dia - spread) / 360) - 1, en %."""
-        # Construir mapa fecha→tasa para búsqueda rápida
-        # Para días sin dato (fines de semana/festivos) usamos el último valor conocido
-        acum   = 1.0
-        ultimo = None
-        # Índice de datos en el rango
-        rango  = [d for d in datos if d["fecha"] >= desde]
+    def componer_acum(desde: date) -> float:
+        """Retorna rendimiento acumulado decimal (no %)."""
+        acum    = 1.0
+        ultimo  = None
+        rango   = [d for d in datos if d["fecha"] >= desde]
         if not rango:
             return 0.0
-        # Llenar días calendario con forward-fill
         d_actual = desde
         idx      = 0
         while d_actual <= hoy:
-            # Avanzar índice si hay dato más reciente disponible
             while idx < len(rango) and rango[idx]["fecha"] <= d_actual:
                 ultimo = rango[idx]["valor"]
                 idx   += 1
             if ultimo is not None:
-                tasa_dia = max(0.0, ultimo - spread)   # no permitir tasa negativa
-                acum    *= (1 + tasa_dia / 360 / 100)  # tasa en %, base 360
+                tasa_dia = max(0.0, ultimo - spread)
+                acum    *= (1 + tasa_dia / 360 / 100)
             d_actual += timedelta(days=1)
-        return round((acum - 1) * 100, 4)   # en %
+        return acum - 1  # decimal
+
+    def anualizar(acum_dec: float, años: float) -> float:
+        """(1 + r)^(1/n) - 1, en %."""
+        if acum_dec <= -1:
+            return -100.0
+        return round(((1 + acum_dec) ** (1 / años) - 1) * 100, 2)
+
+    def efectivo(acum_dec: float) -> float:
+        return round(acum_dec * 100, 2)
 
     inicio_ytd = date(hoy.year, 1, 1)
+    dias_ytd   = max((hoy - inicio_ytd).days, 1)
+
+    # ── Backtesting: valor acumulado mensual desde ini_back ──
+    ini_back  = date(2000, 1, 1)
+    # Usar el primer dato disponible si es posterior a 2000
+    if datos and datos[0]["fecha"] > ini_back:
+        ini_back = datos[0]["fecha"]
+
+    bt_puntos = []
+    # Generar un punto por mes (primer día de cada mes)
+    cur = date(ini_back.year, ini_back.month, 1)
+    acum_bt = 1.0
+    ultimo   = None
+    idx_bt   = 0
+    datos_bt = [d for d in datos if d["fecha"] >= ini_back]
+    d_cur    = ini_back
+
+    while d_cur <= hoy:
+        # Avanzar tasa
+        while idx_bt < len(datos_bt) and datos_bt[idx_bt]["fecha"] <= d_cur:
+            ultimo = datos_bt[idx_bt]["valor"]
+            idx_bt += 1
+        if ultimo is not None:
+            tasa_dia = max(0.0, ultimo - spread)
+            acum_bt *= (1 + tasa_dia / 360 / 100)
+        # Registrar punto si es primer día del mes o primer día
+        if d_cur.day == 1 or d_cur == ini_back:
+            bt_puntos.append({
+                "fecha": d_cur.isoformat(),
+                "valor": round(acum_bt * 100, 4)   # base 100
+            })
+        d_cur += timedelta(days=1)
 
     return {
-        "r1m": componer(hoy - timedelta(days=30)),
-        "r3m": componer(hoy - timedelta(days=91)),
-        "r6m": componer(hoy - timedelta(days=182)),
-        "ytd": componer(inicio_ytd),
-        "r1y": componer(hoy - timedelta(days=365)),
-        "r2y": componer(hoy - timedelta(days=730)),
-        "r3y": componer(hoy - timedelta(days=1095)),
+        "r1m":         efectivo(componer_acum(hoy - timedelta(days=30))),
+        "r3m":         efectivo(componer_acum(hoy - timedelta(days=91))),
+        "r6m":         efectivo(componer_acum(hoy - timedelta(days=182))),
+        "ytd":         efectivo(componer_acum(inicio_ytd)),
+        "r1y":         anualizar(componer_acum(hoy - timedelta(days=365)),   1.0),
+        "r2y":         anualizar(componer_acum(hoy - timedelta(days=730)),   2.0),
+        "r3y":         anualizar(componer_acum(hoy - timedelta(days=1095)),  3.0),
+        "backtesting": bt_puntos,
     }
 
 def get_banxico_dato(serie_id: str) -> str | None:
