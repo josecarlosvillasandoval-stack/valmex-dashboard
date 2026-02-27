@@ -617,7 +617,7 @@ function getRepoActualTasa(moneda){
 }
 function getRepoPropPct(moneda){
   const el=document.getElementById('prop-REPO-'+moneda+'-pct');
-  return el?parseFloat(el.value.replace(/[^0-9.%]/g,''))||0:0;
+  return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
 }
 function getRepoPropTasa(moneda){
   const el=document.getElementById('prop-REPO-'+moneda+'-tasa');
@@ -635,6 +635,12 @@ function onActualRepo(moneda){
     const v=mEl.value.replace(/[^0-9.]/g,'');
     if(v){const p=v.split('.');p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');mEl.value='$'+(p.length>1?p[0]+'.'+p[1].slice(0,2):p[0]);}
   }
+  // formatear tasa con %
+  const tEl=document.getElementById('act-REPO-'+moneda+'-tasa');
+  if(tEl&&tEl.value){
+    const v=tEl.value.replace(/[^0-9.]/g,'');
+    if(v){tEl.value=v+'%';const pos=v.length;setTimeout(()=>{try{tEl.setSelectionRange(pos,pos);}catch(e){}},0);}
+  }
   calcTotalActual();
 }
 
@@ -648,6 +654,12 @@ function onPropRepo(moneda){
   if(pEl&&pEl.value){
     const v=pEl.value.replace(/[^0-9.%]/g,'');
     if(v) pEl.value=v.replace('%','')+' %';
+  }
+  // formatear tasa con %
+  const tEl=document.getElementById('prop-REPO-'+moneda+'-tasa');
+  if(tEl&&tEl.value){
+    const v=tEl.value.replace(/[^0-9.]/g,'');
+    if(v){tEl.value=v+'%';const pos=v.length;setTimeout(()=>{try{tEl.setSelectionRange(pos,pos);}catch(e){}},0);}
   }
   calcTotalPropuesta();
 }
@@ -676,7 +688,25 @@ function calcTotalPropuesta(){
 }
 
 function guardarCliente(){alert('✅ Datos del cliente guardados.');}
-function guardarActual(){alert('✅ Cartera Actual guardada.');}
+function guardarActual(){
+  const repoMXNMonto = getRepoActualMonto('MXN');
+  const repoUSDMonto = getRepoActualMonto('USD');
+  const repoMXNTasa  = getRepoActualTasa('MXN');
+  const repoUSDTasa  = getRepoActualTasa('USD');
+  const tasaMXNEl = document.getElementById('act-REPO-MXN-tasa');
+  const tasaUSDEl = document.getElementById('act-REPO-USD-tasa');
+  if (repoMXNMonto > 0 && repoMXNTasa <= 0) {
+    if (tasaMXNEl) { tasaMXNEl.style.border = '2px solid #EF4444'; tasaMXNEl.focus(); }
+    alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
+    return;
+  } else if (tasaMXNEl) tasaMXNEl.style.border = '';
+  if (repoUSDMonto > 0 && repoUSDTasa <= 0) {
+    if (tasaUSDEl) { tasaUSDEl.style.border = '2px solid #EF4444'; tasaUSDEl.focus(); }
+    alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
+    return;
+  } else if (tasaUSDEl) tasaUSDEl.style.border = '';
+  alert('✅ Cartera Actual guardada.');
+}
 function guardarPropuesta(){
   let t=0;
   ALL_FUNDS.forEach(f=>{const el=document.getElementById('prop-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.]/g,''))||0;});
