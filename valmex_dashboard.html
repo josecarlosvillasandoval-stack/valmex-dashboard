@@ -750,6 +750,31 @@ function guardarPropuesta(){
   if(el) el.textContent = str;
 })();
 
+
+// ── TASA DE REFERENCIA (Banxico Fondeo / SOFR) ──
+let _tasaRefMXN = null, _tasaRefUSD = null;
+async function cargarTasasRef(){
+  try{
+    const r = await fetch('/api/diag-repo',{credentials:'same-origin'});
+    if(!r.ok) return;
+    const d = await r.json();
+    _tasaRefMXN = d?.banxico?.ultimo?.valor ?? null;
+    _tasaRefUSD = d?.fred_sofr?.ultimo?.value ?? d?.fred?.ultimo?.value ?? null;
+    if(_tasaRefMXN){
+      const el = document.getElementById('prop-REPO-MXN-ref');
+      if(el) el.textContent = 'Fondeo Banxico (SF43936): '+Number(_tasaRefMXN).toFixed(4)+'%';
+      const flatChk = document.getElementById('prop-REPO-MXN-flat');
+      if(flatChk?.checked){ document.getElementById('prop-REPO-MXN-tasa').value = Number(_tasaRefMXN).toFixed(4)+'%'; }
+    }
+    if(_tasaRefUSD){
+      const el = document.getElementById('prop-REPO-USD-ref');
+      if(el) el.textContent = 'SOFR (Fed): '+Number(_tasaRefUSD).toFixed(4)+'%';
+      const flatChk = document.getElementById('prop-REPO-USD-flat');
+      if(flatChk?.checked){ document.getElementById('prop-REPO-USD-tasa').value = Number(_tasaRefUSD).toFixed(4)+'%'; }
+    }
+  }catch(e){ console.warn('No se pudieron cargar tasas de referencia',e); }
+}
+
 // ── NAVEGACIÓN ──
 const PAGES = ['presentacion','propuesta','configuracion','comparativa','elite'];
 
