@@ -439,6 +439,8 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
         <div class="cfg-body">
           <div class="fondos-list">
 <div class="fsec-hdr">Deuda</div>
+<div class="fondo-row actual" style="border-left-color:#F59E0B;"><span class="fondo-nombre" style="color:#F59E0B;font-weight:700;">Reporto MXN</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-REPO-MXN-monto" oninput="onActualRepo('MXN')"><input class="fondo-input" type="text" placeholder="Tasa (%)" id="act-REPO-MXN-tasa" oninput="onActualRepo('MXN')" style="max-width:72px;"><span class="fondo-pct" id="act-pct-REPO-MXN">0.00%</span></div>
+<div class="fondo-row actual" style="border-left-color:#F59E0B;"><span class="fondo-nombre" style="color:#F59E0B;font-weight:700;">Reporto USD</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-REPO-USD-monto" oninput="onActualRepo('USD')"><input class="fondo-input" type="text" placeholder="Tasa (%)" id="act-REPO-USD-tasa" oninput="onActualRepo('USD')" style="max-width:72px;"><span class="fondo-pct" id="act-pct-REPO-USD">0.00%</span></div>
 <div class="fondo-row actual"><span class="fondo-nombre">VXREPO1</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXREPO1" oninput="onActual('VXREPO1')"><span class="fondo-pct" id="act-pct-VXREPO1">0.00%</span></div>
 <div class="fondo-row actual"><span class="fondo-nombre">VXGUBCP</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXGUBCP" oninput="onActual('VXGUBCP')"><span class="fondo-pct" id="act-pct-VXGUBCP">0.00%</span></div>
 <div class="fondo-row actual"><span class="fondo-nombre">VXUDIMP</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXUDIMP" oninput="onActual('VXUDIMP')"><span class="fondo-pct" id="act-pct-VXUDIMP">0.00%</span></div>
@@ -477,6 +479,8 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
         <div class="cfg-body">
           <div class="fondos-list">
 <div class="fsec-hdr">Deuda</div>
+<div class="fondo-row propuesta" style="border-left-color:#F59E0B;"><span class="fondo-nombre" style="color:#F59E0B;font-weight:700;">Reporto MXN</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-REPO-MXN-pct" oninput="onPropRepo('MXN')"><input class="fondo-input" type="text" placeholder="Tasa (%)" id="prop-REPO-MXN-tasa" oninput="onPropRepo('MXN')" style="max-width:72px;"><span class="fondo-monto" id="prop-monto-REPO-MXN">$0.00</span></div>
+<div class="fondo-row propuesta" style="border-left-color:#F59E0B;"><span class="fondo-nombre" style="color:#F59E0B;font-weight:700;">Reporto USD</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-REPO-USD-pct" oninput="onPropRepo('USD')"><input class="fondo-input" type="text" placeholder="Tasa (%)" id="prop-REPO-USD-tasa" oninput="onPropRepo('USD')" style="max-width:72px;"><span class="fondo-monto" id="prop-monto-REPO-USD">$0.00</span></div>
 <div class="fondo-row propuesta"><span class="fondo-nombre">VXREPO1</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXREPO1" oninput="onProp('VXREPO1')"><span class="fondo-monto" id="prop-monto-VXREPO1">$0.00</span></div>
 <div class="fondo-row propuesta"><span class="fondo-nombre">VXGUBCP</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXGUBCP" oninput="onProp('VXGUBCP')"><span class="fondo-monto" id="prop-monto-VXGUBCP">$0.00</span></div>
 <div class="fondo-row propuesta"><span class="fondo-nombre">VXUDIMP</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXUDIMP" oninput="onProp('VXUDIMP')"><span class="fondo-monto" id="prop-monto-VXUDIMP">$0.00</span></div>
@@ -515,110 +519,6 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 
   <!-- COMPARATIVA -->
   <div id="page-comparativa" class="page">
-    <div style="max-width:1400px;margin:0 auto;">
-
-      <!-- SELECTOR -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:4px 0;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:8px;height:36px;background:var(--sky);border-radius:3px;"></div>
-          <span style="font-size:28px;font-weight:900;color:var(--navy);text-transform:uppercase;">Análisis de Riesgo</span>
-        </div>
-        <select id="cmp-selector"
-          style="padding:7px 12px;border:1.5px solid #D3DDE6;border-radius:7px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;color:#00205C;background:#fff;outline:none;cursor:pointer;max-width:270px;"
-          onchange="cargarComparativa()">
-          <option value="perfil_0">Perfil 0 - 100% RF low risk</option>
-          <option value="perfil_1">Perfil 1 - 100% RF high risk</option>
-          <option value="perfil_2">Perfil 2 - 80% RF / 20% RV</option>
-          <option value="perfil_3" selected>Perfil 3 - 60% RF / 40% RV</option>
-          <option value="perfil_4">Perfil 4 - 40% RF / 60% RV</option>
-          <option value="actual">Cartera Actual</option>
-          <option value="propuesta">Cartera Propuesta</option>
-        </select>
-      </div>
-      <div style="height:2px;background:var(--navy);border-radius:2px;margin-bottom:16px;"></div>
-
-      <!-- FILA 1: MACRO -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;">
-        <div class="pcard" style="flex-direction:row;align-items:center;padding:14px 18px;gap:14px;">
-          <div style="font-size:28px;">🇲🇽</div>
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">TIIE 28 días</div>
-            <div style="font-size:22px;font-weight:900;color:var(--navy);" id="mac-tiie">—</div>
-          </div>
-        </div>
-        <div class="pcard" style="flex-direction:row;align-items:center;padding:14px 18px;gap:14px;">
-          <div style="font-size:28px;">💵</div>
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">USD / MXN FIX</div>
-            <div style="font-size:22px;font-weight:900;color:var(--navy);" id="mac-usdmxn">—</div>
-          </div>
-        </div>
-        <div class="pcard" style="flex-direction:row;align-items:center;padding:14px 18px;gap:14px;">
-          <div style="font-size:28px;">📊</div>
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">Cetes 28 días</div>
-            <div style="font-size:22px;font-weight:900;color:var(--navy);" id="mac-cetes">—</div>
-          </div>
-        </div>
-        <div class="pcard" style="flex-direction:row;align-items:center;padding:14px 18px;gap:14px;">
-          <div style="font-size:28px;">🌎</div>
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">ACWI 1A (ref.)</div>
-            <div style="font-size:22px;font-weight:900;color:var(--navy);">18.50%</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- FILA 2: RIESGO + MATURITY -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-
-        <!-- Métricas de riesgo -->
-        <div class="pcard">
-          <div class="ph">Métricas de Riesgo del Portafolio</div>
-          <div class="pb" style="padding:12px;">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;height:100%;">
-              <div class="rh-block"><span class="rh-pill">Volatilidad 1A</span><span class="rh-val" id="rk-std1">—</span></div>
-              <div class="rh-block"><span class="rh-pill">Sharpe 1A</span><span class="rh-val" id="rk-sharpe1">—</span></div>
-              <div class="rh-block"><span class="rh-pill">Beta 1A</span><span class="rh-val" id="rk-beta1">—</span></div>
-              <div class="rh-block"><span class="rh-pill">Volatilidad 3A</span><span class="rh-val" id="rk-std3">—</span></div>
-              <div class="rh-block"><span class="rh-pill">Sharpe 3A</span><span class="rh-val" id="rk-sharpe3">—</span></div>
-              <div class="rh-block"><span class="rh-pill">Beta 3A</span><span class="rh-val" id="rk-beta3">—</span></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Maturity Profile -->
-        <div class="pcard">
-          <div class="ph">Perfil de Vencimientos (Deuda)</div>
-          <div class="pb" style="padding:10px;"><canvas id="c-maturity"></canvas></div>
-        </div>
-
-      </div>
-
-      <!-- FILA 3: SEMÁFORO -->
-      <div class="pcard">
-        <div class="ph">Rendimiento 1A vs Benchmark por Fondo</div>
-        <div class="pb" style="padding:14px;overflow-x:auto;">
-          <table id="tbl-semaforo" style="width:100%;border-collapse:collapse;font-family:'Montserrat',sans-serif;">
-            <thead>
-              <tr style="border-bottom:2px solid var(--navy);">
-                <th style="text-align:left;padding:8px 12px;font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">Fondo</th>
-                <th style="text-align:right;padding:8px 12px;font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">Peso</th>
-                <th style="text-align:right;padding:8px 12px;font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">Rend. 1A</th>
-                <th style="text-align:right;padding:8px 12px;font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">Benchmark</th>
-                <th style="text-align:right;padding:8px 12px;font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">Ref.</th>
-                <th style="text-align:right;padding:8px 12px;font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">Diferencia</th>
-                <th style="text-align:center;padding:8px 12px;font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;">Estado</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-semaforo">
-              <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray);">Cargando...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
   </div>
 
   <!-- ELITE -->
@@ -706,9 +606,57 @@ function onProp(f){
   calcTotalPropuesta();
 }
 
+// ── Helpers reporto ──
+function getRepoActualMonto(moneda){
+  const el=document.getElementById('act-REPO-'+moneda+'-monto');
+  return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
+}
+function getRepoActualTasa(moneda){
+  const el=document.getElementById('act-REPO-'+moneda+'-tasa');
+  return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
+}
+function getRepoPropPct(moneda){
+  const el=document.getElementById('prop-REPO-'+moneda+'-pct');
+  return el?parseFloat(el.value.replace(/[^0-9.%]/g,''))||0:0;
+}
+function getRepoPropTasa(moneda){
+  const el=document.getElementById('prop-REPO-'+moneda+'-tasa');
+  return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
+}
+
+function onActualRepo(moneda){
+  const monto=getRepoActualMonto(moneda);
+  const contrato=getMonto();
+  const pEl=document.getElementById('act-pct-REPO-'+moneda);
+  if(pEl) pEl.textContent=contrato>0&&monto>0?(monto/contrato*100).toFixed(2)+'%':'0.00%';
+  // formatear monto
+  const mEl=document.getElementById('act-REPO-'+moneda+'-monto');
+  if(mEl&&mEl.value){
+    const v=mEl.value.replace(/[^0-9.]/g,'');
+    if(v){const p=v.split('.');p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');mEl.value='$'+(p.length>1?p[0]+'.'+p[1].slice(0,2):p[0]);}
+  }
+  calcTotalActual();
+}
+
+function onPropRepo(moneda){
+  const pct=getRepoPropPct(moneda);
+  const contrato=getMonto();
+  const mEl=document.getElementById('prop-monto-REPO-'+moneda);
+  if(mEl) mEl.textContent=contrato>0&&pct>0?'$'+(pct/100*contrato).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}):'$0.00';
+  // formatear % field
+  const pEl=document.getElementById('prop-REPO-'+moneda+'-pct');
+  if(pEl&&pEl.value){
+    const v=pEl.value.replace(/[^0-9.%]/g,'');
+    if(v) pEl.value=v.replace('%','')+' %';
+  }
+  calcTotalPropuesta();
+}
+
 function calcTotalActual(){
   let t=0;
   ALL_FUNDS.forEach(f=>{const el=document.getElementById('act-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.]/g,''))||0;});
+  // incluir reporto
+  t+=getRepoActualMonto('MXN')+getRepoActualMonto('USD');
   const el=document.getElementById('total-actual');
   el.textContent='$'+t.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
   const contrato=getMonto();
@@ -719,6 +667,8 @@ function calcTotalActual(){
 function calcTotalPropuesta(){
   let t=0;
   ALL_FUNDS.forEach(f=>{const el=document.getElementById('prop-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.%]/g,''))||0;});
+  // incluir reporto
+  t+=getRepoPropPct('MXN')+getRepoPropPct('USD');
   const el=document.getElementById('total-propuesta');
   el.textContent=t.toFixed(2)+'%';
   if(t===0) el.className='';
@@ -730,6 +680,7 @@ function guardarActual(){alert('✅ Cartera Actual guardada.');}
 function guardarPropuesta(){
   let t=0;
   ALL_FUNDS.forEach(f=>{const el=document.getElementById('prop-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.]/g,''))||0;});
+  t+=getRepoPropPct('MXN')+getRepoPropPct('USD');
   if(Math.abs(t-100)>0.01){alert('⚠️ El total debe ser 100%. Actualmente es '+t.toFixed(2)+'%');return;}
   alert('✅ Cartera Propuesta guardada.');
 }
@@ -905,150 +856,9 @@ requestAnimationFrame(()=>{
   charts.geo    = donut('c-geo',   ['Norte-América','Eurozona','Europa','América Latina','Otros emergentes','Asia Emergente','Japón','Asia-Pacífico'],[65.49,12.81,7.66,3.89,3.25,2.37,2.3,2.23],null,refRadius);
 });
 
-charts.maturity = new Chart(document.getElementById('c-maturity'), {
-  type: 'bar',
-  data: {
-    labels: ['< 1 año','1-3 años','3-5 años','5-7 años','7-10 años','10-15 años','15-20 años','> 20 años'],
-    datasets: [{
-      data: [0,0,0,0,0,0,0,0],
-      backgroundColor: '#3DA5E0',
-      borderRadius: 4,
-      barPercentage: .75,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + ctx.raw.toFixed(2) + '%' }, backgroundColor: '#00205C', cornerRadius: 6 } },
-    scales: {
-      x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11, family: 'Montserrat' }, color: '#00205C' } },
-      y: { grid: { color: 'rgba(0,32,92,.06)' }, border: { display: false }, ticks: { callback: v => v + '%', font: { size: 11 }, color: '#5B6670' } }
-    }
-  }
-});
-
 // ══════════════════════════════════════════════════════════════════════════
-// COMPARATIVA — Riesgo + Macro
+// Auto-cargar comparativa al entrar a la pestaña — pendiente de implementar
 // ══════════════════════════════════════════════════════════════════════════
-
-async function cargarComparativa() {
-  const sel   = document.getElementById('cmp-selector');
-  const valor = sel ? sel.value : 'perfil_3';
-  const tipoCliente = document.getElementById('cfg-serie')?.value || 'Serie A';
-  let body = { tipo_cliente: tipoCliente };
-
-  if (valor.startsWith('perfil_')) {
-    body.modo = 'perfil';
-    body.perfil_id = valor.replace('perfil_', '');
-  } else if (valor === 'actual') {
-    const fondos = {}; let total = 0;
-    ALL_FUNDS.forEach(f => {
-      const el = document.getElementById('act-' + f);
-      const v  = parseFloat((el?.value || '').replace(/[^0-9.]/g, '')) || 0;
-      if (v > 0) { fondos[f] = v; total += v; }
-    });
-    if (total === 0) { alert('⚠️ Cartera Actual vacía.'); if (sel) sel.value = 'perfil_3'; return; }
-    const pcts = {};
-    Object.entries(fondos).forEach(([f, v]) => { pcts[f] = (v / total) * 100; });
-    body.modo = 'actual'; body.fondos = pcts;
-  } else {
-    const fondos = {}; let total = 0;
-    ALL_FUNDS.forEach(f => {
-      const el = document.getElementById('prop-' + f);
-      const v  = parseFloat((el?.value || '').replace(/[^0-9.%]/g, '')) || 0;
-      if (v > 0) { fondos[f] = v; total += v; }
-    });
-    if (total === 0) { alert('⚠️ Cartera Propuesta vacía.'); if (sel) sel.value = 'perfil_3'; return; }
-    body.modo = 'propuesta'; body.fondos = fondos;
-  }
-
-  showSpinner(true);
-  try {
-    // Paralelo: riesgo + macro
-    const [rResp, mResp] = await Promise.all([
-      fetch('/api/comparativa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-      fetch('/api/macro')
-    ]);
-    const rData = await rResp.json();
-    const mData = await mResp.json();
-    showSpinner(false);
-    if (!rData.ok) { alert('Error: ' + (rData.error || 'respuesta inválida')); return; }
-    aplicarComparativa(rData, mData);
-  } catch (e) {
-    showSpinner(false);
-    alert('Error de conexión: ' + e.message);
-  }
-}
-
-function aplicarComparativa(data, macro) {
-  const fmt1 = v => v != null ? v.toFixed(2) + '%' : '—';
-  const fmt2 = v => v != null ? v.toFixed(4)       : '—';
-
-  // Macro
-  document.getElementById('mac-tiie').textContent   = macro.tiie28  != null ? macro.tiie28.toFixed(2)  + '%' : '—';
-  document.getElementById('mac-usdmxn').textContent = macro.usdmxn  != null ? '$' + macro.usdmxn.toFixed(4)  : '—';
-  document.getElementById('mac-cetes').textContent  = macro.cetes28 != null ? macro.cetes28.toFixed(2) + '%' : '—';
-
-  // Riesgo
-  const rk = data.riesgo;
-  document.getElementById('rk-std1').textContent    = fmt1(rk.std1);
-  document.getElementById('rk-std3').textContent    = fmt1(rk.std3);
-  document.getElementById('rk-sharpe1').textContent = fmt2(rk.sharpe1);
-  document.getElementById('rk-sharpe3').textContent = fmt2(rk.sharpe3);
-  document.getElementById('rk-beta1').textContent   = fmt2(rk.beta1);
-  document.getElementById('rk-beta3').textContent   = fmt2(rk.beta3);
-
-  // Maturity
-  if (charts.maturity && data.maturity) {
-    charts.maturity.data.datasets[0].data = data.maturity.values;
-    charts.maturity.update();
-  }
-
-  // Semáforo
-  const tbody = document.getElementById('tbody-semaforo');
-  if (!data.semaforo?.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray);">Sin datos</td></tr>';
-    return;
-  }
-
-  const COLORES = {
-    green:  { bg: '#ECFDF5', text: '#065F46', dot: '#10B981', label: '▲ Supera' },
-    yellow: { bg: '#FFFBEB', text: '#92400E', dot: '#F59E0B', label: '= En línea' },
-    red:    { bg: '#FEF2F2', text: '#991B1B', dot: '#EF4444', label: '▼ Por debajo' },
-  };
-
-  tbody.innerHTML = data.semaforo.map(f => {
-    const c = COLORES[f.color] || COLORES.yellow;
-    const diffStr = (f.diff >= 0 ? '+' : '') + f.diff.toFixed(2) + '%';
-    return `
-      <tr style="border-bottom:1px solid rgba(0,32,92,.07);">
-        <td style="padding:10px 12px;font-size:13px;font-weight:800;color:var(--navy);">${f.fondo}</td>
-        <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600;color:var(--gray);">${f.pct.toFixed(2)}%</td>
-        <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:var(--navy);">${f.r1y.toFixed(2)}%</td>
-        <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600;color:var(--gray);">${f.bench.toFixed(2)}%</td>
-        <td style="padding:10px 12px;text-align:right;font-size:12px;font-weight:600;color:var(--gray);">${f.bench_lbl}</td>
-        <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:800;color:${f.diff >= 0 ? '#065F46' : '#991B1B'};">${diffStr}</td>
-        <td style="padding:10px 12px;text-align:center;">
-          <span style="display:inline-flex;align-items:center;gap:5px;background:${c.bg};color:${c.text};padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;">
-            <span style="width:8px;height:8px;border-radius:50%;background:${c.dot};display:inline-block;"></span>
-            ${c.label}
-          </span>
-        </td>
-      </tr>`;
-  }).join('');
-}
-
-// Auto-cargar comparativa al entrar a la pestaña
-(function () {
-  const _orig2 = window.showPage;
-  let _cargadoCmp = false;
-  window.showPage = function (name, el) {
-    _orig2(name, el);
-    if (name === 'comparativa' && !_cargadoCmp) {
-      _cargadoCmp = true;
-      setTimeout(() => cargarComparativa(), 300);
-    }
-  };
-})();
 
 // PDF Export
 document.getElementById('btn-pdf').addEventListener('click',async()=>{
@@ -1120,10 +930,27 @@ async function cargarPortafolio() {
       const v  = parseFloat((el?.value || '').replace(/[^0-9.]/g, '')) || 0;
       if (v > 0) { fondos[f] = v; total += v; }
     });
+    // reporto actual
+    const repoMXNMonto = getRepoActualMonto('MXN');
+    const repoUSDMonto = getRepoActualMonto('USD');
+    const repoMXNTasa  = getRepoActualTasa('MXN');
+    const repoUSDTasa  = getRepoActualTasa('USD');
+    // Validación: monto sin tasa → bloquear
+    if (repoMXNMonto > 0 && repoMXNTasa <= 0) {
+      alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
+      if (sel) sel.value = 'perfil_3'; return;
+    }
+    if (repoUSDMonto > 0 && repoUSDTasa <= 0) {
+      alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
+      if (sel) sel.value = 'perfil_3'; return;
+    }
+    total += repoMXNMonto + repoUSDMonto;
     if (total === 0) { alert('⚠️ Cartera Actual vacía.\nLlena los montos en Configuración → Cartera Actual.'); if (sel) sel.value = 'perfil_3'; return; }
     const pcts = {};
     Object.entries(fondos).forEach(([f, v]) => { pcts[f] = (v / total) * 100; });
     body.modo = 'actual'; body.fondos = pcts;
+    if (repoMXNMonto > 0) body.repo_mxn = { pct: (repoMXNMonto / total) * 100, tasa: repoMXNTasa };
+    if (repoUSDMonto > 0) body.repo_usd = { pct: (repoUSDMonto / total) * 100, tasa: repoUSDTasa };
   } else {
     const fondos = {}; let total = 0;
     ALL_FUNDS.forEach(f => {
@@ -1131,9 +958,26 @@ async function cargarPortafolio() {
       const v  = parseFloat((el?.value || '').replace(/[^0-9.%]/g, '')) || 0;
       if (v > 0) { fondos[f] = v; total += v; }
     });
+    // reporto propuesta
+    const repoMXNPct  = getRepoPropPct('MXN');
+    const repoUSDPct  = getRepoPropPct('USD');
+    const repoMXNTasa = getRepoPropTasa('MXN');
+    const repoUSDTasa = getRepoPropTasa('USD');
+    // Validación: % sin tasa → bloquear
+    if (repoMXNPct > 0 && repoMXNTasa <= 0) {
+      alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
+      if (sel) sel.value = 'perfil_3'; return;
+    }
+    if (repoUSDPct > 0 && repoUSDTasa <= 0) {
+      alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
+      if (sel) sel.value = 'perfil_3'; return;
+    }
+    total += repoMXNPct + repoUSDPct;
     if (total === 0) { alert('⚠️ Cartera Propuesta vacía.\nLlena los porcentajes en Configuración → Cartera Propuesta.'); if (sel) sel.value = 'perfil_3'; return; }
     if (Math.abs(total - 100) > 0.5) { alert(`⚠️ Cartera Propuesta suma ${total.toFixed(2)}%.\nDebe ser 100% para continuar.`); if (sel) sel.value = 'perfil_3'; return; }
     body.modo = 'propuesta'; body.fondos = fondos;
+    if (repoMXNPct > 0) body.repo_mxn = { pct: repoMXNPct, tasa: repoMXNTasa };
+    if (repoUSDPct > 0) body.repo_usd = { pct: repoUSDPct, tasa: repoUSDTasa };
   }
 
   showSpinner(true);
