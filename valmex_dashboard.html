@@ -1,1182 +1,769 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VALMEX | Dashboard Asesor</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
-:root{--navy:#00205C;--sky:#41BBC9;--blue:#3DA5E0;--silver:#D3DDE6;--gray:#5B6670;--white:#fff;--bg:#FFFFFF;}
+import os
+import requests
+from flask import Flask, send_file, request, jsonify, redirect, url_for, session, send_from_directory
 
-/* ── TOPBAR ── */
-.topbar{background:var(--navy);width:100%;box-shadow:0 2px 12px rgba(0,0,0,.25);}
-.brand{max-width:1600px;margin:0 auto;padding:0 40px;height:72px;display:flex;align-items:center;justify-content:space-between;}
-.logo-btn{display:flex;align-items:center;cursor:pointer;background:none;border:none;padding:6px 8px;border-radius:8px;transition:background .18s;flex-shrink:0;}
-.logo-btn:hover{background:rgba(255,255,255,.10);}
-.logo-img{height:46px;width:auto;}
-.nav{display:flex;align-items:center;gap:16px;}
-.nav-tab{color:rgba(255,255,255,.75);background:transparent;border:none;font-family:'Montserrat',sans-serif;font-weight:600;font-size:17px;padding:10px 22px;border-radius:10px;cursor:pointer;transition:all .15s;white-space:nowrap;}
-.nav-tab:hover{background:rgba(255,255,255,.12);color:#fff;}
-.nav-tab.active{background:#fff;color:var(--navy);font-weight:700;} .logo-active{background:rgba(255,255,255,0.15)!important;border-radius:10px;}
-.header-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.advisor-avatar{width:38px;height:38px;border-radius:50%;background:var(--sky);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--navy);flex-shrink:0;}
-.advisor-name{font-size:15px;color:rgba(255,255,255,.85);font-weight:500;}
-.btn-logout{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.55);font-size:17px;padding:4px 8px;border-radius:6px;transition:color .15s;}
-.btn-logout:hover{color:#fff;}
-.hamburger{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:5px;padding:6px;}
-.hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;}
+BASE = os.path.dirname(os.path.abspath(__file__))
 
-/* ── MOBILE NAV ── */
-.mobile-nav{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.5);}
-.mobile-panel{position:absolute;top:0;right:0;width:260px;height:100%;background:var(--navy);padding:24px 20px;display:flex;flex-direction:column;gap:6px;}
-.mobile-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;align-self:flex-end;margin-bottom:8px;}
-.mobile-user{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:8px;}
-.mobile-tab{color:rgba(255,255,255,.8);background:transparent;border:none;font-family:'Montserrat',sans-serif;font-weight:600;font-size:15px;padding:11px 14px;border-radius:10px;cursor:pointer;text-align:left;width:100%;transition:all .15s;}
-.mobile-tab:hover,.mobile-tab.active{background:rgba(255,255,255,.15);color:#fff;}
-.mobile-logout{margin-top:auto;padding:11px 14px;color:rgba(255,255,255,.55);background:none;border:none;font-family:'Montserrat',sans-serif;font-size:13px;cursor:pointer;text-align:left;border-radius:10px;transition:all .15s;}
-.mobile-logout:hover{color:#fff;background:rgba(255,255,255,.10);}
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "valmex-secret-2024")
 
-/* ── CONTAINER / PAGES ── */
-.container{max-width:1400px;margin:0 auto;padding:24px 20px;background:#fff;} #page-presentacion{margin:-24px -20px;height:calc(100vh - 72px);flex-direction:column;} 
-
-#prop-dash{
-  width:100%;
-  background:#fff;
-  padding:4px 16px;
-  display:grid;
-  grid-template-columns:repeat(6,1fr);
-  gap:16px;
-  align-content:start;
-}
-.page{display:none;background:#fff;}.page.active{display:block;background:#fff;} #page-presentacion.active{display:flex;} #page-propuesta.active{display:flex;flex-direction:column;margin-top:-24px;}
-
-/* ── BOTÓN DESCARGA ── */
-.btn-dl{width:36px;height:36px;border-radius:8px;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background .18s;text-decoration:none;flex-shrink:0;}
-.btn-dl:hover{background:var(--sky);}
-
-/* ── PRESENTACIÓN ── */
-.pres-card{background:#fff;border-radius:0;border:none;box-shadow:none;overflow:hidden;display:flex;flex-direction:column;height:100%;}
-.pres-hdr{background:#fff;border-bottom:1px solid var(--silver);padding:4px 14px;display:flex;align-items:center;justify-content:flex-end;flex-shrink:0;}
-.pres-hdr h2{font-size:12px;font-weight:600;color:var(--navy);}
-.pres-body{width:100%;flex:1;overflow:hidden;line-height:0;position:relative;}
-.pres-body iframe{width:100%;height:100%;border:none;display:block;}
-
-/* ── PROPUESTA ── */
-.prop-titlebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;padding:4px 0;}
-.prop-title-left{display:flex;align-items:center;gap:10px;}
-.prop-accent{width:8px;height:36px;background:var(--sky);border-radius:3px;flex-shrink:0;}
-.prop-title{font-size:32px;font-weight:900;letter-spacing:.3px;color:var(--navy);text-transform:uppercase;}
-.prop-rule{height:2px;background:var(--navy);border-radius:2px;margin-bottom:14px;}
-.prop-right{display:flex;align-items:center;gap:12px;} 
-.prop-dash-title{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:4px 2px 2px;}
-
-.prop-grid{display:contents;}
-.prop-dash-title{grid-column:1/-1;}
-.prop-rule-full{grid-column:1/-1;height:2px;background:var(--navy);border-radius:2px;margin-bottom:2px;}
-.prop-row1{display:contents;}
-.card-comp{grid-column:span 1;height:306px;}
-.card-rend{grid-column:span 1;height:306px;}
-.card-deuda{grid-column:span 1;height:306px;}
-.card-back{grid-column:span 3;height:306px;}
-.prop-row2{display:contents;}
-.card-pie{grid-column:span 2;height:306px;}
-
-/* Card base */
-.pcard{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 14px rgba(0,0,0,.06);}
-.pcard>.ph{background:var(--navy);color:#fff;padding:10px 14px;font-weight:700;font-size:14px;letter-spacing:.3px;flex-shrink:0;text-align:center;}
-.pcard>.pb{padding:10px;flex:1 1 auto;display:flex;background:#fff;overflow:hidden;}
-.pcard canvas{width:100%!important;height:100%!important;display:block;}
-
-/* Rendimientos — grid 2×3 */
-.rh-grid{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:4px;}
-.rh-block{background:#fff;border:1px solid var(--silver);border-radius:7px;padding:6px 10px;border-left:4px solid var(--navy);display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
-.rh-pill{font-size:13px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;display:block;font-family:'Montserrat',sans-serif;white-space:nowrap;}
-.rh-val{font-size:17px;font-weight:800;color:var(--navy);font-family:'Montserrat',sans-serif;line-height:1.1;white-space:nowrap;}
-.rh-val.pos{color:var(--navy);}.rh-val.neg{color:var(--navy);}.rh-val.flat{color:var(--navy);}
-
-/* Drilldown deuda — mismo grid que rendimientos 2×3, header fusionado arriba */
-.dd-grid{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(3,1fr);gap:4px;}
-.dd-hdr{border-radius:7px;padding:4px 10px;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:11px;font-weight:800;font-family:'Montserrat',sans-serif;letter-spacing:.5px;text-transform:uppercase;}
-.dd-hdr-mxn{background:var(--navy);color:#fff;}
-.dd-hdr-usd{background:var(--navy);color:#fff;}
-.dd-block{background:#fff;border:1px solid var(--silver);border-radius:7px;padding:6px 10px;border-left:4px solid var(--navy);display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
-.dd-block.empty{background:#F8FAFD;border-left-color:var(--silver);}
-.dd-block .rh-pill{font-size:13px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;display:block;font-family:'Montserrat',sans-serif;white-space:nowrap;}
-.dd-block .rh-val{font-size:17px;font-weight:800;color:var(--navy);font-family:'Montserrat',sans-serif;line-height:1.1;}
-
-/* Nota */
-.prop-note{font-size:11px;color:var(--gray);margin-top:8px;font-family:'Montserrat',sans-serif;font-style:italic;}
-
-/* ── CONFIGURACIÓN ── */
-.cfg-layout{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch;}
-.cfg-card{background:#fff;border:1px solid var(--silver);border-radius:12px;box-shadow:0 2px 14px rgba(0,32,92,.08);overflow:hidden;display:flex;flex-direction:column;}
-.cfg-hdr{background:var(--navy);padding:12px 18px;text-align:center;}
-.cfg-hdr h3{font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px;font-family:'Montserrat',sans-serif;}
-.cfg-body{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1;}
-.cfg-card:not(:first-child) .cfg-body{padding:9px 18px 18px;gap:6px;}
-.cfg-layout>.cfg-card:first-child .cfg-body .btn-primary{margin-top:auto;}
-.fg{display:flex;flex-direction:column;gap:5px;}
-.fg label{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;font-family:'Montserrat',sans-serif;}
-.fg input,.fg select{width:100%;padding:9px 12px;border:1.5px solid var(--silver);border-radius:7px;font-size:13px;font-family:'Montserrat',sans-serif;color:#1A2540;background:#fff;outline:none;transition:border-color .18s;box-sizing:border-box;}
-.fg input:focus,.fg select:focus{border-color:var(--sky);}
-.btn-primary{padding:10px 22px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;transition:background .18s;width:100%;margin-top:4px;}
-.btn-primary:hover{background:var(--sky);color:var(--navy);}
-.fondos-list{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;max-height:480px;overflow-y:auto;padding-right:2px;}
-.cfg-hint{font-size:12px;color:var(--gray);font-family:'Montserrat',sans-serif;margin:0 0 6px;}
-.fsec-hdr{background:var(--navy);color:#fff;font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;padding:7px 12px;border-radius:6px;margin:8px 0 4px;font-family:'Montserrat',sans-serif;grid-column:1/-1;text-align:center;}
-.fondo-row{display:flex;flex-direction:column;background:#F8FAFD;border:1px solid var(--silver);border-radius:8px;border-left:3px solid var(--navy);padding:10px 12px;gap:4px;}
-.fondo-nombre{font-size:12px;font-weight:800;color:var(--navy);font-family:'Montserrat',sans-serif;}
-.fondo-input{padding:6px 8px;border:1.5px solid var(--silver);border-radius:6px;font-size:13px;font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy);background:#fff;outline:none;text-align:right;width:100%;box-sizing:border-box;}
-.fondo-input:focus{border-color:var(--sky);background:#EFF6FF;}
-.fondo-pct,.fondo-monto{font-size:11px;font-weight:700;color:var(--sky);font-family:'Montserrat',sans-serif;text-align:right;}
-.fondo-total{font-size:12px;font-weight:700;color:var(--gray);text-align:right;padding:6px 0 2px;font-family:'Montserrat',sans-serif;grid-column:1/-1;}
-.fondo-total span{font-size:15px;font-weight:900;color:var(--navy);}
-.total-ok{color:var(--navy)!important;}
-.total-err{color:#DC2626!important;}
-
-/* ── COMPARATIVA ── */
-.cmp-card{background:#fff;border:1px solid var(--silver);border-radius:12px;box-shadow:0 2px 14px rgba(0,32,92,.08);overflow:hidden;}
-.cmp-hdr{background:var(--navy);padding:12px 20px;}
-.cmp-hdr h3{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px;}
-.cmp-body{padding:20px;height:360px;}
-
-/* ── ELITE ── */
-.elite-hero{background:linear-gradient(130deg,var(--navy) 0%,#0A3580 100%);border-radius:14px;padding:36px 40px;display:flex;align-items:center;gap:28px;box-shadow:0 8px 32px rgba(0,32,92,.22);}
-.elite-icon{width:58px;height:58px;background:#C9A84C;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
-.elite-text h2{font-size:20px;font-weight:800;color:#fff;margin-bottom:6px;}
-.elite-text p{font-size:13px;color:rgba(255,255,255,.76);font-family:'Montserrat',sans-serif;line-height:1.6;}
-.elite-features{margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-.ef-card{background:#fff;border:1px solid var(--silver);border-radius:10px;padding:16px;}
-.ef-icon{width:34px;height:34px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:8px;}
-.ef-card h4{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
-.ef-card p{font-size:11px;color:var(--gray);font-family:'Montserrat',sans-serif;line-height:1.5;}
-
-/* ══ TABLET PORTRAIT (≤1024px vertical) ══ */
-@media(max-width:1024px) and (orientation:portrait){
-  .card-comp,.card-rend,.card-deuda{grid-column:span 1;}
-  .card-back{grid-column:span 3;}
-  .card-pie{grid-column:span 2;}
-  .cfg-layout{grid-template-columns:1fr;}
-  .elite-features{grid-template-columns:1fr;}
+# ─────────────────────────────────────────────────────────────────────────────
+# USUARIOS
+# ─────────────────────────────────────────────────────────────────────────────
+USERS = {
+    "jvilla": {"password": "valmex",   "nombre": "José Carlos Villa", "iniciales": "JV", "rol": "admin"},
+    "admin":  {"password": "admin123", "nombre": "Administrador",      "iniciales": "AD", "rol": "admin"},
 }
 
-/* ══ MOBILE PORTRAIT (≤600px vertical) ══ */
-@media(max-width:600px) and (orientation:portrait){
-  .nav{display:none;}
-  .advisor-name{display:none;}
-  .btn-logout{display:none;}
-  .hamburger{display:flex;}
-  .brand{padding:0 16px;height:62px;}
-  .logo-img{height:34px;}
-  .container{padding:12px;}
-  .pres-body{height:65vh;}
-  .prop-grid{grid-template-columns:1fr;}
-  .card-comp,.card-rend,.card-deuda,.card-back,.card-pie{grid-column:span 1;}
-  .prop-title{font-size:15px;}
-  .rh-val{font-size:19px;}
-  .cfg-layout{grid-template-columns:1fr;}
-  .elite-hero{flex-direction:column;padding:24px 20px;}
-  .elite-features{grid-template-columns:1fr;}
-  .cmp-body{height:260px;}
-  .prop-row1 .pcard,.prop-row2 .pcard{min-height:200px;}
+# ─────────────────────────────────────────────────────────────────────────────
+# PERFILES MODELO — composiciones oficiales VALMEX
+# ─────────────────────────────────────────────────────────────────────────────
+PERFILES = {
+    "0": {"VXGUBCP": 5.00,  "VXDEUDA": 90.00, "VXUDIMP": 5.00},
+    "1": {"VXGUBCP": 25.00, "VXDEUDA": 12.00, "VXUDIMP": 7.00,  "VXGUBLP": 52.00, "VXTBILL": 4.00},
+    "2": {"VXGUBCP": 26.93, "VXDEUDA": 18.00, "VXUDIMP": 5.83,  "VXGUBLP": 26.89, "VXTBILL": 2.35, "VALMX28": 17.00, "VALMX20": 3.00},
+    "3": {"VXGUBCP": 20.40, "VXDEUDA": 5.76,  "VXUDIMP": 6.65,  "VXGUBLP": 25.11, "VXTBILL": 2.08, "VALMX28": 34.00, "VALMX20": 6.00},
+    "4": {"VXGUBCP": 20.70, "VXDEUDA": 4.08,  "VXUDIMP": 5.37,  "VXGUBLP": 7.61,  "VXTBILL": 2.24, "VALMX28": 51.00, "VALMX20": 9.00},
 }
 
-/* ══ LANDSCAPE CELULAR ══ */
-@media(orientation:landscape) and (max-height:600px){
-  .nav{display:none;}
-  .hamburger{display:flex;}
-  .brand{padding:0 14px;height:54px;}
-  .logo-img{height:30px;}
-  .advisor-name{display:none;}
-  .btn-logout{display:none;}
-  .container{padding:8px 12px;}
-  .prop-grid{gap:8px;}
-  .card-comp,.card-rend,.card-deuda{grid-column:span 1;min-height:200px;}
-  .card-back{grid-column:span 3;min-height:200px;}
-  .card-pie{grid-column:span 2;min-height:170px;}
-  .prop-title{font-size:14px;}
-  .rh-val{font-size:13px;}
-  .rh-pill{font-size:8px;padding:2px 5px;}
-  .rh-block{padding:5px;}
-  .dd-block .rh-val{font-size:11px;}
-  .ph{padding:4px 10px;font-size:9.5px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .prop-note{display:none;}
-  .pres-body{height:78vh;}
+# ─────────────────────────────────────────────────────────────────────────────
+# CLASIFICACIÓN DE FONDOS
+# ─────────────────────────────────────────────────────────────────────────────
+FONDOS_DEUDA_MXN = {"VXREPO1", "VXGUBCP", "VXUDIMP", "VXDEUDA", "VXGUBLP", "VLMXETF"}
+FONDOS_DEUDA_USD = {"VXTBILL", "VXCOBER", "VLMXDME"}
+FONDOS_DEUDA     = FONDOS_DEUDA_MXN | FONDOS_DEUDA_USD
+FONDOS_RV        = {"VALMXA", "VALMX20", "VALMX28", "VALMXVL", "VALMXES", "VLMXTEC", "VLMXESG", "VALMXHC", "VXINFRA"}
+FONDOS_CICLO     = {"VLMXJUB", "VLMXP24", "VLMXP31", "VLMXP38", "VLMXP45", "VLMXP52", "VLMXP59"}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ESCALA CREDITICIA S&P — ponderación numérica global
+# ─────────────────────────────────────────────────────────────────────────────
+CREDIT_SCALE = ["AAA", "AA+", "AA", "AA-", "A+", "A", "A-", "BBB+", "BBB", "BBB-", "BB+", "BB", "BB-", "B+", "B", "B-", "<B", "NR"]
+CREDIT_SCORE = {r: i for i, r in enumerate(CREDIT_SCALE)}
+
+# Mapeo escala local México → escala global S&P
+# Fuente: equivalencias estándar Moody's/S&P para emisores soberanos MX
+MX_LOCAL_TO_GLOBAL = {
+    "AAA": "BBB",
+    "AA":  "BBB-",
+    "A":   "BB+",
+    "BBB": "BB",
+    "BB":  "BB-",
+    "B":   "B+",
+    "<B":  "B",
+    "NR":  "NR",
 }
 
-/* ══ TABLET LANDSCAPE ══ */
-@media(orientation:landscape) and (min-height:601px){
-  .card-comp,.card-rend,.card-deuda{grid-column:span 1;}
-  .card-back{grid-column:span 3;}
-  .card-pie{grid-column:span 2;min-height:220px;}
+def weighted_credit_rating(cred_acc: dict, local_to_global: bool = False) -> str:
+    """Calcula la calificación crediticia ponderada estilo S&P.
+    Si local_to_global=True, convierte primero escala local MX a global.
+    """
+    if local_to_global:
+        converted = {}
+        for rating, weight in cred_acc.items():
+            global_rating = MX_LOCAL_TO_GLOBAL.get(rating, rating)
+            converted[global_rating] = converted.get(global_rating, 0) + weight
+        cred_acc = converted
+
+    total_weight = sum(cred_acc.values())
+    if total_weight <= 0:
+        return "—"
+    score = sum(CREDIT_SCORE.get(r, len(CREDIT_SCALE)-1) * v for r, v in cred_acc.items()) / total_weight
+    idx = round(score)
+    idx = max(0, min(idx, len(CREDIT_SCALE) - 1))
+    return CREDIT_SCALE[idx]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAPA ISIN
+# ─────────────────────────────────────────────────────────────────────────────
+ISIN_MAP = {
+  "VXREPO1": {"A":"MXP800461008","B0CF":"MX51VA2J00C5","B0CO":"MX51VA2J0058","B0FI":"MX51VA2J0074","B0NC":"MX51VA2J0041","B1CF":"MX51VA2J00D3","B1CO":"MX51VA2J0082","B1FI":"MX51VA2J00F8","B1NC":"MX51VA2J0066","B2FI":"MX51VA2J0090"},
+  "VXGUBCP": {"A":"MXP800501001","B0CF":"MX51VA2L00B3","B0CO":"MX51VA2L0054","B0FI":"MX51VA2L0039","B0NC":"MX51VA2L0047","B1CF":"MX51VA2L00C1","B1CO":"MX51VA2L0088","B1FI":"MX51VA2L0062","B1NC":"MX51VA2L0070","B2CF":"MX51VA2L00D9","B2FI":"MX51VA2L00E7","B2NC":"MX51VA2L0096"},
+  "VXUDIMP": {"A":"MX51VA2S0008","B0CF":"MX51VA2S00D4","B0CO":"MX51VA2S0065","B0FI":"MX51VA2S0040","B0NC":"MX51VA2S0057","B1CO":"MX51VA2S0099","B1FI":"MX51VA2S0073","B1NC":"MX51VA2S0081","B2CO":"MX51VA2S00C6","B2FI":"MX51VA2S00A0","B2NC":"MX51VA2S00B8"},
+  "VXDEUDA": {"A":"MXP800521009","B0CF":"MX51VA2M0046","B0CO":"MX51VA2M00D7","B0FI":"MX51VA2M0061","B0NC":"MX51VA2M0079","B1CF":"MX51VA2M0095","B1CO":"MX51VA2M00E5","B1FI":"MX51VA2M00A3","B1NC":"MX51VA2M00B1","B2FI":"MX51VA2M00C9","B2NC":"MX51VA2M00H8"},
+  "VXGUBLP": {"A":"MX51VA2R0009","B0CF":"MX51VA2R00C8","B0CO":"MX51VA2R00F1","B0FI":"MX51VA2R0041","B0NC":"MX51VA2R0058","B1CF":"MX51VA2R00D6","B1CO":"MX51VA2R0082","B1FI":"MX51VA2R0066","B1NC":"MX51VA2R0074","B2CO":"MX51VA2R00B0","B2FI":"MX51VA2R0090","B2NC":"MX51VA2R00A2"},
+  "VXTBILL": {"A":"MX51VA1F0004","B0CF":"MX51VA1F0087","B0CO":"MX51VA1F0020","B0FI":"MX51VA1F0012","B0NC":"MX51VA1F0053"},
+  "VXCOBER": {"A":"MXP800621007","B0FI":"MX51VA2N0037","B0NC":"MX51VA2N0045","B1CF":"MX51VA2N00D5","B1CO":"MX51VA2N0086","B1FI":"MX51VA2N0060","B1NC":"MX52FM080076","B2FI":"MX51VA2N0094"},
+  "VLMXETF": {"A":"MX52VL060004","B0FI":"MX52VL060038","B1CO":"MX52VL060061","B1FI":"MX52VL060079"},
+  "VLMXDME": {"A":"MX52VL0D0002","B0CF":"MX52VL0D0010","B0CO":"MX52VL0D0028","B0FI":"MX52VL0D0036","B0NC":"MX52VL0D0044","B1CF":"MX52VL0D0051","B1FI":"MX52VL0D00B0","B2FI":"MX52VL0D0093"},
+  "VALMXA":  {"A":"MX52VA2W0000","B0":"MX52VA2W0018","B1":"MX52VA2W0026","B2":"MX52VA2W0034"},
+  "VALMX20": {"A":"MXP800541007","B0":"MX52VA2O0026","B1":"MX52VA2O0000"},
+  "VALMX28": {"A":"MX52VA130008","B0CF":"MX52VA130040","B0CO":"MX52VA130032","B0FI":"MX52VA130065","B0NC":"MX52VA130099","B1CO":"MX52VA1300B0","B1FI":"MX52VA130016","B1NC":"MX52VA1300C8"},
+  "VALMXVL": {"A":"MX52VA140007","B0":"MX52VA140015","B1":"MX52VA140023","B2":"MX52VA140031","B3":"MX52VA140049"},
+  "VALMXES": {"A":"MX52VA190002","B0":"MX52VA190010","B1":"MX52VA190028","B2":"MX52VA190036","B3":"MX52VA190044"},
+  "VLMXTEC": {"A":"MX52VL080002","B0CF":"MX52VL080010","B0CO":"MX52VL080028","B0FI":"MX52VL080036","B0NC":"MX52VL080044","B1CF":"MX52VL080051","B1CO":"MX52VL080077","B1FI":"MX52VL080069","B1NC":"MX52VL080085","B2FI":"MX52VL0800B7"},
+  "VLMXESG": {"A":"MX52VL0B0004","B0CF":"MX52VL0B0038","B0CO":"MX52VL0B00D0","B0FI":"MX52VL0B0012","B1CF":"MX52VL0B0079","B1CO":"MX52VL0B0053","B1FI":"MX52VL0B0046","B1NC":"MX52VL0B0061","B2FI":"MX52VL0B0087"},
+  "VALMXHC": {"A":"MX52VA1L0004","B0CF":"MX52VA1L0046","B0CO":"MX52VA1L0020","B0FI":"MX52VA1L0012","B0NC":"MX52VA1L0038","B1CF":"MX52VA1L0087","B1CO":"MX52VA1L0061","B1FI":"MX52VA1L00D0","B1NC":"MX52VA1L0079","B2FI":"MX52VA1L0095"},
+  "VXINFRA": {"A":"MX52VL0E0001","B0CO":"MX52VL0E0019","B0FI":"MX52VL0E0027","B1FI":"MX52VL0E0050","B2FI":"MX52VL0E0084"},
+  "VLMXJUB": {"A":"MX52VL070003","B0CF":"MX52VL070011","B0NC":"MX52VL070045","B1CF":"MX52VL070052","B1FI":"MX52VL070078","B1NC":"MX52VL070086","B2NC":"MX52VL0700C7","B3NC":"MX52VL0700D5"},
+  "VLMXP24": {"A":"MX52VL010009","B0CF":"MX52VL0100A4","B0NC":"MX52VL010025","B1FI":"MX52VL010041","B1NC":"MX52VL010058","B2NC":"MX52VL010082","B3NC":"MX52VL0100D8"},
+  "VLMXP31": {"A":"MX52VL030007","B0CF":"MX52VL0300A0","B0FI":"MX52VL030015","B0NC":"MX52VL030023","B1CF":"MX52VL030049","B1FI":"MX52VL030049","B1NC":"MX52VL030056","B2NC":"MX52VL030080","B3NC":"MX52VL0300D4"},
+  "VLMXP38": {"A":"MX52VL000000","B0CF":"MX52VL0000A6","B0FI":"MX52VL000018","B0NC":"MX52VL000026","B1CF":"MX52VL0000B4","B1FI":"MX52VL000042","B1NC":"MX52VL000059","B2NC":"MX52VL000083","B3NC":"MX52VL0000D0"},
+  "VLMXP45": {"A":"MX52VL040014","B0CF":"MX52VL040089","B0FI":"MX52VL040022","B0NC":"MX52VL040048","B1CF":"MX52VL040097","B1CO":"MX52VL0400C4","B1FI":"MX52VL040071","B1NC":"MX52VL0400B6","B2NC":"MX52VL040030","B3NC":"MX52VL0400D2"},
+  "VLMXP52": {"A":"MX52VL050005","B0FI":"MX52VL050013","B0NC":"MX52VL050021","B1FI":"MX52VL050047","B1NC":"MX52VL050096","B2NC":"MX52VL050088","B3NC":"MX52VL0500B3"},
+  "VLMXP59": {"A":"MX52VL0C0003","B0NC":"MX52VL0C0037","B1FI":"MX52VL0C0086","B1NC":"MX52VL0C0052","B2NC":"MX52VL0C0078","B3NC":"MX52VL0C0094"},
 }
 
-@media print{
-  .topbar,.prop-right{display:none!important;}
-  body{background:#fff!important;}
+# ─────────────────────────────────────────────────────────────────────────────
+# SERIES POR TIPO DE CLIENTE
+# ─────────────────────────────────────────────────────────────────────────────
+TIPO_KEY = {
+    "Serie A":                             "A",
+    "Persona Física - B1FI/B1":           "PF",
+    "Persona Física con Fee - B0FI/B0":    "PF_fee",
+    "Plan Personal de Retiro - B1NC/B1CF": "PPR",
+    "Persona Moral - B1CO":                "PM",
+    "Persona Moral con Fee - B0CO":        "PM_fee",
 }
-</style>
-</head>
-<body>
 
-<!-- TOPBAR -->
-<header class="topbar">
-  <div class="brand">
-    <div style="display:flex;align-items:center;gap:16px;flex:1;justify-content:center;">
-      <button class="logo-btn" id="logo-tab" onclick="showPage('presentacion', this)" title="Presentación">
-        <img src="/VALMEX.png" class="logo-img" alt="VALMEX">
-      </button>
-      <nav class="nav">
-        <button class="nav-tab" onclick="showPage('configuracion',this)">Configuración</button>
-        <button class="nav-tab" onclick="showPage('propuesta',this)">Propuesta</button>
-        <button class="nav-tab" onclick="showPage('comparativa',this)">Comparativa</button>
-        <button class="nav-tab" onclick="showPage('elite',this)">VALMEX Elite</button>
-      </nav>
-    </div>
-    <div class="header-right">
-      <div class="advisor-avatar" id="user-avatar">--</div>
-      <span class="advisor-name" id="user-name"></span>
-      <button class="btn-logout" onclick="window.location.href='/logout'" title="Cerrar sesión"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7"/><polyline points="17 15 20 12 17 9"/><line x1="20" y1="12" x2="9" y2="12"/></svg></button>
-      <button class="hamburger" onclick="openMobileNav()" aria-label="Menú">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-  </div>
-</header>
+SERIE_MAP = {
+    "VXREPO1": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VXGUBCP": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VXUDIMP": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1NC","PM":"B1CO","PM_fee":"B0CO"},
+    "VXDEUDA": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VXGUBLP": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VXTBILL": {"A":"A","PF":"B0FI","PF_fee":"B0FI","PPR":"B0CF","PM":"B0CO","PM_fee":"B0CO"},
+    "VXCOBER": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VLMXETF": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VLMXDME": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VALMXA":  {"A":"A","PF":"B1",  "PF_fee":"B0",  "PPR":"B1",  "PM":"B1",  "PM_fee":"B0"},
+    "VALMX20": {"A":"A","PF":"B1",  "PF_fee":"B0",  "PPR":"B1",  "PM":"B1",  "PM_fee":"B0"},
+    "VALMX28": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1NC","PM":"B1CO","PM_fee":"B0CO"},
+    "VALMXVL": {"A":"A","PF":"B1",  "PF_fee":"B0",  "PPR":"B1",  "PM":"B1",  "PM_fee":"B0"},
+    "VALMXES": {"A":"A","PF":"B1",  "PF_fee":"B0",  "PPR":"B1",  "PM":"B1",  "PM_fee":"B0"},
+    "VLMXTEC": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VLMXESG": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VALMXHC": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":"B1CO","PM_fee":"B0CO"},
+    "VXINFRA": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1FI","PM":None,  "PM_fee":"B0CO"},
+    "VLMXJUB": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":None,  "PM_fee":None},
+    "VLMXP24": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1NC","PM":None,  "PM_fee":None},
+    "VLMXP31": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":None,  "PM_fee":None},
+    "VLMXP38": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":None,  "PM_fee":None},
+    "VLMXP45": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1CF","PM":None,  "PM_fee":None},
+    "VLMXP52": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1NC","PM":None,  "PM_fee":None},
+    "VLMXP59": {"A":"A","PF":"B1FI","PF_fee":"B0FI","PPR":"B1NC","PM":None,  "PM_fee":None},
+}
 
-<!-- MOBILE NAV -->
-<div class="mobile-nav" id="mobile-nav" onclick="closeMobileNav()">
-  <div class="mobile-panel" onclick="event.stopPropagation()">
-    <button class="mobile-close" onclick="closeMobileNav()">✕</button>
-    <div class="mobile-user">
-      <div class="advisor-avatar" id="mobile-avatar">--</div>
-      <span style="color:#fff;font-size:14px;font-weight:600;" id="mobile-name"></span>
-    </div>
-    <button class="mobile-tab" onclick="showPage('presentacion',this);closeMobileNav()">Presentación</button>
-    <button class="mobile-tab" onclick="showPage('configuracion',this);closeMobileNav()">Configuración</button>
-    <button class="mobile-tab" onclick="showPage('propuesta',this);closeMobileNav()">Propuesta</button>
-    <button class="mobile-tab" onclick="showPage('comparativa',this);closeMobileNav()">Comparativa</button>
-    <button class="mobile-tab" onclick="showPage('elite',this);closeMobileNav()">VALMEX Elite</button>
-    <button class="mobile-logout" onclick="window.location.href='/logout'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7"/><polyline points="17 15 20 12 17 9"/><line x1="20" y1="12" x2="9" y2="12"/></svg> Cerrar sesión</button>
-  </div>
-</div>
+# Caché Morningstar
+_ms_cache = {}
+MS_URL    = "https://api.morningstar.com/v2/service/mf/hlk0d0zmiy1b898b/universeid/txcm88fa8x3vxapp"
+MS_ACCESS = "hwg0cty5re7araij32k035091f43wxd0"
 
-<!-- CONTENIDO -->
-<div class="container">
 
-  <!-- PRESENTACIÓN -->
-  <div id="page-presentacion" class="page active">
-    <div class="pres-card">
-      <div class="pres-hdr">
-        <a href="/PC.pdf" download="PRESENTACIÓN COMERCIAL VALMEX.pdf" class="btn-dl" title="Descargar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </a>
-      </div>
-      <div class="pres-body">
-        <iframe src="/PC.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH" title="Presentación Comercial"></iframe>
-      </div>
-    </div>
-  </div>
+def load_ms_universe():
+    if _ms_cache:
+        return _ms_cache
+    try:
+        resp = requests.get(MS_URL, params={"accesscode": MS_ACCESS, "format": "JSON"}, timeout=25)
+        resp.raise_for_status()
+        for fund in resp.json().get("data", []):
+            api    = fund.get("api", {})
+            ticker = api.get("FSCBI-Ticker", "").strip()
+            if ticker:
+                _ms_cache[ticker] = api
+        print(f"[MS] Universo cargado: {len(_ms_cache)} fondos")
+    except Exception as e:
+        print(f"[MS ERROR] {e}")
+    return _ms_cache
 
-  <!-- PROPUESTA -->
-  <div id="page-propuesta" class="page">
-    <div class="prop-titlebar" id="prop-toolbar">
-      <div></div>
-      <div class="prop-right">
-        <select id="prop-selector"
-          style="padding:7px 12px;border:1.5px solid #D3DDE6;border-radius:7px;
-                 font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;
-                 color:#00205C;background:#fff;outline:none;cursor:pointer;
-                 transition:border-color .18s;max-width:270px;"
-          onfocus="this.style.borderColor='#41BBC9'"
-          onblur="this.style.borderColor='#D3DDE6'"
-          onchange="cargarPortafolio()">
-          <option value="perfil_0">Perfil 0 - 100% RF low risk</option>
-          <option value="perfil_1">Perfil 1 - 100% RF high risk</option>
-          <option value="perfil_2">Perfil 2 - 80% RF / 20% RV</option>
-          <option value="perfil_3" selected>Perfil 3 - 60% RF / 40% RV</option>
-          <option value="perfil_4">Perfil 4 - 40% RF / 60% RV</option>
-          <option value="actual">Cartera Actual</option>
-          <option value="propuesta">Cartera Propuesta</option>
-        </select>
-        <button class="btn-dl" id="btn-pdf" title="Descargar PDF">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </button>
-      </div>
-    </div>
 
-    <div class="prop-dash-scaler"><div class="prop-grid" id="prop-dash">
+def safe_float(val, default=0.0):
+    try:    return float(val)
+    except: return default
 
-      <div class="prop-dash-title">
-        <div class="prop-title-left">
-          <div class="prop-accent"></div>
-          <span class="prop-title">Estrategia Portafolio</span>
-        </div>
-        <img src="/VALMEX2.png" style="height:38px;width:auto;" alt="VALMEX">
-      </div>
-      <div class="prop-rule-full"></div>
 
-      <!-- FILA 1 -->
-      <div class="prop-row1">
-        <!-- Composición -->
-        <div class="pcard card-comp">
-          <div class="ph">Composición</div>
-          <div class="pb" style="padding:8px 6px;"><canvas id="c-comp"></canvas></div>
-        </div>
+def resolve_serie(fondo, tipo_cliente):
+    tipo_key    = TIPO_KEY.get(tipo_cliente, "PF")
+    fondo_map   = SERIE_MAP.get(fondo, {})
+    deseada     = fondo_map.get(tipo_key)
+    disponibles = ISIN_MAP.get(fondo, {})
+    if deseada and deseada in disponibles:
+        return deseada
+    for fb in ["B1FI", "B0FI", "B1CF", "B1NC", "B1CO", "B0CO", "B1", "B0", "A"]:
+        if fb in disponibles:
+            return fb
+    return list(disponibles.keys())[0] if disponibles else "A"
 
-        <!-- Rendimientos -->
-        <div class="pcard card-rend">
-          <div class="ph">Rendimientos</div>
-          <div class="pb" style="padding:8px;">
-            <div class="rh-grid">
-              <div class="rh-block"><span class="rh-pill">MTD</span><span class="rh-val pos">—</span></div>
-              <div class="rh-block"><span class="rh-pill">3 Meses</span><span class="rh-val pos">—</span></div>
-              <div class="rh-block"><span class="rh-pill">YTD</span><span class="rh-val pos">—</span></div>
-              <div class="rh-block"><span class="rh-pill">12 Meses</span><span class="rh-val pos">—</span></div>
-              <div class="rh-block"><span class="rh-pill">24 Meses</span><span class="rh-val pos">—</span></div>
-              <div class="rh-block"><span class="rh-pill">36 Meses</span><span class="rh-val pos">—</span></div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Drilldown Deuda — 2 columnas MXN / USD -->
-        <div class="pcard card-deuda">
-          <div class="ph">Drilldown Deuda</div>
-          <div class="pb" style="padding:8px;">
-            <div class="dd-grid">
-              <!-- Headers -->
-              <div class="dd-hdr dd-hdr-mxn">MX</div>
-              <div class="dd-hdr dd-hdr-usd">USD</div>
-              <!-- Duración -->
-              <div class="dd-block" id="dd-dur-mxn"><span class="rh-pill" style="font-size:12px;">Duración</span><span class="rh-val" id="dd-val-dur-mxn">—</span></div>
-              <div class="dd-block" id="dd-dur-usd"><span class="rh-pill" style="font-size:12px;">Duración</span><span class="rh-val" id="dd-val-dur-usd">—</span></div>
-              <!-- YTM -->
-              <div class="dd-block" id="dd-ytm-mxn"><span class="rh-pill">YTM</span><span class="rh-val" id="dd-val-ytm-mxn">—</span></div>
-              <div class="dd-block" id="dd-ytm-usd"><span class="rh-pill">YTM</span><span class="rh-val" id="dd-val-ytm-usd">—</span></div>
-              <!-- Calificación -->
-              <div class="dd-block" id="dd-cred-mxn"><span class="rh-pill">C.Credit.</span><span class="rh-val" id="dd-val-cred-mxn">—</span></div>
-              <div class="dd-block" id="dd-cred-usd"><span class="rh-pill">C.Credit.</span><span class="rh-val" id="dd-val-cred-usd">—</span></div>
-            </div>
-          </div>
-        </div>
+def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
+                        repo_mxn: dict = None, repo_usd: dict = None) -> dict:
+    universe = load_ms_universe()
 
-        <!-- Línea backtesting -->
-        <div class="pcard card-back">
-          <div class="ph">Backtesting</div>
-          <div class="pb" style="padding:10px;"><canvas id="c-linea"></canvas></div>
-        </div>
-      </div>
+    r1m = r3m = r6m = ytd = r1y = r2y = r3y = 0.0
+    stock_t = bond_t = cash_t = 0.0
+    geo_acc = {}; sec_acc = {}; supersec_acc = {}
+    lista = []
 
-      <!-- FILA 2 -->
-      <div class="prop-row2">
-        <div class="pcard card-pie">
-          <div class="ph">Clase de activos</div>
-          <div class="pb" style="padding:6px;"><canvas id="c-clase"></canvas></div>
-        </div>
-        <div class="pcard card-pie">
-          <div class="ph" id="ph-geo">Exposición Geográfica RV</div>
-          <div class="pb" style="padding:6px;"><canvas id="c-geo"></canvas></div>
-        </div>
-        <div class="pcard card-pie">
-          <div class="ph">Exposición Sectorial RV</div>
-          <div class="pb" style="padding:6px;"><canvas id="c-sector"></canvas></div>
-        </div>
-      </div>
+    # Acumuladores separados MXN / USD
+    # Ponderamos dur y ytm por (bond_fraction * w) para normalizar correctamente
+    dur_mxn_num = ytm_mxn_num = bond_mxn_denom = 0.0
+    dur_usd_num = ytm_usd_num = bond_usd_denom = 0.0
+    cred_mxn = {}; cred_usd = {}
 
-      <div style="grid-column:1/-1;padding:4px 4px 2px;border-top:1px solid rgba(0,32,92,0.12);margin-top:2px;">
-        <p class="prop-note" id="prop-note-text">*Rendimientos con plazo menor a un año están expresados en términos efectivos y los rendimientos mayores a un año en términos anualizados. Los rendimientos se encuentran actualizados al <span id="fecha-actualizacion"></span>.</p>
-      </div>
-    </div>
-    </div>
-  </div>
+    for fondo, pct in fondos_pct.items():
+        if pct <= 0:
+            continue
+        serie  = resolve_serie(fondo, tipo_cliente)
+        ticker = f"{fondo} {serie}"
+        d      = universe.get(ticker, {})
 
-  <!-- CONFIGURACIÓN -->
-  <div id="page-configuracion" class="page">
-    <div class="cfg-layout">
+        if not d:
+            for s in ["B1FI", "B0FI", "B1CF", "B1NC", "B1CO", "B0CO", "B1", "B0", "A"]:
+                t2 = f"{fondo} {s}"
+                if t2 in universe:
+                    d = universe[t2]; serie = s; break
 
-      <div class="cfg-card">
-        <div class="cfg-hdr"><h3>Datos del Cliente</h3></div>
-        <div class="cfg-body">
-          <div class="fg"><label>Nombre Completo</label><input type="text" id="cfg-nombre" placeholder="Ej. María García López"></div>
-          <div class="fg"><label>No. Contrato</label><input type="text" id="cfg-contrato" placeholder="Ej. 123456"></div>
-          <div class="fg"><label>Perfil de Riesgo</label>
-            <select id="cfg-perfil">
-              <option value="0">Perfil 0 - 100% RF low risk</option>
-              <option value="1">Perfil 1 - 100% RF high risk</option>
-              <option value="2">Perfil 2 - 80% RF / 20% RV</option>
-              <option value="3" selected>Perfil 3 - 60% RF / 40% RV</option>
-              <option value="4">Perfil 4 - 40% RF / 60% RV</option>
-            </select>
-          </div>
-          <div class="fg"><label>Monto del Contrato (MXN)</label><input type="text" id="cfg-monto" placeholder="$0.00" oninput="formatMonto(this)"></div>
-          <div class="fg"><label>Rango Backtesting</label>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <input type="date" id="cfg-fecha-ini" value="2016-01-01">
-              <input type="date" id="cfg-fecha-fin">
-            </div>
-          </div>
-          <div class="fg"><label>Serie del Cliente</label>
-            <select id="cfg-serie">
-              <option selected>Serie A</option>
-              <option>Persona Física - B1FI/B1</option>
-              <option>Persona Física con Fee - B0FI/B0</option>
-              <option>Plan Personal de Retiro - B1NC/B1CF</option>
-              <option>Persona Moral - B1CO</option>
-              <option>Persona Moral con Fee - B0CO</option>
-            </select>
-          </div>
-          <button class="btn-primary" onclick="guardarCliente()">Guardar Cliente</button>
-        </div>
-      </div>
+        w = pct / 100.0
 
-      <div class="cfg-card">
-        <div class="cfg-hdr"><h3>Cartera Actual</h3></div>
-        <div class="cfg-body">
-          <div class="fondos-list">
-<div class="fsec-hdr">Deuda</div>
-<div class="fondo-row actual" style="border-left-color:#F59E0B;"><span class="fondo-nombre" style="color:#F59E0B;font-weight:700;">Reporto MXN</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-REPO-MXN-monto" oninput="onActualRepo('MXN')"><input class="fondo-input" type="text" placeholder="Tasa (%)" id="act-REPO-MXN-tasa" oninput="onActualRepo('MXN')" style="max-width:72px;"><span class="fondo-pct" id="act-pct-REPO-MXN">0.00%</span></div>
-<div class="fondo-row actual" style="border-left-color:#F59E0B;"><span class="fondo-nombre" style="color:#F59E0B;font-weight:700;">Reporto USD</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-REPO-USD-monto" oninput="onActualRepo('USD')"><input class="fondo-input" type="text" placeholder="Tasa (%)" id="act-REPO-USD-tasa" oninput="onActualRepo('USD')" style="max-width:72px;"><span class="fondo-pct" id="act-pct-REPO-USD">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VXREPO1</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXREPO1" oninput="onActual('VXREPO1')"><span class="fondo-pct" id="act-pct-VXREPO1">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VXGUBCP</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXGUBCP" oninput="onActual('VXGUBCP')"><span class="fondo-pct" id="act-pct-VXGUBCP">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VXUDIMP</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXUDIMP" oninput="onActual('VXUDIMP')"><span class="fondo-pct" id="act-pct-VXUDIMP">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VXDEUDA</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXDEUDA" oninput="onActual('VXDEUDA')"><span class="fondo-pct" id="act-pct-VXDEUDA">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VXGUBLP</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXGUBLP" oninput="onActual('VXGUBLP')"><span class="fondo-pct" id="act-pct-VXGUBLP">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VXTBILL</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXTBILL" oninput="onActual('VXTBILL')"><span class="fondo-pct" id="act-pct-VXTBILL">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VXCOBER</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXCOBER" oninput="onActual('VXCOBER')"><span class="fondo-pct" id="act-pct-VXCOBER">0.00%</span></div>
-<div class="fsec-hdr">Renta Variable</div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXETF</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXETF" oninput="onActual('VLMXETF')"><span class="fondo-pct" id="act-pct-VLMXETF">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXDME</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXDME" oninput="onActual('VLMXDME')"><span class="fondo-pct" id="act-pct-VLMXDME">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VALMXA</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VALMXA" oninput="onActual('VALMXA')"><span class="fondo-pct" id="act-pct-VALMXA">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VALMX20</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VALMX20" oninput="onActual('VALMX20')"><span class="fondo-pct" id="act-pct-VALMX20">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VALMX28</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VALMX28" oninput="onActual('VALMX28')"><span class="fondo-pct" id="act-pct-VALMX28">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VALMXVL</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VALMXVL" oninput="onActual('VALMXVL')"><span class="fondo-pct" id="act-pct-VALMXVL">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VALMXES</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VALMXES" oninput="onActual('VALMXES')"><span class="fondo-pct" id="act-pct-VALMXES">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXTEC</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXTEC" oninput="onActual('VLMXTEC')"><span class="fondo-pct" id="act-pct-VLMXTEC">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXESG</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXESG" oninput="onActual('VLMXESG')"><span class="fondo-pct" id="act-pct-VLMXESG">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VALMXHC</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VALMXHC" oninput="onActual('VALMXHC')"><span class="fondo-pct" id="act-pct-VALMXHC">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VXINFRA</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VXINFRA" oninput="onActual('VXINFRA')"><span class="fondo-pct" id="act-pct-VXINFRA">0.00%</span></div>
-<div class="fsec-hdr">Ciclo de Vida - Vanguard</div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXJUB</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXJUB" oninput="onActual('VLMXJUB')"><span class="fondo-pct" id="act-pct-VLMXJUB">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXP24</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXP24" oninput="onActual('VLMXP24')"><span class="fondo-pct" id="act-pct-VLMXP24">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXP31</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXP31" oninput="onActual('VLMXP31')"><span class="fondo-pct" id="act-pct-VLMXP31">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXP38</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXP38" oninput="onActual('VLMXP38')"><span class="fondo-pct" id="act-pct-VLMXP38">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXP45</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXP45" oninput="onActual('VLMXP45')"><span class="fondo-pct" id="act-pct-VLMXP45">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXP52</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXP52" oninput="onActual('VLMXP52')"><span class="fondo-pct" id="act-pct-VLMXP52">0.00%</span></div>
-<div class="fondo-row actual"><span class="fondo-nombre">VLMXP59</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXP59" oninput="onActual('VLMXP59')"><span class="fondo-pct" id="act-pct-VLMXP59">0.00%</span></div>
-          </div>
-          <div class="fondo-total">Total: <span id="total-actual">$0.00</span></div>
-          <button class="btn-primary" onclick="guardarActual()">Guardar Cartera Actual</button>
-        </div>
-      </div>
+        r1m += safe_float(d.get("TTR-Return1Mth")) * w
+        r3m += safe_float(d.get("TTR-Return3Mth")) * w
+        r6m += safe_float(d.get("TTR-Return6Mth")) * w
+        ytd += safe_float(d.get("TTR-ReturnYTD"))  * w
+        r1y += safe_float(d.get("TTR-Return1Yr"))  * w
+        r2y += safe_float(d.get("TTR-Return2Yr"))  * w
+        r3y += safe_float(d.get("TTR-Return3Yr"))  * w
 
-      <div class="cfg-card">
-        <div class="cfg-hdr"><h3>Cartera Propuesta</h3></div>
-        <div class="cfg-body">
-          <div class="fondos-list">
-<div class="fsec-hdr">Deuda</div>
-<div class="fondo-row propuesta" style="border-left-color:#F59E0B;"><span class="fondo-nombre" style="color:#F59E0B;font-weight:700;">Reporto MXN</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-REPO-MXN-pct" oninput="onPropRepo('MXN')"><input class="fondo-input" type="text" placeholder="Tasa (%)" id="prop-REPO-MXN-tasa" oninput="onPropRepo('MXN')" style="max-width:72px;"><span class="fondo-monto" id="prop-monto-REPO-MXN">$0.00</span></div>
-<div class="fondo-row propuesta" style="border-left-color:#F59E0B;"><span class="fondo-nombre" style="color:#F59E0B;font-weight:700;">Reporto USD</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-REPO-USD-pct" oninput="onPropRepo('USD')"><input class="fondo-input" type="text" placeholder="Tasa (%)" id="prop-REPO-USD-tasa" oninput="onPropRepo('USD')" style="max-width:72px;"><span class="fondo-monto" id="prop-monto-REPO-USD">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VXREPO1</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXREPO1" oninput="onProp('VXREPO1')"><span class="fondo-monto" id="prop-monto-VXREPO1">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VXGUBCP</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXGUBCP" oninput="onProp('VXGUBCP')"><span class="fondo-monto" id="prop-monto-VXGUBCP">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VXUDIMP</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXUDIMP" oninput="onProp('VXUDIMP')"><span class="fondo-monto" id="prop-monto-VXUDIMP">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VXDEUDA</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXDEUDA" oninput="onProp('VXDEUDA')"><span class="fondo-monto" id="prop-monto-VXDEUDA">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VXGUBLP</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXGUBLP" oninput="onProp('VXGUBLP')"><span class="fondo-monto" id="prop-monto-VXGUBLP">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VXTBILL</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXTBILL" oninput="onProp('VXTBILL')"><span class="fondo-monto" id="prop-monto-VXTBILL">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VXCOBER</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXCOBER" oninput="onProp('VXCOBER')"><span class="fondo-monto" id="prop-monto-VXCOBER">$0.00</span></div>
-<div class="fsec-hdr">Renta Variable</div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXETF</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXETF" oninput="onProp('VLMXETF')"><span class="fondo-monto" id="prop-monto-VLMXETF">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXDME</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXDME" oninput="onProp('VLMXDME')"><span class="fondo-monto" id="prop-monto-VLMXDME">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VALMXA</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VALMXA" oninput="onProp('VALMXA')"><span class="fondo-monto" id="prop-monto-VALMXA">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VALMX20</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VALMX20" oninput="onProp('VALMX20')"><span class="fondo-monto" id="prop-monto-VALMX20">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VALMX28</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VALMX28" oninput="onProp('VALMX28')"><span class="fondo-monto" id="prop-monto-VALMX28">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VALMXVL</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VALMXVL" oninput="onProp('VALMXVL')"><span class="fondo-monto" id="prop-monto-VALMXVL">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VALMXES</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VALMXES" oninput="onProp('VALMXES')"><span class="fondo-monto" id="prop-monto-VALMXES">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXTEC</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXTEC" oninput="onProp('VLMXTEC')"><span class="fondo-monto" id="prop-monto-VLMXTEC">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXESG</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXESG" oninput="onProp('VLMXESG')"><span class="fondo-monto" id="prop-monto-VLMXESG">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VALMXHC</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VALMXHC" oninput="onProp('VALMXHC')"><span class="fondo-monto" id="prop-monto-VALMXHC">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VXINFRA</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VXINFRA" oninput="onProp('VXINFRA')"><span class="fondo-monto" id="prop-monto-VXINFRA">$0.00</span></div>
-<div class="fsec-hdr">Ciclo de Vida - Vanguard</div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXJUB</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXJUB" oninput="onProp('VLMXJUB')"><span class="fondo-monto" id="prop-monto-VLMXJUB">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXP24</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXP24" oninput="onProp('VLMXP24')"><span class="fondo-monto" id="prop-monto-VLMXP24">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXP31</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXP31" oninput="onProp('VLMXP31')"><span class="fondo-monto" id="prop-monto-VLMXP31">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXP38</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXP38" oninput="onProp('VLMXP38')"><span class="fondo-monto" id="prop-monto-VLMXP38">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXP45</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXP45" oninput="onProp('VLMXP45')"><span class="fondo-monto" id="prop-monto-VLMXP45">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXP52</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXP52" oninput="onProp('VLMXP52')"><span class="fondo-monto" id="prop-monto-VLMXP52">$0.00</span></div>
-<div class="fondo-row propuesta"><span class="fondo-nombre">VLMXP59</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXP59" oninput="onProp('VLMXP59')"><span class="fondo-monto" id="prop-monto-VLMXP59">$0.00</span></div>
-          </div>
-          <div class="fondo-total">Total: <span id="total-propuesta">0.00%</span></div>
-          <button class="btn-primary" onclick="guardarPropuesta()">Guardar Cartera Propuesta</button>
-        </div>
-      </div>
+        stock = safe_float(d.get("AAB-StockNet"))
+        bond  = safe_float(d.get("AAB-BondNet"))
+        cash  = safe_float(d.get("AAB-CashNet"))
+        stock_t += stock * w
+        bond_t  += bond  * w
+        cash_t  += cash  * w
 
-    </div>
-  </div>
+        # ── Clasificación del fondo ──
+        is_usd       = fondo in FONDOS_DEUDA_USD
+        is_deuda_mxn = fondo in FONDOS_DEUDA_MXN
+        is_deuda     = fondo in FONDOS_DEUDA
+        is_rv        = fondo in FONDOS_RV
+        is_ciclo     = fondo in FONDOS_CICLO
 
-  <!-- COMPARATIVA -->
-  <div id="page-comparativa" class="page">
-  </div>
+        # ── Drilldown deuda: solo fondos de deuda MXN/USD (no RV puro) ──
+        # Ciclo de vida participa en drilldown MXN
+        if (is_deuda or is_ciclo) and bond > 0:
+            bond_w = (bond / 100.0) * w
+            if bond_w > 0:
+                dur_val = safe_float(d.get("PS-EffectiveDuration"))
+                ytm_val = safe_float(d.get("PS-YieldToMaturity"))
+                if is_usd:
+                    dur_usd_num    += dur_val * bond_w
+                    ytm_usd_num    += ytm_val * bond_w
+                    bond_usd_denom += bond_w
+                else:
+                    dur_mxn_num    += dur_val * bond_w
+                    ytm_mxn_num    += ytm_val * bond_w
+                    bond_mxn_denom += bond_w
 
-  <!-- ELITE -->
-  <div id="page-elite" class="page">
-    <div class="elite-hero">
-      <div class="elite-icon">⭐</div>
-      <div class="elite-text">
-        <h2>VALMEX ELITE</h2>
-        <p>Acceso exclusivo a estrategias de inversión de alto impacto, análisis cuantitativo avanzado y reportería personalizada para patrimonios significativos.</p>
-      </div>
-    </div>
-    <div class="elite-features">
-      <div class="ef-card"><div class="ef-icon">📊</div><h4>Análisis Cuantitativo</h4><p>Modelos propietarios con datos de Morningstar y Bloomberg para optimización de portafolios.</p></div>
-      <div class="ef-card"><div class="ef-icon">🌐</div><h4>Acceso Global</h4><p>Más de 10,000 instrumentos en 45 mercados internacionales.</p></div>
-      <div class="ef-card"><div class="ef-icon">📄</div><h4>Reportería Premium</h4><p>Presentaciones ejecutivas automatizadas con tu branding y datos en tiempo real.</p></div>
-    </div>
-  </div>
+                # Calificación crediticia
+                for cq_key, cq_lbl in [
+                    ("CQB-AAA","AAA"),("CQB-AA","AA"),("CQB-A","A"),
+                    ("CQB-BBB","BBB"),("CQB-BB","BB"),("CQB-B","B"),
+                    ("CQB-BelowB","<B"),("CQB-NotRated","NR"),
+                ]:
+                    v = safe_float(d.get(cq_key))
+                    if v > 0:
+                        contribution = v * bond_w
+                        if is_usd:
+                            cred_usd[cq_lbl] = cred_usd.get(cq_lbl, 0) + contribution
+                        else:
+                            cred_mxn[cq_lbl] = cred_mxn.get(cq_lbl, 0) + contribution
 
-</div><!-- /.container -->
+                # Super-sectores de deuda
+                supersector_map = {
+                    "GBSR-SuperSectorCashandEquivalentsNet": "Efectivo y Equiv.",
+                    "GBSR-SuperSectorCorporateNet":          "Corporativo",
+                    "GBSR-SuperSectorGovernmentNet":         "Gubernamental",
+                    "GBSR-SuperSectorMunicipalNet":          "Municipal",
+                    "GBSR-SuperSectorSecuritizedNet":        "Bursatilizado",
+                    "GBSR-SuperSectorDerivativeNet":         "Derivados",
+                }
+                for ss_key, ss_lbl in supersector_map.items():
+                    v = safe_float(d.get(ss_key))
+                    if v > 0:
+                        supersec_acc[ss_lbl] = supersec_acc.get(ss_lbl, 0) + v * bond_w
 
-<script>
-const ALL_FUNDS = ["VXREPO1", "VXGUBCP", "VXUDIMP", "VXDEUDA", "VXGUBLP", "VXTBILL", "VXCOBER", "VLMXETF", "VLMXDME", "VALMXA", "VALMX20", "VALMX28", "VALMXVL", "VALMXES", "VLMXTEC", "VLMXESG", "VALMXHC", "VXINFRA", "VLMXJUB", "VLMXP24", "VLMXP31", "VLMXP38", "VLMXP45", "VLMXP52", "VLMXP59"];
+        # ── Geo y sectores: fondos RV puros + Ciclo de Vida ──
+        if (is_rv or is_ciclo) and stock > 0:
+            geo_raw = d.get("RE-RegionalExposure", [])
+            GEO_EXCLUDE = {"emerging market", "developed country", "emerging markets", "developed countries"}
+            if isinstance(geo_raw, list):
+                for item in geo_raw:
+                    region = item.get("Region", "")
+                    val    = safe_float(item.get("Value", 0))
+                    if region and val > 0 and region.lower() not in GEO_EXCLUDE:
+                        geo_acc[region] = geo_acc.get(region, 0) + val * (stock * w / 100)
 
-document.addEventListener('DOMContentLoaded',()=>{
-  const hoy=new Date().toISOString().split('T')[0];
-  const fi=document.getElementById('cfg-fecha-fin');
-  if(fi) fi.value=hoy;
-  document.querySelectorAll('[id^="prop-"]').forEach(el=>{
-    if(el.tagName==='INPUT'){
-      el.addEventListener('keydown',function(e){
-        if(e.key==='Backspace'||e.key==='Delete'){
-          const v=this.value.replace('%','');
-          const numV=v.replace(/[^0-9.]/g,'');
-          if(this.value.endsWith('%')){
-            e.preventDefault();
-            const newV=numV.slice(0,-1);
-            this.value=newV;
-            onProp(this.id.replace('prop-',''));
-          }
+            sector_map = {
+                "GR-TechnologyNet":           "Technology",
+                "GR-FinancialServicesNet":    "Financial Services",
+                "GR-HealthcareNet":           "Healthcare",
+                "GR-CommunicationServicesNet":"Communication Services",
+                "GR-IndustrialsNet":          "Industrials",
+                "GR-ConsumerCyclicalNet":     "Consumer Cyclical",
+                "GR-ConsumerDefensiveNet":    "Consumer Defensive",
+                "GR-BasicMaterialsNet":       "Basic Materials",
+                "GR-EnergyNet":               "Energy",
+                "GR-RealEstateNet":           "Real Estate",
+                "GR-UtilitiesNet":            "Utilities",
+            }
+            for key, nombre in sector_map.items():
+                v = safe_float(d.get(key))
+                if v > 0:
+                    sec_acc[nombre] = sec_acc.get(nombre, 0) + v * (stock * w / 100)
+
+        lista.append({
+            "fondo": fondo, "serie": serie, "pct": round(pct, 2),
+            "r1m": round(safe_float(d.get("TTR-Return1Mth")), 2),
+            "r3m": round(safe_float(d.get("TTR-Return3Mth")), 2),
+            "r1y": round(safe_float(d.get("TTR-Return1Yr")),  2),
+            "r3y": round(safe_float(d.get("TTR-Return3Yr")),  2),
+        })
+
+    # ── Reporto directo (pseudo-fondo sintético) ──
+    for repo_cfg, es_usd, label_corto in [
+        (repo_mxn, False, "MD MXP"),
+        (repo_usd, True,  "MD USD"),
+    ]:
+        if not repo_cfg:
+            continue
+        pct  = float(repo_cfg.get("pct", 0))
+        tasa = float(repo_cfg.get("tasa", 0))
+        if pct <= 0:
+            continue
+        w = pct / 100.0
+
+        # Rendimientos históricos reales basados en tasa de referencia
+        rend = get_repo_rendimientos(tasa, es_usd)
+
+        r1m += rend["r1m"] * w
+        r3m += rend["r3m"] * w
+        r6m += rend["r6m"] * w
+        ytd += rend["ytd"] * w
+        r1y += rend["r1y"] * w
+        r2y += rend["r2y"] * w
+        r3y += rend["r3y"] * w
+
+        # Clase activos: 100% deuda
+        bond_t += 1.0 * w
+        # Drilldown deuda: dur=0 (overnight), ytm=tasa neta
+        bond_w = w
+        if es_usd:
+            dur_usd_num    += 0.0  * bond_w
+            ytm_usd_num    += tasa * bond_w
+            bond_usd_denom += bond_w
+            cred_usd["AAA"] = cred_usd.get("AAA", 0) + 100 * bond_w
+        else:
+            dur_mxn_num    += 0.0  * bond_w
+            ytm_mxn_num    += tasa * bond_w
+            bond_mxn_denom += bond_w
+            cred_mxn["AAA"] = cred_mxn.get("AAA", 0) + 100 * bond_w
+        supersec_acc["Gubernamental"] = supersec_acc.get("Gubernamental", 0) + 100 * bond_w
+        lista.append({
+            "fondo": label_corto, "serie": "—", "pct": round(pct, 2),
+            "r1m": round(rend["r1m"], 2),
+            "r3m": round(rend["r3m"], 2),
+            "r1y": round(rend["r1y"], 2),
+            "r3y": round(rend["r3y"], 2),
+        })
+
+    def top_n(d, n=8):
+        t = sum(d.values()) or 1
+        items = sorted(d.items(), key=lambda x: -x[1])[:n]
+        return {"labels":[i[0] for i in items],"values":[round(i[1]/t*100,2) for i in items]}
+
+    GEO_TRANSLATE = {
+        "united states":     "Estados Unidos",
+        "canada":            "Canadá",
+        "latin america":     "América Latina",
+        "united kingdom":    "Reino Unido",
+        "eurozone":          "Eurozona",
+        "europe - ex euro":  "Europa ex-Euro",
+        "europe - emerging": "Europa Emergente",
+        "africa":            "África",
+        "middle east":       "Medio Oriente",
+        "japan":             "Japón",
+        "australasia":       "Australasia",
+        "asia - developed":  "Asia Desarrollada",
+        "asia - emerging":   "Asia Emergente",
+        "greater asia":      "Gran Asia",
+        "greater europe":    "Gran Europa",
+        "americas":          "Américas",
+        "north america":     "Norteamérica",
+    }
+
+    SEC_TRANSLATE = {
+        "technology":             "Tecnología",
+        "financial services":     "Financiero",
+        "healthcare":             "Salud",
+        "communication services": "Comunicaciones",
+        "industrials":            "Industriales",
+        "consumer cyclical":      "Consumo Discrecional",
+        "consumer defensive":     "Consumo Básico",
+        "basic materials":        "Materiales",
+        "energy":                 "Energía",
+        "real estate":            "Bienes Raíces",
+        "utilities":              "Utilidades",
+    }
+
+    def filter_pct(d, min_pct=1.0, translate=None):
+        t = sum(d.values()) or 1
+        main  = []
+        otros = 0.0
+        for k, v in sorted(d.items(), key=lambda x: -x[1]):
+            pct = v / t * 100
+            label = (translate or {}).get(k.lower(), k)
+            if pct >= min_pct:
+                main.append((label, pct))
+            else:
+                otros += pct
+        if otros > 0:
+            main.append(("Otros", round(otros, 2)))
+        return {"labels":[i[0] for i in main],"values":[round(i[1],2) for i in main]}
+
+    has_mxn = bond_mxn_denom > 0
+    has_usd = bond_usd_denom > 0
+
+    return {
+        "ok": True,
+        "rendimientos": {
+            "mtd":round(r1m,2),"r3m":round(r3m,2),
+            "ytd":round(ytd,2),"r1y":round(r1y,2),
+            "r2y":round(r2y,2),"r3y":round(r3y,2),
+        },
+        "clase_activos": {
+            "labels":["Deuda","Renta Variable","Reporto"],
+            "values":[round(bond_t,2),round(stock_t,2),round(cash_t,2)],
+        },
+        "composicion": sorted(lista, key=lambda x: -x["pct"]),
+        "geo":           filter_pct(geo_acc, translate=GEO_TRANSLATE),
+        "sectores":      filter_pct(sec_acc, translate=SEC_TRANSLATE),
+        "supersectores": filter_pct(supersec_acc),
+        "has_rv":        stock_t > 0,
+        "deuda": {
+            "has_mxn":  has_mxn,
+            "dur_mxn":  round(dur_mxn_num / bond_mxn_denom, 2) if has_mxn else 0,
+            "ytm_mxn":  round(ytm_mxn_num / bond_mxn_denom, 2) if has_mxn else 0,
+            "cred_mxn": weighted_credit_rating(cred_mxn, local_to_global=True) if cred_mxn else "—",
+            "has_usd":  has_usd,
+            "dur_usd":  round(dur_usd_num / bond_usd_denom, 2) if has_usd else 0,
+            "ytm_usd":  round(ytm_usd_num / bond_usd_denom, 2) if has_usd else 0,
+            "cred_usd": weighted_credit_rating(cred_usd) if cred_usd else "—",
+        },
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RUTAS
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        data = request.get_json(force=True)
+        u    = data.get("usuario", "").strip().lower()
+        p    = data.get("password", "").strip()
+        user = USERS.get(u)
+        if user and user["password"] == p:
+            session["usuario"] = u
+            return jsonify({"ok":True,"nombre":user["nombre"],"iniciales":user["iniciales"],"rol":user["rol"]})
+        return jsonify({"ok": False}), 401
+    return send_file(os.path.join(BASE, "login.html"))
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+@app.route("/me")
+def me():
+    u = session.get("usuario")
+    if not u or u not in USERS:
+        return jsonify({"ok": False}), 401
+    user = USERS[u]
+    return jsonify({"ok":True,"nombre":user["nombre"],"iniciales":user["iniciales"],"rol":user["rol"]})
+
+@app.route("/PC.pdf")
+def pc_pdf():
+    return send_from_directory(BASE, "PC.pdf")
+
+@app.route("/VALMEX.png")
+def valmex_logo():
+    return send_from_directory(BASE, "VALMEX.png")
+
+@app.route("/VALMEX2.png")
+def valmex_logo2():
+    return send_from_directory(BASE, "VALMEX2.png")
+
+@app.route("/")
+def index():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+    return send_file(os.path.join(BASE, "valmex_dashboard.html"))
+
+
+@app.route("/api/propuesta", methods=["POST"])
+def api_propuesta():
+    if "usuario" not in session:
+        return jsonify({"ok": False, "error": "No autenticado"}), 401
+
+    body         = request.get_json(force=True)
+    tipo_cliente = body.get("tipo_cliente", "Serie A")
+    modo         = body.get("modo", "propuesta")
+
+    if modo == "perfil":
+        pid = str(body.get("perfil_id", "3"))
+        fondos_pct = PERFILES.get(pid)
+        if not fondos_pct:
+            return jsonify({"ok": False, "error": f"Perfil {pid} no existe"}), 400
+    else:
+        raw = body.get("fondos", {})
+        fondos_pct = {k: float(v) for k, v in raw.items() if float(v) > 0}
+        repo_mxn = body.get("repo_mxn")
+        repo_usd = body.get("repo_usd")
+        # Permitir portafolio solo con reporto (sin fondos Valmex)
+        if not fondos_pct and not repo_mxn and not repo_usd:
+            return jsonify({"ok": False, "error": "Sin fondos con % > 0"}), 400
+
+    return jsonify(calcular_portafolio(fondos_pct, tipo_cliente,
+                                        repo_mxn=body.get("repo_mxn"),
+                                        repo_usd=body.get("repo_usd")))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MACRO — Banxico SIE API
+# ─────────────────────────────────────────────────────────────────────────────
+BANXICO_TOKEN = os.environ.get("BANXICO_TOKEN", "")  # Configura tu token en variable de entorno
+BANXICO_BASE  = "https://www.banxico.org.mx/SieAPIRest/service/v1/series"
+FRED_API_KEY  = os.environ.get("FRED_API_KEY", "")
+FRED_BASE     = "https://api.stlouisfed.org/fred/series/observations"
+
+# IDs de series
+SERIE_TIIE28  = "SF43783"   # TIIE 28 días
+SERIE_USDMXN  = "SF43718"   # USD/MXN FIX
+SERIE_CETES28 = "SF60633"   # Cetes 28 días (proxy T-Bill MX)
+
+_macro_cache = {}
+_macro_ts    = 0
+
+# ── Caché de tasas históricas ──
+_hist_cache    = {}
+_hist_cache_ts = 0
+
+import time
+from datetime import date, timedelta
+from functools import lru_cache
+
+
+def _banxico_serie_rango(serie_id: str, fecha_ini: str, fecha_fin: str) -> list[dict]:
+    """Descarga serie Banxico en rango yyyy-mm-dd. Retorna lista de {fecha, valor}."""
+    try:
+        url  = f"{BANXICO_BASE}/{serie_id}/datos/{fecha_ini}/{fecha_fin}"
+        hdrs = {"Bmx-Token": BANXICO_TOKEN, "Accept": "application/json"}
+        r    = requests.get(url, headers=hdrs, timeout=15)
+        r.raise_for_status()
+        datos = r.json()["bmx"]["series"][0].get("datos", [])
+        result = []
+        for d in datos:
+            try:
+                result.append({"fecha": d["fecha"], "valor": float(d["dato"].replace(",", "."))})
+            except Exception:
+                pass
+        return result
+    except Exception as e:
+        print(f"[BANXICO HIST ERROR] {serie_id}: {e}")
+        return []
+
+
+def _fred_serie_rango(series_id: str, fecha_ini: str, fecha_fin: str) -> list[dict]:
+    """Descarga serie FRED en rango. Retorna lista de {fecha, valor}."""
+    try:
+        params = {
+            "series_id":       series_id,
+            "observation_start": fecha_ini,
+            "observation_end":   fecha_fin,
+            "api_key":         FRED_API_KEY,
+            "file_type":       "json",
+            "frequency":       "m",         # mensual
+            "aggregation_method": "avg",
         }
-      });
-    }
-  });
-});
+        r = requests.get(FRED_BASE, params=params, timeout=15)
+        r.raise_for_status()
+        obs = r.json().get("observations", [])
+        result = []
+        for o in obs:
+            try:
+                if o["value"] != ".":
+                    result.append({"fecha": o["date"], "valor": float(o["value"])})
+            except Exception:
+                pass
+        return result
+    except Exception as e:
+        print(f"[FRED ERROR] {series_id}: {e}")
+        return []
 
-function formatMonto(el){
-  let v=el.value.replace(/[^0-9.]/g,'');
-  const p=v.split('.');
-  p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
-  el.value='$'+(p.length>1?p[0]+'.'+p[1].slice(0,2):p[0]);
-  ALL_FUNDS.forEach(f=>{ const el=document.getElementById('act-'+f); if(el&&el.value) onActual(f); });
-  ALL_FUNDS.forEach(f=>{ const el=document.getElementById('prop-'+f); if(el&&el.value) onProp(f); });
-}
 
-function getMonto(){
-  const el=document.getElementById('cfg-monto');
-  return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
-}
+def _promedio_serie(datos: list[dict], fecha_desde: date) -> float | None:
+    """Promedio de valores desde fecha_desde hasta hoy."""
+    vals = [d["valor"] for d in datos
+            if _parse_fecha(d["fecha"]) and _parse_fecha(d["fecha"]) >= fecha_desde]
+    return sum(vals) / len(vals) if vals else None
 
-function onActual(f){
-  const el=document.getElementById('act-'+f);
-  let v=el.value.replace(/[^0-9.]/g,'');
-  if(!v){el.value='';const pEl=document.getElementById('act-pct-'+f);if(pEl)pEl.textContent='0.00%';calcTotalActual();return;}
-  const p=v.split('.');
-  p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
-  el.value='$'+(p.length>1?p[0]+'.'+p[1].slice(0,2):p[0]);
-  const monto=parseFloat(v)||0;
-  const total=getMonto();
-  const pEl=document.getElementById('act-pct-'+f);
-  if(pEl) pEl.textContent=total>0?(monto/total*100).toFixed(2)+'%':'0.00%';
-  calcTotalActual();
-}
 
-function onProp(f){
-  const el=document.getElementById('prop-'+f);
-  let v=el.value.replace(/[^0-9.]/g,'');
-  if(!v){el.value='';const mEl=document.getElementById('prop-monto-'+f);if(mEl)mEl.textContent='$0.00';calcTotalPropuesta();return;}
-  el.value=v+'%';
-  const pos=v.length;
-  setTimeout(()=>{try{el.setSelectionRange(pos,pos);}catch(e){}},0);
-  const pct=parseFloat(v)||0;
-  const total=getMonto();
-  const mEl=document.getElementById('prop-monto-'+f);
-  if(mEl) mEl.textContent=total>0?'$'+(pct/100*total).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}):'$0.00';
-  calcTotalPropuesta();
-}
+def _parse_fecha(s: str) -> date | None:
+    """Parsea fecha en formato dd/mm/yyyy o yyyy-mm-dd."""
+    try:
+        if "/" in s:
+            d, m, y = s.split("/")
+            return date(int(y), int(m), int(d))
+        return date.fromisoformat(s[:10])
+    except Exception:
+        return None
 
-// ── Helpers reporto ──
-function getRepoActualMonto(moneda){
-  const el=document.getElementById('act-REPO-'+moneda+'-monto');
-  return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
-}
-function getRepoActualTasa(moneda){
-  const el=document.getElementById('act-REPO-'+moneda+'-tasa');
-  return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
-}
-function getRepoPropPct(moneda){
-  const el=document.getElementById('prop-REPO-'+moneda+'-pct');
-  return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
-}
-function getRepoPropTasa(moneda){
-  const el=document.getElementById('prop-REPO-'+moneda+'-tasa');
-  return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
-}
 
-function onActualRepo(moneda){
-  const monto=getRepoActualMonto(moneda);
-  const contrato=getMonto();
-  const pEl=document.getElementById('act-pct-REPO-'+moneda);
-  if(pEl) pEl.textContent=contrato>0&&monto>0?(monto/contrato*100).toFixed(2)+'%':'0.00%';
-  // formatear monto
-  const mEl=document.getElementById('act-REPO-'+moneda+'-monto');
-  if(mEl&&mEl.value){
-    const v=mEl.value.replace(/[^0-9.]/g,'');
-    if(v){const p=v.split('.');p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');mEl.value='$'+(p.length>1?p[0]+'.'+p[1].slice(0,2):p[0]);}
-  }
-  // formatear tasa con %
-  const tEl=document.getElementById('act-REPO-'+moneda+'-tasa');
-  if(tEl&&tEl.value){
-    const v=tEl.value.replace(/[^0-9.]/g,'');
-    if(v){tEl.value=v+'%';const pos=v.length;setTimeout(()=>{try{tEl.setSelectionRange(pos,pos);}catch(e){}},0);}
-  }
-  calcTotalActual();
-}
+def get_repo_rendimientos(tasa_neta: float, es_usd: bool) -> dict:
+    """
+    Calcula rendimientos históricos del reporto con composición diaria overnight.
 
-function onPropRepo(moneda){
-  const pct=getRepoPropPct(moneda);
-  const contrato=getMonto();
-  const mEl=document.getElementById('prop-monto-REPO-'+moneda);
-  if(mEl) mEl.textContent=contrato>0&&pct>0?'$'+(pct/100*contrato).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}):'$0.00';
-  // formatear % field
-  const pEl=document.getElementById('prop-REPO-'+moneda+'-pct');
-  if(pEl&&pEl.value){
-    const v=pEl.value.replace(/[^0-9.%]/g,'');
-    if(v) pEl.value=v.replace('%','')+' %';
-  }
-  // formatear tasa con %
-  const tEl=document.getElementById('prop-REPO-'+moneda+'-tasa');
-  if(tEl&&tEl.value){
-    const v=tEl.value.replace(/[^0-9.]/g,'');
-    if(v){tEl.value=v+'%';const pos=v.length;setTimeout(()=>{try{tEl.setSelectionRange(pos,pos);}catch(e){}},0);}
-  }
-  calcTotalPropuesta();
-}
+    Lógica:
+      1. Baja serie diaria de TIIE 28d (Banxico) o Fed Funds (FRED)
+      2. spread = tasa_ref_hoy - tasa_neta_cliente  (constante)
+      3. Para cada día del período: tasa_cliente_dia = tasa_ref_dia - spread
+      4. Rendimiento = ∏(1 + tasa_cliente_dia/360) - 1  (composición diaria)
+    """
+    global _hist_cache, _hist_cache_ts
 
-function calcTotalActual(){
-  let t=0;
-  ALL_FUNDS.forEach(f=>{const el=document.getElementById('act-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.]/g,''))||0;});
-  // incluir reporto
-  t+=getRepoActualMonto('MXN')+getRepoActualMonto('USD');
-  const el=document.getElementById('total-actual');
-  el.textContent='$'+t.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const contrato=getMonto();
-  if(t===0) el.className='';
-  else el.className=contrato>0&&Math.abs(t-contrato)<0.01?'total-ok':'total-err';
-}
+    cache_key = "usd" if es_usd else "mxn"
+    now = time.time()
 
-function calcTotalPropuesta(){
-  let t=0;
-  ALL_FUNDS.forEach(f=>{const el=document.getElementById('prop-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.%]/g,''))||0;});
-  // incluir reporto
-  t+=getRepoPropPct('MXN')+getRepoPropPct('USD');
-  const el=document.getElementById('total-propuesta');
-  el.textContent=t.toFixed(2)+'%';
-  if(t===0) el.className='';
-  else el.className=Math.abs(t-100)<0.01?'total-ok':'total-err';
-}
+    if cache_key in _hist_cache and (now - _hist_cache_ts) < 14400:
+        datos = _hist_cache[cache_key]
+    else:
+        hoy = date.today()
+        ini = (hoy - timedelta(days=365 * 4)).isoformat()
+        fin = hoy.isoformat()
 
-function guardarCliente(){alert('✅ Datos del cliente guardados.');}
-function guardarActual(){
-  const repoMXNMonto = getRepoActualMonto('MXN');
-  const repoUSDMonto = getRepoActualMonto('USD');
-  const repoMXNTasa  = getRepoActualTasa('MXN');
-  const repoUSDTasa  = getRepoActualTasa('USD');
-  const tasaMXNEl = document.getElementById('act-REPO-MXN-tasa');
-  const tasaUSDEl = document.getElementById('act-REPO-USD-tasa');
-  if (repoMXNMonto > 0 && repoMXNTasa <= 0) {
-    if (tasaMXNEl) { tasaMXNEl.style.border = '2px solid #EF4444'; tasaMXNEl.focus(); }
-    alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
-    return;
-  } else if (tasaMXNEl) tasaMXNEl.style.border = '';
-  if (repoUSDMonto > 0 && repoUSDTasa <= 0) {
-    if (tasaUSDEl) { tasaUSDEl.style.border = '2px solid #EF4444'; tasaUSDEl.focus(); }
-    alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
-    return;
-  } else if (tasaUSDEl) tasaUSDEl.style.border = '';
-  alert('✅ Cartera Actual guardada.');
-}
-function guardarPropuesta(){
-  let t=0;
-  ALL_FUNDS.forEach(f=>{const el=document.getElementById('prop-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.]/g,''))||0;});
-  t+=getRepoPropPct('MXN')+getRepoPropPct('USD');
-  if(Math.abs(t-100)>0.01){alert('⚠️ El total debe ser 100%. Actualmente es '+t.toFixed(2)+'%');return;}
-  alert('✅ Cartera Propuesta guardada.');
-}
+        if es_usd:
+            # FRED: DFF = Fed Funds efectiva diaria
+            try:
+                params = {
+                    "series_id": "DFF",
+                    "observation_start": ini,
+                    "observation_end":   fin,
+                    "api_key":    FRED_API_KEY,
+                    "file_type":  "json",
+                }
+                r = requests.get(FRED_BASE, params=params, timeout=15)
+                r.raise_for_status()
+                datos = []
+                for o in r.json().get("observations", []):
+                    try:
+                        if o["value"] != ".":
+                            datos.append({"fecha": _parse_fecha(o["date"]), "valor": float(o["value"])})
+                    except Exception:
+                        pass
+            except Exception as e:
+                print(f"[FRED DFF ERROR] {e}")
+                datos = []
+        else:
+            # Banxico: TIIE 28d diaria
+            raw = _banxico_serie_rango(SERIE_TIIE28, ini, fin)
+            datos = [{"fecha": _parse_fecha(d["fecha"]), "valor": d["valor"]}
+                     for d in raw if _parse_fecha(d["fecha"])]
 
-// ── FECHA DINÁMICA ──
-(function(){
-  const hoy = new Date();
-  const dia = hoy.getDay();
-  let offset = 1;
-  if(dia === 1) offset = 3;
-  else if(dia === 0) offset = 2;
-  else if(dia === 6) offset = 1;
-  const fecha = new Date(hoy);
-  fecha.setDate(hoy.getDate() - offset);
-  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  const str = fecha.getDate() + ' de ' + meses[fecha.getMonth()] + ' de ' + fecha.getFullYear();
-  const el = document.getElementById('fecha-actualizacion');
-  if(el) el.textContent = str;
-})();
+        # Filtrar Nones y ordenar por fecha
+        datos = sorted([d for d in datos if d["fecha"] is not None], key=lambda x: x["fecha"])
+        _hist_cache[cache_key] = datos
+        _hist_cache_ts = now
 
-// ── NAVEGACIÓN ──
-const PAGES = ['presentacion','propuesta','configuracion','comparativa','elite'];
+    if not datos:
+        # Fallback lineal si no hay datos
+        return {
+            "r1m": round(tasa_neta / 12, 2),
+            "r3m": round(tasa_neta / 4,  2),
+            "r6m": round(tasa_neta / 2,  2),
+            "ytd": round(tasa_neta / 12, 2),
+            "r1y": round(tasa_neta,      2),
+            "r2y": round(tasa_neta,      2),
+            "r3y": round(tasa_neta,      2),
+        }
 
-function showPage(name, el) {
-  PAGES.forEach(id => document.getElementById('page-'+id).classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.mobile-tab').forEach(b => b.classList.remove('active'));
-  if (el && (el.classList.contains('nav-tab') || el.classList.contains('mobile-tab'))) {
-    el.classList.add('active');
-  }
-  const nameMap = {'presentacion':'presentación','configuracion':'configuración','propuesta':'propuesta','comparativa':'comparativa','elite':'valmex elite'};
-  const label = nameMap[name] || name;
-  if (el && el.classList.contains('nav-tab')) {
-    document.querySelectorAll('.mobile-tab').forEach(b => { if(b.textContent.trim().toLowerCase()===label) b.classList.add('active'); });
-  }
-  if (el && el.classList.contains('mobile-tab')) {
-    document.querySelectorAll('.nav-tab').forEach(b => { if(b.textContent.trim().toLowerCase()===label) b.classList.add('active'); });
-  }
-  const logo = document.getElementById('logo-tab');
-  if (name === 'presentacion') logo.classList.add('logo-active');
-  else logo.classList.remove('logo-active');
-  if (name === 'propuesta') {
-    setTimeout(() => { Object.values(charts).forEach(c => c && c.resize && c.resize()); }, 80);
-  }
-  window.scrollTo(0,0);
-}
-function openMobileNav()  { document.getElementById('mobile-nav').style.display='block'; document.body.style.overflow='hidden'; }
-function closeMobileNav() { document.getElementById('mobile-nav').style.display='none';  document.body.style.overflow=''; }
+    hoy = date.today()
 
-// ── USUARIO ──
-document.getElementById('logo-tab').classList.add('logo-active');
-fetch('/me')
-  .then(r => r.ok ? r.json() : null)
-  .then(user => {
-    if (!user || !user.ok) return;
-    document.getElementById('user-avatar').textContent = user.iniciales;
-    document.getElementById('user-name').textContent   = user.nombre;
-    document.getElementById('mobile-avatar').textContent = user.iniciales;
-    document.getElementById('mobile-name').textContent   = user.nombre;
-  }).catch(()=>{});
+    # Spread constante: diferencia entre tasa ref hoy y tasa neta al cliente
+    tasa_ref_hoy = datos[-1]["valor"]
+    spread = tasa_ref_hoy - tasa_neta   # pp que quita el asesor
 
-// ── CHARTS ──
-Chart.defaults.font.family = "'Montserrat',sans-serif";
-Chart.defaults.font.size   = 10;
-Chart.defaults.color       = '#00205C';
+    def componer(desde: date) -> float:
+        """Composición diaria: ∏(1 + (tasa_ref_dia - spread) / 360) - 1, en %."""
+        # Construir mapa fecha→tasa para búsqueda rápida
+        # Para días sin dato (fines de semana/festivos) usamos el último valor conocido
+        acum   = 1.0
+        ultimo = None
+        # Índice de datos en el rango
+        rango  = [d for d in datos if d["fecha"] >= desde]
+        if not rango:
+            return 0.0
+        # Llenar días calendario con forward-fill
+        d_actual = desde
+        idx      = 0
+        while d_actual <= hoy:
+            # Avanzar índice si hay dato más reciente disponible
+            while idx < len(rango) and rango[idx]["fecha"] <= d_actual:
+                ultimo = rango[idx]["valor"]
+                idx   += 1
+            if ultimo is not None:
+                tasa_dia = max(0.0, ultimo - spread)   # no permitir tasa negativa
+                acum    *= (1 + tasa_dia / 360 / 100)  # tasa en %, base 360
+            d_actual += timedelta(days=1)
+        return round((acum - 1) * 100, 4)   # en %
 
-const PAL = ['#00205C','#3DA5E0','#41BBC9','#1A4A8A','#F59E0B','#2E6DB4','#5B9BD5','#8FB8E0','#B8D4ED','#0A3580','#6BAED6'];
-const charts = {};
+    inicio_ytd = date(hoy.year, 1, 1)
 
-charts.comp = new Chart(document.getElementById('c-comp'),{
-  type:'bar',
-  data:{
-    labels:['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'],
-    datasets:[{data:[34.37,22.52,10.00,10.00,6.90,6.90,5.00,4.31],backgroundColor:'#3DA5E0',borderRadius:3,barPercentage:.82,categoryPercentage:.92}]
-  },
-  options:{
-    indexAxis:'y',responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.raw+'%'},backgroundColor:'#00205C',titleFont:{size:10},bodyFont:{size:10},padding:8,cornerRadius:6}},
-    layout:{padding:{right:8,left:8,top:4,bottom:4}},
-    scales:{
-      x:{display:false,max:36,grid:{display:false}},
-      y:{grid:{display:false},ticks:{font:{size:13,weight:'700',family:'Montserrat'},color:'#00205C'},border:{display:false},afterFit(scale){scale.width=82;}}
-    }
-  },
-  plugins:[{id:'pct',afterDatasetsDraw(chart){
-    const {ctx,scales:{x,y}}=chart; ctx.save();
-    chart.data.datasets[0].data.forEach((val,i)=>{
-      const bar=chart.getDatasetMeta(0).data[i];
-      const barRight=x.getPixelForValue(val);
-      const barLeft=x.getPixelForValue(0);
-      const barWidth=barRight-barLeft;
-      const label=val.toFixed(2)+'%';
-      ctx.font='700 13px Montserrat,sans-serif';
-      ctx.textBaseline='middle';
-      const textW=ctx.measureText(label).width;
-      if(barWidth > textW+12){ctx.fillStyle='#00205C';ctx.textAlign='right';ctx.fillText(label, barRight-6, bar.y);}
-      else{ctx.fillStyle='#00205C';ctx.textAlign='left';ctx.fillText(label, barRight+6, bar.y);}
-    });
-    ctx.restore();
-  }}]
-});
-
-charts.linea = new Chart(document.getElementById('c-linea'),{
-  type:'line',
-  data:{
-    labels:['2016','2017','2018','2019','2020','2021','2022','2023','2024'],
-    datasets:[
-      {label:'Propuesta',data:[100,108,112,122,115,140,150,170,200],borderColor:'#00205C',backgroundColor:'rgba(61,165,224,0.08)',fill:true,borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#00205C',pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverRadius:5,tension:.35},
-      {label:'Benchmark',data:[100,106,110,118,112,134,144,162,193],borderColor:'#41BBC9',backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],pointRadius:3,pointBackgroundColor:'#41BBC9',pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverRadius:5,tension:.35}
-    ]
-  },
-  options:{
-    responsive:true,maintainAspectRatio:false,
-    interaction:{mode:'index',intersect:false},
-    plugins:{
-      legend:{position:'bottom',labels:{boxWidth:8,font:{size:13,family:'Montserrat',weight:'600'},padding:16,usePointStyle:true,pointStyleWidth:12,color:'#00205C'}},
-      tooltip:{backgroundColor:'#00205C',titleFont:{size:10,weight:'600'},bodyFont:{size:10},padding:10,cornerRadius:6,callbacks:{label:ctx=>' '+ctx.dataset.label+': '+ctx.raw}}
-    },
-    layout:{padding:{right:30,top:18}},
-    scales:{
-      x:{grid:{display:false},ticks:{font:{size:13,family:'Montserrat'},color:'#00205C'},border:{display:false}},
-      y:{min:90,grid:{color:'rgba(0,32,92,0.06)'},ticks:{font:{size:13,family:'Montserrat'},color:'#00205C'},border:{display:false}}
-    }
-  },
-  plugins:[{id:'endLabels',afterDatasetsDraw(chart){
-    const {ctx}=chart; ctx.save();
-    const pts = chart.data.datasets.map((ds,i)=>{
-      const meta=chart.getDatasetMeta(i);
-      const lastPt=meta.data[meta.data.length-1];
-      return {x:lastPt.x, y:lastPt.y, val:ds.data[ds.data.length-1], color:ds.borderColor};
-    });
-    if(Math.abs(pts[0].y - pts[1].y) < 18){pts[0].y = Math.min(pts[0].y, pts[1].y) - 9;pts[1].y = Math.min(pts[0].y, pts[1].y) + 18;}
-    pts.forEach(p=>{ctx.fillStyle=p.color;ctx.font='bold 12px Montserrat,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(p.val, p.x+6, p.y);});
-    ctx.restore();
-  }}]
-});
-
-function donut(id,labels,data,colors,radius,compact){
-  const isMobile = window.innerWidth<=600 && window.innerHeight>window.innerWidth;
-  const lblSize = 12;
-  const lblPad  = compact ? 8 : 10;
-  const lblPSW  = compact ? 10 : 12;
-  return new Chart(document.getElementById(id),{
-    type:'doughnut',
-    data:{labels,datasets:[{data,backgroundColor:colors||PAL.slice(0,data.length),borderWidth:2,borderColor:'#fff',hoverOffset:8,hoverBorderWidth:3,...(radius?{radius}:{})}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,cutout:'65%',
-      plugins:{
-        legend:{position:isMobile?'bottom':'right',labels:{boxWidth:lblPSW,font:{size:lblSize,family:'Montserrat',weight:'600'},padding:lblPad,color:'#00205C',usePointStyle:true,pointStyleWidth:lblPSW}},
-        tooltip:{backgroundColor:'#00205C',titleFont:{size:10,weight:'700',family:'Montserrat'},bodyFont:{size:10,family:'Montserrat'},padding:10,cornerRadius:6,callbacks:{label:ctx=>' '+ctx.label+': '+ctx.raw.toFixed(2)+'%'}}
-      }
-    },
-    plugins:[{id:'pctLabel',afterDatasetsDraw(chart){
-      const {ctx,data}=chart; ctx.save();
-      chart.getDatasetMeta(0).data.forEach((arc,i)=>{
-        const val=data.datasets[0].data[i];
-        if(val<4) return;
-        const {x,y}=arc.tooltipPosition();
-        ctx.fillStyle='#fff';ctx.font='bold 13px Montserrat,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.fillText(val.toFixed(1)+'%',x,y);
-      });
-      ctx.restore();
-    }}]
-  });
-}
-
-charts.sector = donut('c-sector',['Tecnología','Financiero','Salud','Comunicaciones','Industriales','Consumo discrecional','Consumo básico','Materiales','Energía'],[32.57,15.25,12.64,8.51,8.4,7.93,5.13,4.2,3.0],null,null,true);
-requestAnimationFrame(()=>{
-  const sectorMeta = charts.sector.getDatasetMeta(0);
-  const refRadius = sectorMeta.data[0] ? sectorMeta.data[0].outerRadius : null;
-  charts.clase  = donut('c-clase', ['Deuda','Renta Variable','Reporto'],[76.9,18.8,4.3],['#00205C','#3DA5E0','#F59E0B'],refRadius);
-  charts.geo    = donut('c-geo',   ['Norte-América','Eurozona','Europa','América Latina','Otros emergentes','Asia Emergente','Japón','Asia-Pacífico'],[65.49,12.81,7.66,3.89,3.25,2.37,2.3,2.23],null,refRadius);
-});
-
-// ══════════════════════════════════════════════════════════════════════════
-// Auto-cargar comparativa al entrar a la pestaña — pendiente de implementar
-// ══════════════════════════════════════════════════════════════════════════
-
-// PDF Export
-document.getElementById('btn-pdf').addEventListener('click',async()=>{
-  const {jsPDF}=window.jspdf;
-  const el=document.getElementById('prop-dash');
-  const tmpStyle=document.createElement('style');
-  tmpStyle.id='pdf-override';
-  tmpStyle.textContent=`
-    #prop-dash {width:1280px!important;min-width:1280px!important;display:grid!important;grid-template-columns:repeat(6,1fr)!important;gap:16px!important;padding:12px 16px!important;}
-    #prop-dash .card-comp,#prop-dash .card-rend,#prop-dash .card-deuda{grid-column:span 1!important;height:306px!important;}
-    #prop-dash .card-back{grid-column:span 3!important;height:306px!important;}
-    #prop-dash .card-pie{grid-column:span 2!important;height:306px!important;}
-    #prop-dash .prop-dash-title{grid-column:1/-1!important;}
-    #prop-dash .prop-rule-full{grid-column:1/-1!important;}
-  `;
-  document.head.appendChild(tmpStyle);
-  ['comp','linea','comp2'].forEach(k=>{ if(charts[k]&&charts[k].resize) charts[k].resize(); });
-  await new Promise(r=>setTimeout(r,250));
-  const cv=await html2canvas(el,{scale:4,useCORS:true,backgroundColor:'#ffffff',logging:false,scrollX:0,scrollY:0,width:1280});
-  tmpStyle.remove();
-  ['comp','linea','comp2'].forEach(k=>{ if(charts[k]&&charts[k].resize) charts[k].resize(); });
-  const img=cv.toDataURL('image/png');
-  const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'letter'});
-  const pw=pdf.internal.pageSize.getWidth();
-  const ph=pdf.internal.pageSize.getHeight();
-  pdf.addImage(img,'PNG',0,6,pw,ph-15);
-  pdf.save('PROPUESTA DE INVERSIÓN VALMEX.pdf');
-});
-
-// ══════════════════════════════════════════════════════════════════════════
-// PROPUESTA DINÁMICA — Morningstar
-// ══════════════════════════════════════════════════════════════════════════
-
-function showSpinner(show) {
-  let sp = document.getElementById('_vx_spinner');
-  if (!sp) {
-    if (!document.getElementById('_vxcss')) {
-      var css = document.createElement('style');
-      css.id = '_vxcss';
-      css.textContent = '@keyframes _vxspin { to { transform: rotate(360deg); } }';
-      document.head.appendChild(css);
-    }
-    sp = document.createElement('div');
-    sp.id = '_vx_spinner';
-    sp.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,32,92,.52);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
-    var ring = document.createElement('div');
-    ring.style.cssText = 'width:52px;height:52px;border-radius:50%;border:5px solid rgba(255,255,255,.2);border-top-color:#41BBC9;animation:_vxspin .85s linear infinite;';
-    var txt = document.createElement('p');
-    txt.style.cssText = 'color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:14px;letter-spacing:.4px;margin:0;';
-    txt.textContent = 'Consultando Morningstar…';
-    sp.appendChild(ring); sp.appendChild(txt); document.body.appendChild(sp);
-  }
-  sp.style.display = show ? 'flex' : 'none';
-}
-
-async function cargarPortafolio() {
-  const sel   = document.getElementById('prop-selector');
-  const valor = sel ? sel.value : 'perfil_3';
-  const tipoCliente = document.getElementById('cfg-serie')?.value || 'Serie A';
-  let body = { tipo_cliente: tipoCliente };
-
-  if (valor.startsWith('perfil_')) {
-    body.modo = 'perfil';
-    body.perfil_id = valor.replace('perfil_', '');
-  } else if (valor === 'actual') {
-    const fondos = {}; let total = 0;
-    ALL_FUNDS.forEach(f => {
-      const el = document.getElementById('act-' + f);
-      const v  = parseFloat((el?.value || '').replace(/[^0-9.]/g, '')) || 0;
-      if (v > 0) { fondos[f] = v; total += v; }
-    });
-    // reporto actual
-    const repoMXNMonto = getRepoActualMonto('MXN');
-    const repoUSDMonto = getRepoActualMonto('USD');
-    const repoMXNTasa  = getRepoActualTasa('MXN');
-    const repoUSDTasa  = getRepoActualTasa('USD');
-    // Validación: monto sin tasa → bloquear
-    const tasaMXNEl = document.getElementById('act-REPO-MXN-tasa');
-    const tasaUSDEl = document.getElementById('act-REPO-USD-tasa');
-    if (repoMXNMonto > 0 && repoMXNTasa <= 0) {
-      if (tasaMXNEl) { tasaMXNEl.style.border = '2px solid #EF4444'; tasaMXNEl.focus(); }
-      alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
-      if (sel) sel.value = 'perfil_3'; return;
-    } else if (tasaMXNEl) tasaMXNEl.style.border = '';
-    if (repoUSDMonto > 0 && repoUSDTasa <= 0) {
-      if (tasaUSDEl) { tasaUSDEl.style.border = '2px solid #EF4444'; tasaUSDEl.focus(); }
-      alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
-      if (sel) sel.value = 'perfil_3'; return;
-    } else if (tasaUSDEl) tasaUSDEl.style.border = '';
-    total += repoMXNMonto + repoUSDMonto;
-    if (total === 0) { alert('⚠️ Cartera Actual vacía.\nLlena los montos en Configuración → Cartera Actual.'); if (sel) sel.value = 'perfil_3'; return; }
-    const pcts = {};
-    Object.entries(fondos).forEach(([f, v]) => { pcts[f] = (v / total) * 100; });
-    body.modo = 'actual'; body.fondos = pcts;
-    if (repoMXNMonto > 0) body.repo_mxn = { pct: (repoMXNMonto / total) * 100, tasa: repoMXNTasa };
-    if (repoUSDMonto > 0) body.repo_usd = { pct: (repoUSDMonto / total) * 100, tasa: repoUSDTasa };
-  } else {
-    const fondos = {}; let total = 0;
-    ALL_FUNDS.forEach(f => {
-      const el = document.getElementById('prop-' + f);
-      const v  = parseFloat((el?.value || '').replace(/[^0-9.%]/g, '')) || 0;
-      if (v > 0) { fondos[f] = v; total += v; }
-    });
-    // reporto propuesta
-    const repoMXNPct  = getRepoPropPct('MXN');
-    const repoUSDPct  = getRepoPropPct('USD');
-    const repoMXNTasa = getRepoPropTasa('MXN');
-    const repoUSDTasa = getRepoPropTasa('USD');
-    // Validación: % sin tasa → bloquear
-    const tasaMXNPEl = document.getElementById('prop-REPO-MXN-tasa');
-    const tasaUSDPEl = document.getElementById('prop-REPO-USD-tasa');
-    if (repoMXNPct > 0 && repoMXNTasa <= 0) {
-      if (tasaMXNPEl) { tasaMXNPEl.style.border = '2px solid #EF4444'; tasaMXNPEl.focus(); }
-      alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
-      if (sel) sel.value = 'perfil_3'; return;
-    } else if (tasaMXNPEl) tasaMXNPEl.style.border = '';
-    if (repoUSDPct > 0 && repoUSDTasa <= 0) {
-      if (tasaUSDPEl) { tasaUSDPEl.style.border = '2px solid #EF4444'; tasaUSDPEl.focus(); }
-      alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
-      if (sel) sel.value = 'perfil_3'; return;
-    } else if (tasaUSDPEl) tasaUSDPEl.style.border = '';
-    total += repoMXNPct + repoUSDPct;
-    if (total === 0) { alert('⚠️ Cartera Propuesta vacía.\nLlena los porcentajes en Configuración → Cartera Propuesta.'); if (sel) sel.value = 'perfil_3'; return; }
-    if (Math.abs(total - 100) > 0.5) { alert(`⚠️ Cartera Propuesta suma ${total.toFixed(2)}%.\nDebe ser 100% para continuar.`); if (sel) sel.value = 'perfil_3'; return; }
-    body.modo = 'propuesta'; body.fondos = fondos;
-    if (repoMXNPct > 0) body.repo_mxn = { pct: repoMXNPct, tasa: repoMXNTasa };
-    if (repoUSDPct > 0) body.repo_usd = { pct: repoUSDPct, tasa: repoUSDTasa };
-  }
-
-  showSpinner(true);
-  try {
-    const resp = await fetch('/api/propuesta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await resp.json();
-    showSpinner(false);
-    if (!data.ok) { alert('Error: ' + (data.error || 'respuesta inválida')); return; }
-    aplicarDatos(data, valor);
-  } catch (e) {
-    showSpinner(false);
-    alert('Error de conexión: ' + e.message);
-  }
-}
-
-function aplicarDatos(data, valor) {
-
-  // ── Rendimientos ──
-  const r = data.rendimientos;
-  const fmtR = v => (v == null) ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
-  const orden = [r.mtd, r.r3m, r.ytd, r.r1y, r.r2y, r.r3y];
-  document.querySelectorAll('#page-propuesta .rh-val').forEach((el, i) => {
-    if (i < orden.length) {
-      el.textContent = fmtR(orden[i]);
-      el.className   = 'rh-val ' + ((orden[i] ?? 0) >= 0 ? 'pos' : 'neg');
-    }
-  });
-
-  // ── Composición ──
-  if (charts.comp && data.composicion?.length) {
-    const top8 = data.composicion.slice(0, 8);
-    charts.comp.data.labels           = top8.map(f => f.fondo);
-    charts.comp.data.datasets[0].data = top8.map(f => f.pct);
-    charts.comp.options.scales.x.max  = Math.max(...top8.map(f => f.pct)) * 1.18;
-    charts.comp.update('none');
-  }
-
-  // ── Clase de activos — "Reporto" ya viene del backend ──
-  if (charts.clase) {
-    charts.clase.data.labels = [];
-    charts.clase.data.datasets[0].data = [];
-    charts.clase.update('none');
-    if (data.clase_activos) {
-      const c = data.clase_activos;
-      const lbls = [], vals = [];
-      c.labels.forEach((l, i) => { if (c.values[i] > 0) { lbls.push(l); vals.push(c.values[i]); } });
-      charts.clase.data.labels = lbls;
-      charts.clase.data.datasets[0].data = vals;
-    }
-    charts.clase.update();
-  }
-
-  // ── Pie central: Geo RV si hay RV, Tipo de Deuda si solo deuda ──
-  if (charts.geo) {
-    charts.geo.data.labels = [];
-    charts.geo.data.datasets[0].data = [];
-    charts.geo.update('none');
-    const phGeo = document.getElementById('ph-geo');
-    if (data.has_rv && data.geo?.labels?.length) {
-      if (phGeo) phGeo.textContent = 'Exposición Geográfica RV';
-      charts.geo.data.labels = data.geo.labels;
-      charts.geo.data.datasets[0].data = data.geo.values;
-    } else if (!data.has_rv && data.supersectores?.labels?.length) {
-      if (phGeo) phGeo.textContent = 'Tipo de Deuda';
-      charts.geo.data.labels = data.supersectores.labels;
-      charts.geo.data.datasets[0].data = data.supersectores.values;
-    }
-    charts.geo.update();
-  }
-
-  // ── Sectores ──
-  if (charts.sector) {
-    charts.sector.data.labels = [];
-    charts.sector.data.datasets[0].data = [];
-    charts.sector.update('none');
-    if (data.sectores?.labels?.length) {
-      charts.sector.data.labels = data.sectores.labels;
-      charts.sector.data.datasets[0].data = data.sectores.values;
-    }
-    charts.sector.update();
-  }
-
-  // ── Drilldown Deuda — MXN / USD ──
-  if (data.deuda) {
-    const d = data.deuda;
-
-    // Helpers
-    const setVal = (id, txt, empty) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.textContent = txt;
-      // Marcar bloque vacío si no hay datos
-      const block = el.closest('.dd-block');
-      if (block) block.classList.toggle('empty', !!empty);
-    };
-
-    // Helper especial para duración — número grande + "años" pequeño misma línea
-    const setDur = (id, val, empty) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (empty || !val || val === '—') {
-        el.innerHTML = '—';
-      } else {
-        el.innerHTML = val + '<br><span style="font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);">años</span>';
-      }
-      const block = el.closest('.dd-block');
-      if (block) block.classList.toggle('empty', !!empty);
-    };
-
-    if (d.has_mxn) {
-      setDur('dd-val-dur-mxn',  d.dur_mxn > 0  ? d.dur_mxn.toFixed(2) : null, !d.dur_mxn);
-      setVal('dd-val-ytm-mxn',  d.ytm_mxn > 0  ? d.ytm_mxn.toFixed(2) + '%'     : '—', !d.ytm_mxn);
-      setVal('dd-val-cred-mxn', d.cred_mxn || '—', !d.cred_mxn || d.cred_mxn === '—');
-    } else {
-      setDur('dd-val-dur-mxn',  null, true);
-      setVal('dd-val-ytm-mxn',  '—', true);
-      setVal('dd-val-cred-mxn', '—', true);
+    return {
+        "r1m": componer(hoy - timedelta(days=30)),
+        "r3m": componer(hoy - timedelta(days=91)),
+        "r6m": componer(hoy - timedelta(days=182)),
+        "ytd": componer(inicio_ytd),
+        "r1y": componer(hoy - timedelta(days=365)),
+        "r2y": componer(hoy - timedelta(days=730)),
+        "r3y": componer(hoy - timedelta(days=1095)),
     }
 
-    if (d.has_usd) {
-      setDur('dd-val-dur-usd',  d.dur_usd > 0  ? d.dur_usd.toFixed(2) : null, !d.dur_usd);
-      setVal('dd-val-ytm-usd',  d.ytm_usd > 0  ? d.ytm_usd.toFixed(2) + '%'     : '—', !d.ytm_usd);
-      setVal('dd-val-cred-usd', d.cred_usd || '—', !d.cred_usd || d.cred_usd === '—');
-    } else {
-      setDur('dd-val-dur-usd',  null, true);
-      setVal('dd-val-ytm-usd',  '—', true);
-      setVal('dd-val-cred-usd', '—', true);
+def get_banxico_dato(serie_id: str) -> str | None:
+    """Obtiene el dato oportuno de una serie Banxico."""
+    try:
+        url  = f"{BANXICO_BASE}/{serie_id}/datos/oportuno"
+        hdrs = {"Bmx-Token": BANXICO_TOKEN, "Accept": "application/json"}
+        resp = requests.get(url, headers=hdrs, timeout=10)
+        resp.raise_for_status()
+        datos = resp.json()["bmx"]["series"][0]["datos"]
+        return datos[0]["dato"] if datos else None
+    except Exception as e:
+        print(f"[BANXICO ERROR] {serie_id}: {e}")
+        return None
+
+def get_macro() -> dict:
+    """Devuelve datos macro con caché de 1 hora."""
+    global _macro_cache, _macro_ts
+    import time
+    if _macro_cache and (time.time() - _macro_ts) < 3600:
+        return _macro_cache
+
+    tiie  = get_banxico_dato(SERIE_TIIE28)
+    usdmx = get_banxico_dato(SERIE_USDMXN)
+    cetes = get_banxico_dato(SERIE_CETES28)
+
+    _macro_cache = {
+        "tiie28":  round(float(tiie),  4) if tiie  else None,
+        "usdmxn":  round(float(usdmx), 4) if usdmx else None,
+        "cetes28": round(float(cetes), 4) if cetes else None,
     }
-  }
+    _macro_ts = time.time()
+    return _macro_cache
 
-  // ── Título ──
-  const propTitle = document.querySelector('.prop-title');
-  if (propTitle) {
-    const labelMap = {
-      perfil_0:'Perfil 0 · 100% RF low risk', perfil_1:'Perfil 1 · 100% RF high risk',
-      perfil_2:'Perfil 2 · 80% RF / 20% RV',  perfil_3:'Perfil 3 · 60% RF / 40% RV',
-      perfil_4:'Perfil 4 · 40% RF / 60% RV',  actual:'Cartera Actual', propuesta:'Cartera Propuesta',
-    };
-    const nombre = document.getElementById('cfg-nombre')?.value?.trim() || '';
-    const lbl = labelMap[valor] || 'Estrategia Portafolio';
-    propTitle.textContent = nombre ? `${lbl} · ${nombre}` : lbl;
-  }
-}
 
-function guardarPropuesta() {
-  const sel = document.getElementById('prop-selector');
-  if (sel) sel.value = 'propuesta';
-  cargarPortafolio();
-}
 
-(function () {
-  const _orig = window.showPage;
-  let _cargado = false;
-  window.showPage = function (name, el) {
-    _orig(name, el);
-    if (name === 'propuesta' && !_cargado) {
-      _cargado = true;
-      setTimeout(() => cargarPortafolio(), 300);
-    }
-  };
-})();
-</script>
-</body>
-</html>
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
