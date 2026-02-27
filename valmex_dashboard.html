@@ -1103,6 +1103,57 @@ function aplicarDatos(data, valor) {
     charts.comp.update('none');
   }
 
+  // ── Backtesting: agregar curva de reporto si existe ──
+  if (charts.linea && data.bt_repo?.length) {
+    const btRepo = data.bt_repo;
+
+    // Alinear fechas con el eje X existente (años enteros)
+    // Construir serie mensual base 100 desde primer punto disponible
+    // Normalizar a base 100 en la fecha de inicio del gráfico
+    const primeraFecha = btRepo[0].fecha;
+    const primerValor  = btRepo[0].valor;
+
+    // Filtrar solo puntos de enero de cada año para coincidir con el eje
+    const años = charts.linea.data.labels;  // ej. ['2016','2017',...,'2024']
+    const serieRepo = años.map(anio => {
+      // Buscar punto de enero de ese año en bt_repo
+      const pt = btRepo.find(p => p.fecha.startsWith(anio + '-01') || p.fecha.startsWith(anio));
+      if (!pt) return null;
+      // Normalizar a base 100 desde el primer punto del gráfico
+      const primerPtAnio = btRepo.find(p => p.fecha.startsWith(años[0]));
+      const base = primerPtAnio ? primerPtAnio.valor : pt.valor;
+      return Math.round((pt.valor / base) * 100 * 100) / 100;
+    });
+
+    // Verificar si ya existe dataset de reporto
+    const dsExistente = charts.linea.data.datasets.findIndex(ds => ds._esRepo);
+    const dsRepo = {
+      label:           'Reporto directo',
+      data:            serieRepo,
+      borderColor:     '#F59E0B',
+      backgroundColor: 'transparent',
+      borderWidth:     2,
+      borderDash:      [3, 3],
+      pointRadius:     2,
+      pointBackgroundColor: '#F59E0B',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 1.5,
+      tension:         .35,
+      _esRepo:         true,
+    };
+
+    if (dsExistente >= 0) {
+      charts.linea.data.datasets[dsExistente] = dsRepo;
+    } else {
+      charts.linea.data.datasets.push(dsRepo);
+    }
+    charts.linea.update('none');
+  } else if (charts.linea) {
+    // Quitar curva de reporto si no hay datos
+    charts.linea.data.datasets = charts.linea.data.datasets.filter(ds => !ds._esRepo);
+    charts.linea.update('none');
+  }
+
   // ── Clase de activos — "Reporto" ya viene del backend ──
   if (charts.clase) {
     charts.clase.data.labels = [];
