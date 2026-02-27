@@ -3,10 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="X-Content-Type-Options" content="nosniff">
-<meta http-equiv="X-Frame-Options" content="DENY">
-<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+
 <title>VALMEX | Dashboard Asesor</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1408,30 +1405,8 @@ function guardarPropuesta() {
   cargarPortafolio();
 }
 
-// ── SEGURIDAD: Deshabilitar inspección de botón derecho en producción ──
-// (comentar en desarrollo)
-document.addEventListener('contextmenu', e => e.preventDefault());
-
-// ── SEGURIDAD: Detectar devtools abierto (básico) ──
-(function(){
-  let _dt = false;
-  const threshold = 160;
-  setInterval(()=>{
-    if(window.outerWidth-window.innerWidth>threshold||window.outerHeight-window.innerHeight>threshold){
-      if(!_dt){ _dt=true; } // Solo loguear, no bloquear
-    } else { _dt=false; }
-  }, 1000);
-})();
-
-// ── SEGURIDAD: Prevenir ataques de clickjacking desde el propio script ──
-if(self !== top){ top.location = self.location; }
-
-// ── SEGURIDAD: Input sanitization global — interceptar innerHTML ──
-(function(){
-  const _orig = Element.prototype.innerHTML.__lookupSetter__('innerHTML');
-  // No reemplazamos innerHTML globalmente (rompería Chart.js)
-  // Solo usamos textContent para datos del usuario (ya implementado en sanitize)
-})();
+// ── SEGURIDAD: Prevenir clickjacking básico ──
+if(self !== top && self.location.hostname !== top.location.hostname){ top.location = self.location; }
 
 // ── AUTOLOAD + TASAS DE REFERENCIA ──
 (function () {
