@@ -1195,16 +1195,13 @@ function aplicarDatos(data, valor) {
     charts.clase.update('none');
     if (data.clase_activos) {
       const c = data.clase_activos;
-      const CLASE_COLORS = {'Deuda':'#00205C','Renta Variable':'#3DA5E0','Reporto':'#41BBC9'};
-      const lbls = [], vals = [], cols = [];
+      const lbls = [], vals = [], idxs = [];
       c.labels.forEach((l, i) => {
-        if (c.values[i] > 0.01) {
-          lbls.push(l); vals.push(c.values[i]); cols.push(CLASE_COLORS[l] || '#94A3B8');
-        }
+        if (c.values[i] > 0.01) { lbls.push(l); vals.push(c.values[i]); idxs.push(idxs.length); }
       });
       charts.clase.data.labels = lbls;
       charts.clase.data.datasets[0].data = vals;
-      charts.clase.data.datasets[0].backgroundColor = cols;
+      charts.clase.data.datasets[0].backgroundColor = PAL.slice(0, lbls.length);
     }
     charts.clase.update();
   }
@@ -1221,17 +1218,9 @@ function aplicarDatos(data, valor) {
       charts.geo.data.datasets[0].data = data.geo.values;
     } else if (!data.has_rv && data.supersectores?.labels?.length) {
       if (phGeo) phGeo.textContent = 'Tipo de Deuda';
-      const SS_COLORS = {
-        'Reporto':       '#3DA5E0',
-        'Gubernamental': '#00205C',
-        'Corporativo':   '#41BBC9',
-        'Municipal':     '#1A4A8A',
-        'Bursatilizado': '#2E6DB4',
-        'Derivados':     '#5B9BD5',
-      };
       charts.geo.data.labels = data.supersectores.labels;
       charts.geo.data.datasets[0].data = data.supersectores.values;
-      charts.geo.data.datasets[0].backgroundColor = data.supersectores.labels.map((l,i) => SS_COLORS[l] || PAL[i]);
+      charts.geo.data.datasets[0].backgroundColor = PAL.slice(0, data.supersectores.labels.length);
     }
     charts.geo.update();
   }
