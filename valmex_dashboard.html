@@ -1221,9 +1221,17 @@ function aplicarDatos(data, valor) {
       charts.geo.data.datasets[0].data = data.geo.values;
     } else if (!data.has_rv && data.supersectores?.labels?.length) {
       if (phGeo) phGeo.textContent = 'Tipo de Deuda';
+      const SS_COLORS = {
+        'Reporto':       '#3DA5E0',
+        'Gubernamental': '#00205C',
+        'Corporativo':   '#41BBC9',
+        'Municipal':     '#1A4A8A',
+        'Bursatilizado': '#2E6DB4',
+        'Derivados':     '#5B9BD5',
+      };
       charts.geo.data.labels = data.supersectores.labels;
       charts.geo.data.datasets[0].data = data.supersectores.values;
-      charts.geo.data.datasets[0].backgroundColor = PAL.slice(0, data.supersectores.labels.length);
+      charts.geo.data.datasets[0].backgroundColor = data.supersectores.labels.map((l,i) => SS_COLORS[l] || PAL[i]);
     }
     charts.geo.update();
   }
