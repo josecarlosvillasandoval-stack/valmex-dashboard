@@ -230,16 +230,19 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
         stock = safe_float(d.get("AAB-StockNet"))
         bond  = safe_float(d.get("AAB-BondNet"))
         cash  = safe_float(d.get("AAB-CashNet"))
-        stock_t += stock * w
-        bond_t  += bond  * w
-        cash_t  += cash  * w
-
-        # ── Clasificación del fondo ──
+        # Clasificación del fondo
         is_usd       = fondo in FONDOS_DEUDA_USD
         is_deuda_mxn = fondo in FONDOS_DEUDA_MXN
         is_deuda     = fondo in FONDOS_DEUDA
         is_rv        = fondo in FONDOS_RV
         is_ciclo     = fondo in FONDOS_CICLO
+
+        # Clase de activos: stock_t solo acumula fondos RV/ciclo
+        # Fondos de deuda como VLMXDME pueden traer AAB-StockNet>0 de Morningstar — ignorar
+        if is_rv or is_ciclo:
+            stock_t += stock * w
+        bond_t  += bond  * w
+        cash_t  += cash  * w
 
         # ── Drilldown deuda: solo fondos de deuda MXN/USD (no RV puro) ──
         # Ciclo de vida participa en drilldown MXN
