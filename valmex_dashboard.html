@@ -1195,7 +1195,7 @@ function aplicarDatos(data, valor) {
     charts.clase.update('none');
     if (data.clase_activos) {
       const c = data.clase_activos;
-      const CLASE_COLORS = {'Deuda':'#00205C','Renta Variable':'#3DA5E0','Reporto':'#F59E0B'};
+      const CLASE_COLORS = {'Deuda':'#00205C','Renta Variable':'#3DA5E0','Reporto':'#41BBC9'};
       const lbls = [], vals = [], cols = [];
       c.labels.forEach((l, i) => {
         if (c.values[i] > 0.01) {
