@@ -571,6 +571,7 @@ function formatMonto(el){
   el.value='$'+(p.length>1?p[0]+'.'+p[1].slice(0,2):p[0]);
   ALL_FUNDS.forEach(f=>{ const el=document.getElementById('act-'+f); if(el&&el.value) onActual(f); });
   ALL_FUNDS.forEach(f=>{ const el=document.getElementById('prop-'+f); if(el&&el.value) onProp(f); });
+  calcTotalActual();   // re-evalúa rojo/verde al cambiar monto del contrato
 }
 
 function getMonto(){
@@ -965,7 +966,7 @@ charts.sector = donut('c-sector',['Tecnología','Financiero','Salud','Comunicaci
 requestAnimationFrame(()=>{
   const sectorMeta = charts.sector.getDatasetMeta(0);
   const refRadius = sectorMeta.data[0] ? sectorMeta.data[0].outerRadius : null;
-  charts.clase  = donut('c-clase', ['Deuda','Renta Variable','Reporto'],[76.9,18.8,4.3],['#00205C','#3DA5E0','#F59E0B'],refRadius);
+  charts.clase  = donut('c-clase', ['Deuda','Renta Variable'],[80,20],['#00205C','#3DA5E0'],refRadius);
   charts.geo    = donut('c-geo',   ['Norte-América','Eurozona','Europa','América Latina','Otros emergentes','Asia Emergente','Japón','Asia-Pacífico'],[65.49,12.81,7.66,3.89,3.25,2.37,2.3,2.23],null,refRadius);
 });
 
@@ -1194,10 +1195,16 @@ function aplicarDatos(data, valor) {
     charts.clase.update('none');
     if (data.clase_activos) {
       const c = data.clase_activos;
-      const lbls = [], vals = [];
-      c.labels.forEach((l, i) => { if (c.values[i] > 0) { lbls.push(l); vals.push(c.values[i]); } });
+      const CLASE_COLORS = {'Deuda':'#00205C','Renta Variable':'#3DA5E0','Reporto':'#F59E0B'};
+      const lbls = [], vals = [], cols = [];
+      c.labels.forEach((l, i) => {
+        if (c.values[i] > 0.01) {
+          lbls.push(l); vals.push(c.values[i]); cols.push(CLASE_COLORS[l] || '#94A3B8');
+        }
+      });
       charts.clase.data.labels = lbls;
       charts.clase.data.datasets[0].data = vals;
+      charts.clase.data.datasets[0].backgroundColor = cols;
     }
     charts.clase.update();
   }
