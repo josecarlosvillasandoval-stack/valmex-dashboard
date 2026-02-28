@@ -829,9 +829,10 @@ function renderSlotsActual() {
       <span class="fondo-pct">${pct}</span>`;
     grid.appendChild(card);
   });
-  // Expandir si todos los slots con ticker están llenos
-  const conTicker = _slotsActual.filter(s => s.ticker).length;
-  if (conTicker >= _slotsActual.length) {
+  // Expandir si todos los slots están validados (tienen nombre) — agregar bloque de 3
+  const validados = _slotsActual.filter(s => s.nombre).length;
+  const totalSlots = _slotsActual.length;
+  if (validados > 0 && validados >= totalSlots) {
     _slotsActual.push(...Array.from({length: SLOTS_BLOQUE}, () => ({ticker:'',nombre:'',tipo:'',monto:'',loading:false,error:''})));
     renderSlotsActual();
     return;
@@ -871,9 +872,10 @@ function renderSlotsProp() {
       <span class="fondo-monto">${mon}</span>`;
     grid.appendChild(card);
   });
-  // Expandir si todos los slots con ticker están llenos
-  const conTicker = _slotsProp.filter(s => s.ticker).length;
-  if (conTicker >= _slotsProp.length) {
+  // Expandir si todos los slots están validados (tienen nombre) — agregar bloque de 3
+  const validados = _slotsProp.filter(s => s.nombre).length;
+  const totalSlots = _slotsProp.length;
+  if (validados > 0 && validados >= totalSlots) {
     _slotsProp.push(...Array.from({length: SLOTS_BLOQUE}, () => ({ticker:'',nombre:'',tipo:'',pct:'',loading:false,error:''})));
     renderSlotsProp();
     return;
@@ -912,6 +914,8 @@ async function validarSlotActual(i) {
     const d = await r.json();
     _slotsActual[i].loading = false;
     if (d.ok) {
+      // Normalizar ticker con .MX si no lo tiene
+      if (!_slotsActual[i].ticker.endsWith('.MX')) _slotsActual[i].ticker += '.MX';
       _slotsActual[i].nombre = d.data.nombre;
       _slotsActual[i].tipo   = d.data.tipo;
       _slotsActual[i].error  = '';
@@ -940,6 +944,8 @@ async function validarSlotProp(i) {
     const d = await r.json();
     _slotsProp[i].loading = false;
     if (d.ok) {
+      // Normalizar ticker con .MX si no lo tiene
+      if (!_slotsProp[i].ticker.endsWith('.MX')) _slotsProp[i].ticker += '.MX';
       _slotsProp[i].nombre = d.data.nombre;
       _slotsProp[i].tipo   = d.data.tipo;
       _slotsProp[i].error  = '';
@@ -992,13 +998,7 @@ function guardarActual(){
   } else if (tasaUSDEl) tasaUSDEl.style.border = '';
   alert('✅ Cartera Actual guardada.');
 }
-function guardarPropuesta(){
-  let t=0;
-  ALL_FUNDS.forEach(f=>{const el=document.getElementById('prop-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.]/g,''))||0;});
-  t+=getRepoPropPct('MXN')+getRepoPropPct('USD');
-  if(Math.abs(t-100)>0.01){alert('⚠️ El total debe ser 100%. Actualmente es '+t.toFixed(2)+'%');return;}
-  alert('✅ Cartera Propuesta guardada.');
-}
+// guardarPropuesta — definida en sección principal
 
 // ── FECHA DINÁMICA ──
 (function(){
