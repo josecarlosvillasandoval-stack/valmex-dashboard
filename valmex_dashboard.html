@@ -543,6 +543,26 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 const ALL_FUNDS = ["VXREPO1", "VXGUBCP", "VXUDIMP", "VXDEUDA", "VXGUBLP", "VXTBILL", "VXCOBER", "VLMXETF", "VLMXDME", "VALMXA", "VALMX20", "VALMX28", "VALMXVL", "VALMXES", "VLMXTEC", "VLMXESG", "VALMXHC", "VXINFRA", "VLMXJUB", "VLMXP24", "VLMXP31", "VLMXP38", "VLMXP45", "VLMXP52", "VLMXP59"];
 
 document.addEventListener('DOMContentLoaded',()=>{
+  // ── Privacidad: sin memoria en inputs + borrado total con selección ──
+  document.querySelectorAll('input').forEach(inp => {
+    inp.setAttribute('autocomplete', 'off');
+    inp.setAttribute('autocorrect', 'off');
+    inp.setAttribute('autocapitalize', 'off');
+    inp.setAttribute('spellcheck', 'false');
+    // Borrar todo cuando hay selección y se presiona Delete/Backspace
+    inp.addEventListener('keydown', e => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') &&
+          inp.selectionStart !== inp.selectionEnd) {
+        e.preventDefault();
+        const start = inp.selectionStart;
+        const val = inp.value;
+        inp.value = val.slice(0, start) + val.slice(inp.selectionEnd);
+        inp.selectionStart = inp.selectionEnd = start;
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+  });
+
   const hoy=new Date().toISOString().split('T')[0];
   const fi=document.getElementById('cfg-fecha-fin');
   if(fi) fi.value=hoy;
