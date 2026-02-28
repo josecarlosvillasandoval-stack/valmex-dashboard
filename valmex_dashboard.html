@@ -646,8 +646,7 @@ function onActualRepoTasa(moneda){
     if(v){tEl.value=v+'%';const pos=v.length;setTimeout(()=>{try{tEl.setSelectionRange(pos,pos);}catch(e){}},0);}
     else tEl.value='';
   }
-  // Limpiar borde rojo si ya puso tasa
-  if(getRepoActualTasa(moneda)>0) tEl.style.border='';
+  calcTotalActual(); // actualiza borde y color del total en tiempo real
 }
 
 // Mantener onActualRepo como alias por compatibilidad (ya no se usa en HTML pero por si acaso)
@@ -676,34 +675,68 @@ function onPropRepoTasa(moneda){
     if(v){tEl.value=v+'%';const pos=v.length;setTimeout(()=>{try{tEl.setSelectionRange(pos,pos);}catch(e){}},0);}
     else tEl.value='';
   }
-  if(getRepoPropTasa(moneda)>0) tEl.style.border='';
+  calcTotalPropuesta(); // actualiza borde y color del total en tiempo real
 }
 
 // Alias por compatibilidad
 function onPropRepo(moneda){ onPropRepoPct(moneda); }
 
+function _validarTasaRepo(moneda, monto, tasa, idTasa) {
+  // Pone borde rojo en campo tasa si hay monto/pct pero no hay tasa
+  const tasaEl = document.getElementById(idTasa);
+  if (!tasaEl) return;
+  if (monto > 0 && tasa <= 0) {
+    tasaEl.style.border = '2px solid #EF4444';
+  } else {
+    tasaEl.style.border = '';
+  }
+}
+
 function calcTotalActual(){
   let t=0;
   ALL_FUNDS.forEach(f=>{const el=document.getElementById('act-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.]/g,''))||0;});
-  t+=getRepoActualMonto('MXN')+getRepoActualMonto('USD');
-  const el=document.getElementById('total-actual');
-  el.textContent='$'+t.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const contrato=getMonto();
-  if(t===0) el.className='';
-  else if(contrato>0 && Math.abs(t-contrato)<1) el.className='total-ok';
-  else if(contrato>0) el.className='total-err';
-  else el.className='';
+  const mxnMonto = getRepoActualMonto('MXN');
+  const usdMonto = getRepoActualMonto('USD');
+  t += mxnMonto + usdMonto;
+
+  // Validar tasa en tiempo real
+  _validarTasaRepo('MXN', mxnMonto, getRepoActualTasa('MXN'), 'act-REPO-MXN-tasa');
+  _validarTasaRepo('USD', usdMonto, getRepoActualTasa('USD'), 'act-REPO-USD-tasa');
+
+  const el = document.getElementById('total-actual');
+  el.textContent = '$'+t.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const contrato = getMonto();
+
+  // Rojo si: monto no coincide con contrato O hay repo sin tasa
+  const repoSinTasa = (mxnMonto > 0 && getRepoActualTasa('MXN') <= 0) ||
+                      (usdMonto > 0 && getRepoActualTasa('USD') <= 0);
+  if (t === 0) { el.className = ''; }
+  else if (repoSinTasa) { el.className = 'total-err'; }
+  else if (contrato > 0 && Math.abs(t - contrato) < 1) { el.className = 'total-ok'; }
+  else if (contrato > 0) { el.className = 'total-err'; }
+  else { el.className = ''; }
 }
 
 function calcTotalPropuesta(){
   let t=0;
   ALL_FUNDS.forEach(f=>{const el=document.getElementById('prop-'+f);if(el)t+=parseFloat(el.value.replace(/[^0-9.%]/g,''))||0;});
-  // incluir reporto
-  t+=getRepoPropPct('MXN')+getRepoPropPct('USD');
-  const el=document.getElementById('total-propuesta');
-  el.textContent=t.toFixed(2)+'%';
-  if(t===0) el.className='';
-  else el.className=Math.abs(t-100)<0.01?'total-ok':'total-err';
+  const mxnPct = getRepoPropPct('MXN');
+  const usdPct = getRepoPropPct('USD');
+  t += mxnPct + usdPct;
+
+  // Validar tasa en tiempo real
+  _validarTasaRepo('MXN', mxnPct, getRepoPropTasa('MXN'), 'prop-REPO-MXN-tasa');
+  _validarTasaRepo('USD', usdPct, getRepoPropTasa('USD'), 'prop-REPO-USD-tasa');
+
+  const el = document.getElementById('total-propuesta');
+  el.textContent = t.toFixed(2)+'%';
+
+  // Rojo si: suma ≠ 100% O hay repo sin tasa
+  const repoSinTasa = (mxnPct > 0 && getRepoPropTasa('MXN') <= 0) ||
+                      (usdPct > 0 && getRepoPropTasa('USD') <= 0);
+  if (t === 0) { el.className = ''; }
+  else if (repoSinTasa) { el.className = 'total-err'; }
+  else { el.className = Math.abs(t-100) < 0.01 ? 'total-ok' : 'total-err'; }
 }
 
 function guardarCliente(){alert('✅ Datos del cliente guardados.');}
