@@ -272,7 +272,10 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
                 # Calificación crediticia
                 # Fondos/Reporto USD (incl. VLMXETF, VLMXDME): AA+ (Fitch USA)
                 # Fondos MXN: ajuste Valmex → BBB
-                if is_usd or fondo in FONDOS_CRED_GLOBAL:
+                if fondo in FONDOS_CRED_GLOBAL:
+                    # MXN pero calificación S&P USA → acumula en cred_mxn (columna MX)
+                    cred_mxn[SP_RATING_USD] = cred_mxn.get(SP_RATING_USD, 0) + 100 * w
+                elif is_usd:
                     cred_usd[SP_RATING_USD] = cred_usd.get(SP_RATING_USD, 0) + 100 * w
                 else:
                     cred_mxn[SP_RATING_MXN] = cred_mxn.get(SP_RATING_MXN, 0) + 100 * w
