@@ -271,7 +271,8 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
                         else:
                             cred_mxn[cq_lbl] = cred_mxn.get(cq_lbl, 0) + contribution
 
-                # Super-sectores de deuda
+                # Super-sectores: son % del fondo completo (misma escala que AAB-BondNet/CashNet)
+                # Se ponderan por w (peso en portafolio), NO por bond_w
                 supersector_map = {
                     "GBSR-SuperSectorCashandEquivalentsNet": "Reporto",
                     "GBSR-SuperSectorCorporateNet":          "Corporativo",
@@ -283,7 +284,7 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
                 for ss_key, ss_lbl in supersector_map.items():
                     v = safe_float(d.get(ss_key))
                     if v > 0:
-                        supersec_acc[ss_lbl] = supersec_acc.get(ss_lbl, 0) + v * bond_w
+                        supersec_acc[ss_lbl] = supersec_acc.get(ss_lbl, 0) + v * w
 
         # ── Geo y sectores: fondos RV puros + Ciclo de Vida ──
         if (is_rv or is_ciclo) and stock > 0:
