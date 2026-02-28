@@ -1,7 +1,8 @@
 import os
 import time
 import requests
-from datetime import date, timedelta
+import yfinance as yf
+from datetime import date, timedelta, datetime
 from flask import Flask, send_file, request, jsonify, redirect, url_for, session, send_from_directory
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -173,6 +174,145 @@ def load_ms_universe():
         print(f"[MS ERROR] {e}")
     return _ms_cache
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ACCIONES & ETFs — Yahoo Finance
+# ─────────────────────────────────────────────────────────────────────────────
+_accion_cache: dict = {}
+_accion_cache_ts: dict = {}
+ACCION_CACHE_TTL = 3600  # 1 hora
+
+GEO_TRANSLATE_YF = {
+    "united states": "Estados Unidos", "mexico": "México", "canada": "Canadá",
+    "united kingdom": "Reino Unido", "germany": "Alemania", "france": "Francia",
+    "japan": "Japón", "china": "China", "brazil": "Brasil", "india": "India",
+    "south korea": "Corea del Sur", "taiwan": "Taiwán", "australia": "Australia",
+    "netherlands": "Países Bajos", "switzerland": "Suiza", "spain": "España",
+    "italy": "Italia", "hong kong": "Hong Kong", "singapore": "Singapur",
+}
+
+SEC_TRANSLATE_YF = {
+    "technology": "Tecnología", "financial services": "Financiero",
+    "healthcare": "Salud", "consumer cyclical": "Consumo Discrecional",
+    "industrials": "Industriales", "communication services": "Comunicaciones",
+    "consumer defensive": "Consumo Básico", "energy": "Energía",
+    "basic materials": "Materiales", "real estate": "Bienes Raíces",
+    "utilities": "Utilidades",
+}
+
+def get_accion_yf(ticker: str) -> dict | None:
+    """
+    Obtiene datos de una acción/ETF via Yahoo Finance.
+    Retorna dict con rendimientos, sector, geo, tipo, o None si no existe.
+    Tickers BMV/BIVA: agregar .MX (ej WALMEX.MX)
+    Tickers SIC en pesos: agregar .MX (ej AAPL.MX, QQQ.MX)
+    Tickers USA directo: sin sufijo (ej NVDA, QQQ)
+    """
+    now = time.time()
+    if ticker in _accion_cache and (now - _accion_cache_ts.get(ticker, 0)) < ACCION_CACHE_TTL:
+        return _accion_cache[ticker]
+
+    try:
+        t = yf.Ticker(ticker)
+        info = t.info or {}
+
+        # Verificar que existe
+        if not info.get("regularMarketPrice") and not info.get("currentPrice") and not info.get("previousClose"):
+            return None
+
+        quote_type = info.get("quoteType", "").upper()  # EQUITY, ETF, MUTUALFUND
+        tipo = "ETF" if quote_type == "ETF" else "Acción"
+
+        # Historial de precios — 3 años para calcular rendimientos
+        hist = t.history(period="3y", auto_adjust=True)
+        if hist.empty:
+            return None
+
+        today = datetime.now().date()
+        prices = hist["Close"]
+        idx    = prices.index
+
+        def precio_en(d: date):
+            """Precio más reciente en o antes de la fecha d."""
+            ts = [i for i in idx if i.date() <= d]
+            return float(prices[ts[-1]]) if ts else None
+
+        p_hoy  = precio_en(today)
+        if p_hoy is None:
+            return None
+
+        # MTD — inicio del mes
+        p_mtd = precio_en(date(today.year, today.month, 1))
+        # 3M
+        p_3m  = precio_en(today - timedelta(days=91))
+        # YTD
+        p_ytd = precio_en(date(today.year, 1, 1))
+        # 1Y
+        p_1y  = precio_en(today - timedelta(days=365))
+        # 2Y
+        p_2y  = precio_en(today - timedelta(days=730))
+        # 3Y
+        p_3y  = precio_en(today - timedelta(days=1095))
+
+        def rend_efectivo(p_ini):
+            if p_ini and p_ini > 0:
+                return round((p_hoy / p_ini - 1) * 100, 2)
+            return None
+
+        def rend_anual(p_ini, years):
+            if p_ini and p_ini > 0:
+                r = (p_hoy / p_ini) ** (1 / years) - 1
+                return round(r * 100, 2)
+            return None
+
+        # Sector y geografía
+        sector_en = (info.get("sector") or "").strip().lower()
+        sector    = SEC_TRANSLATE_YF.get(sector_en, info.get("sector") or "")
+        pais_en   = (info.get("country") or "").strip().lower()
+        pais      = GEO_TRANSLATE_YF.get(pais_en, info.get("country") or "")
+
+        # Para ETFs: usar holdingsMap si disponible
+        sectores_etf = {}
+        geo_etf      = {}
+        if quote_type == "ETF":
+            try:
+                holdings = t.funds_data
+                if holdings and hasattr(holdings, "sector_weightings"):
+                    for s, v in (holdings.sector_weightings or {}).items():
+                        lbl = SEC_TRANSLATE_YF.get(s.lower(), s)
+                        sectores_etf[lbl] = round(v * 100, 2)
+                if holdings and hasattr(holdings, "equity_holdings"):
+                    eq = holdings.equity_holdings
+                    if eq is not None and hasattr(eq, "to_dict"):
+                        pass  # geo de ETF es más complejo, usar país del ETF
+            except Exception:
+                pass
+
+        result = {
+            "ticker":   ticker,
+            "nombre":   info.get("shortName") or info.get("longName") or ticker,
+            "tipo":     tipo,         # "Acción" o "ETF"
+            "sector":   sector,
+            "pais":     pais,
+            "moneda":   info.get("currency", "MXN"),
+            "r1m":      rend_efectivo(p_mtd),
+            "r3m":      rend_efectivo(p_3m),
+            "ytd":      rend_efectivo(p_ytd),
+            "r1y":      rend_anual(p_1y, 1),
+            "r2y":      rend_anual(p_2y, 2),
+            "r3y":      rend_anual(p_3y, 3),
+            "sectores": sectores_etf,
+            "geo":      geo_etf,
+        }
+
+        _accion_cache[ticker] = result
+        _accion_cache_ts[ticker] = now
+        return result
+
+    except Exception as e:
+        print(f"[YF ERROR] {ticker}: {e}")
+        return None
+
+
 
 def safe_float(val, default=0.0):
     try:    return float(val)
@@ -193,7 +333,8 @@ def resolve_serie(fondo, tipo_cliente):
 
 
 def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
-                        repo_mxn: dict = None, repo_usd: dict = None) -> dict:
+                        repo_mxn: dict = None, repo_usd: dict = None,
+                        acciones: list = None) -> dict:
     universe = load_ms_universe()
 
     r1m = r3m = r6m = ytd = r1y = r2y = r3y = 0.0
@@ -438,6 +579,53 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
             main.append(("Otros", round(otros, 2)))
         return {"labels":[i[0] for i in main],"values":[round(i[1],2) for i in main]}
 
+    # ── Acciones & ETFs (Yahoo Finance) ──
+    for acc in (acciones or []):
+        ticker = acc.get("ticker", "").upper()
+        pct    = float(acc.get("pct", 0))
+        if pct <= 0 or not ticker:
+            continue
+        w   = pct / 100.0
+        yfd = get_accion_yf(ticker)
+        if not yfd:
+            continue
+
+        # Rendimientos ponderados
+        r1m += (yfd.get("r1m") or 0) * w
+        r3m += (yfd.get("r3m") or 0) * w
+        ytd += (yfd.get("ytd") or 0) * w
+        r1y += (yfd.get("r1y") or 0) * w
+        r2y += (yfd.get("r2y") or 0) * w
+        r3y += (yfd.get("r3y") or 0) * w
+
+        # Clase de activos: 100% RV
+        stock_t += 100 * w
+
+        # Composición
+        lista.append({
+            "fondo": ticker,
+            "serie": yfd.get("tipo", "Acción"),
+            "pct":   round(pct, 2),
+            "r1m":   round(yfd.get("r1m") or 0, 2),
+            "r3m":   round(yfd.get("r3m") or 0, 2),
+            "r1y":   round(yfd.get("r1y") or 0, 2),
+            "r3y":   round(yfd.get("r3y") or 0, 2),
+        })
+
+        # Sectores: ETF usa su propio desglose, Acción usa su sector
+        if yfd.get("sectores"):
+            for s, v in yfd["sectores"].items():
+                sec_acc[s] = sec_acc.get(s, 0) + v * w
+        elif yfd.get("sector"):
+            sec_acc[yfd["sector"]] = sec_acc.get(yfd["sector"], 0) + 100 * w
+
+        # Geo: acción/ETF → país
+        if yfd.get("geo"):
+            for g, v in yfd["geo"].items():
+                geo_acc[g] = geo_acc.get(g, 0) + v * w
+        elif yfd.get("pais"):
+            geo_acc[yfd["pais"]] = geo_acc.get(yfd["pais"], 0) + 100 * w
+
     has_mxn = bond_mxn_denom > 0
     has_usd = bond_usd_denom > 0
 
@@ -524,6 +712,25 @@ def index():
     return send_file(os.path.join(BASE, "valmex_dashboard.html"))
 
 
+@app.route("/api/accion/validate", methods=["POST"])
+def api_accion_validate():
+    """Valida un ticker de Yahoo Finance y retorna sus datos básicos."""
+    if "usuario" not in session:
+        return jsonify({"ok": False, "error": "No autenticado"}), 401
+    body   = request.get_json(force=True)
+    ticker = (body.get("ticker") or "").strip().upper()
+    if not ticker:
+        return jsonify({"ok": False, "error": "Ticker vacío"}), 400
+    # Siempre buscar en MXN — agregar .MX si no lo tiene
+    if not ticker.endswith(".MX"):
+        ticker = ticker + ".MX"
+    data = get_accion_yf(ticker)
+    if data is None:
+        base = ticker.replace(".MX", "")
+        return jsonify({"ok": False, "error": f"'{base}' no encontrado en SIC/BMV/BIVA. Verifica el ticker."}), 404
+    return jsonify({"ok": True, "data": data})
+
+
 @app.route("/api/propuesta", methods=["POST"])
 def api_propuesta():
     if "usuario" not in session:
@@ -543,13 +750,15 @@ def api_propuesta():
         fondos_pct = {k: float(v) for k, v in raw.items() if float(v) > 0}
         repo_mxn = body.get("repo_mxn")
         repo_usd = body.get("repo_usd")
-        # Permitir portafolio solo con reporto (sin fondos Valmex)
-        if not fondos_pct and not repo_mxn and not repo_usd:
+        # Permitir portafolio solo con reporto o acciones (sin fondos Valmex)
+        acciones_raw = body.get("acciones", [])
+        if not fondos_pct and not repo_mxn and not repo_usd and not acciones_raw:
             return jsonify({"ok": False, "error": "Sin fondos con % > 0"}), 400
 
     return jsonify(calcular_portafolio(fondos_pct, tipo_cliente,
                                         repo_mxn=body.get("repo_mxn"),
-                                        repo_usd=body.get("repo_usd")))
+                                        repo_usd=body.get("repo_usd"),
+                                        acciones=body.get("acciones", [])))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
