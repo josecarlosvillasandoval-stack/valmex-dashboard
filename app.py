@@ -440,7 +440,7 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
         },
         "clase_activos": {
             "labels":["Deuda","Renta Variable","Reporto"],
-            "values":[round(bond_t*100,2), round(stock_t*100,2), round(cash_t*100,2)],
+            "values":[round(bond_t,2), round(stock_t,2), round(cash_t,2)],
         },
         "composicion": sorted(lista, key=lambda x: -x["pct"]),
         "geo":           filter_pct(geo_acc, translate=GEO_TRANSLATE),
