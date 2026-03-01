@@ -332,16 +332,20 @@ _repo_ts    = 0.0
 REPO_TTL    = 3600  # 1 hora
 
 def _fetch_hist_mxn():
-    """USD/MXN semanal desde 2000 vía Yahoo Finance (MXN=X)."""
-    try:
-        df = yf.Ticker("MXN=X").history(start="2000-01-01", interval="1wk")[["Close"]].dropna()
-        fechas  = [d.strftime("%Y-%m-%d") for d in df.index]
-        precios = [round(float(v), 4) for v in df["Close"]]
-        print(f"[HIST MXN] {len(fechas)} registros desde {fechas[0]}")
-        return {"fechas": fechas, "precios": precios}
-    except Exception as e:
-        print(f"[HIST MXN ERROR] {e}")
-        return {"fechas": [], "precios": []}
+    """USD/MXN semanal desde 2000 vía Yahoo Finance. Prueba varios tickers."""
+    for ticker in ["USDMXN=X", "MXN=X"]:
+        try:
+            df = yf.Ticker(ticker).history(start="2000-01-01", interval="1wk")[["Close"]].dropna()
+            if df.empty:
+                print(f"[HIST MXN] {ticker} sin datos, intentando siguiente...")
+                continue
+            fechas  = [d.strftime("%Y-%m-%d") for d in df.index]
+            precios = [round(float(v), 4) for v in df["Close"]]
+            print(f"[HIST MXN] {ticker}: {len(fechas)} registros desde {fechas[0]}")
+            return {"fechas": fechas, "precios": precios}
+        except Exception as e:
+            print(f"[HIST MXN ERROR] {ticker}: {e}")
+    return {"fechas": [], "precios": []}
 
 def _fetch_sofr():
     """SOFR diario desde FRED (CSV público, sin API key)."""
@@ -414,20 +418,36 @@ def yf_quote(symbol: str) -> dict:
             return cached["data"]
     try:
         tk   = yf.Ticker(symbol)
-        info = tk.info
-        qt   = info.get("quoteType", "")
-        if not info or qt in ("", "NONE") or info.get("regularMarketPrice") is None and info.get("currentPrice") is None:
+
+        # fast_info es más confiable que info en versiones recientes de yfinance
+        fast  = tk.fast_info
+        price = getattr(fast, "last_price", None)
+
+        # Fallback a info si fast_info no tiene precio
+        if price is None:
+            info  = tk.info
+            price = info.get("regularMarketPrice") or info.get("currentPrice")
+        else:
+            info = tk.info
+
+        qt = info.get("quoteType", "") if info else ""
+
+        # Bug corregido: paréntesis alrededor de la condición compuesta
+        if not price or qt in ("", "NONE"):
             result = {"ok": False, "error": "Ticker no encontrado o sin datos", "ticker": symbol}
         else:
+            cambio = getattr(fast, "regular_market_change_percent", None)
+            if cambio is None:
+                cambio = info.get("regularMarketChangePercent") or 0.0
             result = {
                 "ok":         True,
                 "ticker":     symbol,
-                "nombre":     info.get("longName") or info.get("shortName") or symbol,
-                "precio":     info.get("regularMarketPrice") or info.get("currentPrice"),
-                "moneda":     info.get("currency", "MXN"),
-                "cambio_pct": round(info.get("regularMarketChangePercent") or 0.0, 4),
-                "volumen":    info.get("regularMarketVolume"),
-                "exchange":   info.get("exchange"),
+                "nombre":     (info.get("longName") or info.get("shortName") or symbol) if info else symbol,
+                "precio":     price,
+                "moneda":     getattr(fast, "currency", None) or (info.get("currency", "USD") if info else "USD"),
+                "cambio_pct": round(float(cambio), 4),
+                "volumen":    getattr(fast, "regular_market_volume", None) or (info.get("regularMarketVolume") if info else None),
+                "exchange":   getattr(fast, "exchange", None) or (info.get("exchange") if info else None),
                 "tipo":       qt,
             }
         print(f"[YF OK] {symbol}: {result.get('precio')}")
@@ -778,6 +798,12 @@ def api_accion_data():
         info  = tk.info
         qt    = info.get("quoteType", "EQUITY")
         precio = info.get("regularMarketPrice") or info.get("currentPrice")
+        # Fallback a fast_info si info no trae precio (común en versiones nuevas de yfinance)
+        if precio is None:
+            try:
+                precio = tk.fast_info.last_price
+            except Exception:
+                pass
         if not info or precio is None:
             result = {"ok": False, "error": "Ticker no encontrado o sin precio", "ticker": ticker}
         else:
