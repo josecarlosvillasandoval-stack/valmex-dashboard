@@ -716,12 +716,15 @@ def api_accion_validate():
     ticker = (body.get("ticker") or "").strip().upper()
     if not ticker:
         return jsonify({"ok": False, "error": "Ticker vacío"}), 400
-    if not ticker.endswith(".MX"):
-        ticker = ticker + ".MX"
+    # Try as-is first (covers US tickers like AMZN, AAPL, etc.)
     data = get_accion_yf(ticker)
+    # If not found and doesn't already have .MX, try Mexican exchange
+    if data is None and not ticker.endswith(".MX"):
+        data = get_accion_yf(ticker + ".MX")
+        if data:
+            ticker = ticker + ".MX"
     if data is None:
-        base = ticker.replace(".MX", "")
-        return jsonify({"ok": False, "error": f"'{base}' no encontrado en SIC/BMV/BIVA. Verifica el ticker."}), 404
+        return jsonify({"ok": False, "error": f"'{ticker}' no encontrado. Verifica el ticker."}), 404
     return jsonify({"ok": True, "data": data})
 
 
