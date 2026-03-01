@@ -153,6 +153,71 @@ _db_cache: dict    = {}
 _db_cache_ts: dict = {}
 DB_CACHE_TTL = 3600
 
+# Catálogo completo de emisoras (BMV local + SIC/global + BIVA)
+# Cargado una vez al inicio; estructura: {ticker: {nombre, bolsa, tipo, mercado}}
+_catalogo_emisoras: dict = {}
+_catalogo_ts: float      = 0
+_CATALOGO_TTL = 86400    # refrescar cada 24 horas
+
+
+def cargar_catalogo_emisoras(forzar: bool = False) -> dict:
+    """
+    Descarga el catálogo completo de emisoras de DataBursatil.
+    Incluye BMV local, SIC (global) y BIVA.
+    Retorna dict {ticker_db: {nombre, bolsa, tipo, mercado, yf_ticker}}
+    """
+    global _catalogo_emisoras, _catalogo_ts
+    now = time.time()
+    if not forzar and _catalogo_emisoras and (now - _catalogo_ts) < _CATALOGO_TTL:
+        return _catalogo_emisoras
+    if not DB_TOKEN:
+        return {}
+
+    catalogo = {}
+    # DataBursatil permite filtrar por mercado; sin 'letra' devuelve todas
+    for mercado in ["local", "global"]:
+        try:
+            r = requests.get(
+                f"{DB_BASE}/emisoras",
+                params={"token": DB_TOKEN, "mercado": mercado},
+                timeout=30,
+            )
+            r.raise_for_status()
+            em_raw = r.json()
+            items  = em_raw if isinstance(em_raw, list) else em_raw.get("data", [])
+            for item in items:
+                e = (item.get("Emisora") or "").strip().upper()
+                s = (item.get("Serie")   or "").strip().upper()
+                if not e:
+                    continue
+                ticker_db = e + s          # formato DataBursatil: "GMEXICOB"
+                yf_ticker = ticker_db + ".MX"  # formato Yahoo Finance: "GMEXICOB.MX"
+                tv = (item.get("tipo_valor_descripcion") or "").upper()
+                if "FIBRA" in tv or "FIDEICOMISO" in tv:
+                    tipo = "FIBRA"
+                elif "ETF" in tv or "TRAC" in tv or "FONDO" in tv:
+                    tipo = "ETF"
+                else:
+                    tipo = "Acción"
+                catalogo[ticker_db] = {
+                    "ticker_db": ticker_db,
+                    "yf_ticker": yf_ticker,
+                    "nombre":    item.get("razon_social") or ticker_db,
+                    "bolsa":     item.get("bolsa", "").upper(),
+                    "tipo":      tipo,
+                    "mercado":   mercado,   # "local" = BMV/BIVA, "global" = SIC
+                    "isin":      item.get("isin", ""),
+                }
+            print(f"[CATALOGO] {mercado}: {len(items)} emisoras cargadas")
+        except Exception as e:
+            print(f"[CATALOGO ERROR] mercado={mercado}: {e}")
+
+    if catalogo:
+        _catalogo_emisoras = catalogo
+        _catalogo_ts       = now
+        print(f"[CATALOGO] Total: {len(catalogo)} emisoras (BMV + SIC + BIVA)")
+    return _catalogo_emisoras
+
 
 def get_accion_db(emisora_serie: str) -> dict | None:
     """
@@ -234,31 +299,11 @@ def get_accion_db(emisora_serie: str) -> dict | None:
             return round(((p_hoy / p_ini) ** (1 / years) - 1) * 100, 2)
         return None
 
-    # 2. Info de la emisora (nombre, tipo)
-    nombre = key
-    tipo   = "Acción"
-    try:
-        r2 = requests.get(
-            f"{DB_BASE}/emisoras",
-            params={"token": DB_TOKEN, "letra": key, "mercado": "local,global"},
-            timeout=10,
-        )
-        r2.raise_for_status()
-        em_raw = r2.json()
-        items = em_raw if isinstance(em_raw, list) else em_raw.get("data", [])
-        for item in items:
-            e = (item.get("Emisora") or "").strip().upper()
-            s = (item.get("Serie")   or "").strip().upper()
-            if (e + s) == key or e == key:
-                nombre = item.get("razon_social") or key
-                tv = (item.get("tipo_valor_descripcion") or "").upper()
-                if "FIBRA" in tv or "FIDEICOMISO" in tv:
-                    tipo = "FIBRA"
-                elif "ETF" in tv or "TRAC" in tv or "FONDO" in tv:
-                    tipo = "ETF"
-                break
-    except Exception as e:
-        print(f"[DB EMISORA ERROR] {key}: {e}")
+    # 2. Info de la emisora (nombre, tipo) — desde catálogo en memoria
+    catalogo = cargar_catalogo_emisoras()
+    em_info  = catalogo.get(key, {})
+    nombre   = em_info.get("nombre", key)
+    tipo     = em_info.get("tipo",   "Acción")
 
     result = {
         "ticker":        key,
@@ -1102,6 +1147,7 @@ def diag_repo():
 
 @app.route("/api/emisoras/buscar")
 def api_buscar_emisora():
+    """Búsqueda en el catálogo en memoria — sin costo de créditos."""
     if "usuario" not in session:
         return jsonify({"ok": False, "error": "No autenticado"}), 401
     q = (request.args.get("q") or "").strip().upper()
@@ -1109,31 +1155,33 @@ def api_buscar_emisora():
         return jsonify({"ok": True, "results": []})
     if not DB_TOKEN:
         return jsonify({"ok": False, "error": "DataBursatil no configurado"}), 503
-    try:
-        r = requests.get(
-            f"{DB_BASE}/emisoras",
-            params={"token": DB_TOKEN, "letra": q, "mercado": "local,global"},
-            timeout=10,
-        )
-        r.raise_for_status()
-        em_raw = r.json()
-        items = em_raw if isinstance(em_raw, list) else em_raw.get("data", [])
-        results = []
-        for item in items[:30]:
-            e = (item.get("Emisora") or "").strip()
-            s = (item.get("Serie")   or "").strip()
-            if not e:
-                continue
+
+    catalogo = cargar_catalogo_emisoras()
+    results  = []
+    for ticker_db, info in catalogo.items():
+        if q in ticker_db or q in info["nombre"].upper():
             results.append({
-                "ticker": e + s,
-                "nombre": item.get("razon_social") or (e + s),
-                "bolsa":  item.get("bolsa", ""),
-                "tipo":   item.get("tipo_valor_descripcion", ""),
+                "ticker": ticker_db,
+                "yf_ticker": info["yf_ticker"],
+                "nombre": info["nombre"],
+                "bolsa":  info["bolsa"],
+                "tipo":   info["tipo"],
+                "mercado": info["mercado"],
             })
-        return jsonify({"ok": True, "results": results})
-    except Exception as e:
-        print(f"[DB BUSCAR ERROR] {e}")
-        return jsonify({"ok": False, "results": []}), 500
+            if len(results) >= 30:
+                break
+    return jsonify({"ok": True, "results": results, "total_catalogo": len(catalogo)})
+
+
+@app.route("/api/emisoras/catalogo")
+def api_catalogo_emisoras():
+    """Devuelve el catálogo completo (para cargar en el frontend de una vez)."""
+    if "usuario" not in session:
+        return jsonify({"ok": False, "error": "No autenticado"}), 401
+    if not DB_TOKEN:
+        return jsonify({"ok": False, "error": "DataBursatil no configurado"}), 503
+    catalogo = cargar_catalogo_emisoras()
+    return jsonify({"ok": True, "total": len(catalogo), "emisoras": list(catalogo.values())})
 
 
 @app.route("/api/creditos/db")
@@ -1153,4 +1201,8 @@ def api_creditos_db():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+    # Pre-cargar catálogo de emisoras al iniciar
+    if DB_TOKEN:
+        import threading
+        threading.Thread(target=cargar_catalogo_emisoras, daemon=True).start()
     app.run(host="0.0.0.0", port=port, debug=False)
