@@ -201,30 +201,53 @@ SEC_TRANSLATE_YF = {
 
 def get_accion_yf(ticker: str) -> dict | None:
     """
-    Obtiene datos de una acción/ETF via Yahoo Finance.
-    Retorna dict con rendimientos, sector, geo, tipo, o None si no existe.
-    Tickers BMV/BIVA: agregar .MX (ej WALMEX.MX)
-    Tickers SIC en pesos: agregar .MX (ej AAPL.MX, QQQ.MX)
-    Tickers USA directo: sin sufijo (ej NVDA, QQQ)
+    Obtiene datos de una acción/ETF via Yahoo Finance usando requests directo
+    con headers de browser para evitar bloqueos en servidores cloud.
     """
     now = time.time()
     if ticker in _accion_cache and (now - _accion_cache_ts.get(ticker, 0)) < ACCION_CACHE_TTL:
         return _accion_cache[ticker]
 
+    # Headers que simulan un browser real — necesario en servidores cloud
+    YF_HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+    }
+
     try:
-        t = yf.Ticker(ticker)
+        # Configurar sesión yfinance con headers de browser
+        import yfinance as yf
+        session = requests.Session()
+        session.headers.update(YF_HEADERS)
+
+        t = yf.Ticker(ticker, session=session)
         info = t.info or {}
 
-        # Verificar que existe
-        if not info.get("regularMarketPrice") and not info.get("currentPrice") and not info.get("previousClose"):
+        # Verificar que existe — yfinance retorna dict vacío o con symbol si no existe
+        symbol = info.get("symbol", "")
+        has_price = (info.get("regularMarketPrice") or
+                     info.get("currentPrice") or
+                     info.get("previousClose") or
+                     info.get("regularMarketPreviousClose"))
+        if not has_price and not symbol:
+            print(f"[YF] {ticker}: no encontrado (sin precio ni symbol)")
             return None
 
-        quote_type = info.get("quoteType", "").upper()  # EQUITY, ETF, MUTUALFUND
+        quote_type = info.get("quoteType", "").upper()
         tipo = "ETF" if quote_type == "ETF" else "Acción"
 
-        # Historial de precios — 3 años para calcular rendimientos
+        # Historial de precios — 3 años
         hist = t.history(period="3y", auto_adjust=True)
         if hist.empty:
+            # Intentar con período menor
+            hist = t.history(period="1y", auto_adjust=True)
+        if hist.empty:
+            print(f"[YF] {ticker}: historial vacío")
             return None
 
         today = datetime.now().date()
@@ -232,25 +255,18 @@ def get_accion_yf(ticker: str) -> dict | None:
         idx    = prices.index
 
         def precio_en(d: date):
-            """Precio más reciente en o antes de la fecha d."""
             ts = [i for i in idx if i.date() <= d]
             return float(prices[ts[-1]]) if ts else None
 
-        p_hoy  = precio_en(today)
+        p_hoy = precio_en(today)
         if p_hoy is None:
             return None
 
-        # MTD — inicio del mes
         p_mtd = precio_en(date(today.year, today.month, 1))
-        # 3M
         p_3m  = precio_en(today - timedelta(days=91))
-        # YTD
         p_ytd = precio_en(date(today.year, 1, 1))
-        # 1Y
         p_1y  = precio_en(today - timedelta(days=365))
-        # 2Y
         p_2y  = precio_en(today - timedelta(days=730))
-        # 3Y
         p_3y  = precio_en(today - timedelta(days=1095))
 
         def rend_efectivo(p_ini):
@@ -264,13 +280,11 @@ def get_accion_yf(ticker: str) -> dict | None:
                 return round(r * 100, 2)
             return None
 
-        # Sector y geografía
         sector_en = (info.get("sector") or "").strip().lower()
         sector    = SEC_TRANSLATE_YF.get(sector_en, info.get("sector") or "")
         pais_en   = (info.get("country") or "").strip().lower()
         pais      = GEO_TRANSLATE_YF.get(pais_en, info.get("country") or "")
 
-        # Para ETFs: usar holdingsMap si disponible
         sectores_etf = {}
         geo_etf      = {}
         if quote_type == "ETF":
@@ -280,17 +294,15 @@ def get_accion_yf(ticker: str) -> dict | None:
                     for s, v in (holdings.sector_weightings or {}).items():
                         lbl = SEC_TRANSLATE_YF.get(s.lower(), s)
                         sectores_etf[lbl] = round(v * 100, 2)
-                if holdings and hasattr(holdings, "equity_holdings"):
-                    eq = holdings.equity_holdings
-                    if eq is not None and hasattr(eq, "to_dict"):
-                        pass  # geo de ETF es más complejo, usar país del ETF
             except Exception:
                 pass
 
+        nombre = info.get("shortName") or info.get("longName") or info.get("symbol") or ticker
+
         result = {
             "ticker":   ticker,
-            "nombre":   info.get("shortName") or info.get("longName") or ticker,
-            "tipo":     tipo,         # "Acción" o "ETF"
+            "nombre":   nombre,
+            "tipo":     tipo,
             "sector":   sector,
             "pais":     pais,
             "moneda":   info.get("currency", "MXN"),
@@ -306,6 +318,7 @@ def get_accion_yf(ticker: str) -> dict | None:
 
         _accion_cache[ticker] = result
         _accion_cache_ts[ticker] = now
+        print(f"[YF OK] {ticker}: {nombre} | precio={p_hoy:.2f}")
         return result
 
     except Exception as e:
