@@ -182,6 +182,55 @@ _accion_cache_ts: dict = {}
 ACCION_CACHE_TTL = 3600  # 1 hora
 ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "YFUB8EA3CMFYEWKH")
 
+# Mapeo país individual → región (para alinear con regiones Morningstar)
+PAIS_A_REGION = {
+    "Estados Unidos":  "Norteamérica",
+    "Canadá":          "Norteamérica",
+    "México":          "América Latina",
+    "Brasil":          "América Latina",
+    "Argentina":       "América Latina",
+    "Chile":           "América Latina",
+    "Colombia":        "América Latina",
+    "Perú":            "América Latina",
+    "Reino Unido":     "Europa ex-Euro",
+    "Suiza":           "Europa ex-Euro",
+    "Suecia":          "Europa ex-Euro",
+    "Dinamarca":       "Europa ex-Euro",
+    "Noruega":         "Europa ex-Euro",
+    "Alemania":        "Eurozona",
+    "Francia":         "Eurozona",
+    "Países Bajos":    "Eurozona",
+    "España":          "Eurozona",
+    "Italia":          "Eurozona",
+    "Finlandia":       "Eurozona",
+    "Bélgica":         "Eurozona",
+    "Portugal":        "Eurozona",
+    "Irlanda":         "Eurozona",
+    "Austria":         "Eurozona",
+    "Japón":           "Japón",
+    "Australia":       "Australasia",
+    "Nueva Zelanda":   "Australasia",
+    "Hong Kong":       "Asia Desarrollada",
+    "Singapur":        "Asia Desarrollada",
+    "Corea del Sur":   "Asia Desarrollada",
+    "Taiwán":          "Asia Desarrollada",
+    "China":           "Asia Emergente",
+    "India":           "Asia Emergente",
+    "Indonesia":       "Asia Emergente",
+    "Tailandia":       "Asia Emergente",
+    "Malasia":         "Asia Emergente",
+    "Filipinas":       "Asia Emergente",
+    "Vietnam":         "Asia Emergente",
+    "Arabia Saudita":  "Medio Oriente",
+    "Emiratos":        "Medio Oriente",
+    "Israel":          "Medio Oriente",
+    "Qatar":           "Medio Oriente",
+    "Sudáfrica":       "África",
+    "Egipto":          "África",
+    "Nigeria":         "África",
+    "Otros":           "Otros",
+}
+
 GEO_TRANSLATE_YF = {
     "united states": "Estados Unidos", "mexico": "México", "canada": "Canadá",
     "united kingdom": "Reino Unido", "germany": "Alemania", "france": "Francia",
@@ -192,12 +241,37 @@ GEO_TRANSLATE_YF = {
 }
 
 SEC_TRANSLATE_YF = {
-    "technology": "Tecnología", "financial services": "Financiero",
-    "healthcare": "Salud", "consumer cyclical": "Consumo Discrecional",
-    "industrials": "Industriales", "communication services": "Comunicaciones",
-    "consumer defensive": "Consumo Básico", "energy": "Energía",
-    "basic materials": "Materiales", "real estate": "Bienes Raíces",
-    "utilities": "Utilidades",
+    # Con espacios (formato info/longName)
+    "technology":             "Tecnología",
+    "financial services":     "Financiero",
+    "healthcare":             "Salud",
+    "consumer cyclical":      "Consumo Discrecional",
+    "industrials":            "Industriales",
+    "communication services": "Comunicaciones",
+    "consumer defensive":     "Consumo Básico",
+    "energy":                 "Energía",
+    "basic materials":        "Materiales",
+    "real estate":            "Bienes Raíces",
+    "utilities":              "Utilidades",
+    # Con guiones bajos (formato funds_data/sector_weightings)
+    "technology":             "Tecnología",
+    "financial_services":     "Financiero",
+    "healthcare":             "Salud",
+    "consumer_cyclical":      "Consumo Discrecional",
+    "industrials":            "Industriales",
+    "communication_services": "Comunicaciones",
+    "consumer_defensive":     "Consumo Básico",
+    "energy":                 "Energía",
+    "basic_materials":        "Materiales",
+    "real_estate":            "Bienes Raíces",
+    "utilities":              "Utilidades",
+    # Otros formatos posibles
+    "realestate":             "Bienes Raíces",
+    "consumercyclical":       "Consumo Discrecional",
+    "consumerdefensive":      "Consumo Básico",
+    "communicationservices":  "Comunicaciones",
+    "basicmaterials":         "Materiales",
+    "financialservices":      "Financiero",
 }
 
 # ── Yahoo Finance cookie/crumb cache ──
@@ -470,6 +544,7 @@ def get_accion_yf(ticker: str) -> dict | None:
         moneda     = "MXN" if ticker.endswith(".MX") else "USD"
 
         # Traducciones de países para ETFs
+        # Traducir países de Yahoo Finance a español (luego se mapean a región)
         GEO_PAISES_ETF = {
             "united states": "Estados Unidos", "japan": "Japón",
             "united kingdom": "Reino Unido", "canada": "Canadá",
@@ -481,6 +556,25 @@ def get_accion_yf(ticker: str) -> dict | None:
             "singapore": "Singapur", "brazil": "Brasil", "mexico": "México",
             "spain": "España", "italy": "Italia", "south africa": "Sudáfrica",
             "saudi arabia": "Arabia Saudita", "others": "Otros",
+            "new zealand": "Nueva Zelanda", "norway": "Noruega",
+            "finland": "Finlandia", "belgium": "Bélgica", "ireland": "Irlanda",
+            "austria": "Austria", "portugal": "Portugal",
+            "indonesia": "Indonesia", "thailand": "Tailandia",
+            "malaysia": "Malasia", "philippines": "Filipinas",
+            "vietnam": "Vietnam", "israel": "Israel",
+            "argentina": "Argentina", "chile": "Chile",
+            "colombia": "Colombia", "peru": "Perú",
+            "egypt": "Egipto", "nigeria": "Nigeria",
+            "qatar": "Qatar", "uae": "Emiratos",
+            "united arab emirates": "Emiratos",
+            "north america": "Norteamérica",
+            "eurozone": "Eurozona",
+            "europe": "Europa ex-Euro",
+            "latin america": "América Latina",
+            "asia emerging": "Asia Emergente",
+            "asia developed": "Asia Desarrollada",
+            "asia": "Asia Emergente",
+            "emerging markets": "Asia Emergente",
         }
 
         sectores_etf = {}
@@ -493,36 +587,40 @@ def get_accion_yf(ticker: str) -> dict | None:
                     sw = holdings.sector_weightings or {}
                     if hasattr(sw, 'items'):
                         for s, v in sw.items():
-                            lbl = SEC_TRANSLATE_YF.get(s.lower(), s)
+                            # Normalizar clave: guiones bajos → espacio, lowercase
+                            s_norm = s.lower().replace('_', ' ').strip()
+                            s_raw  = s.lower().replace(' ', '_').strip()
+                            lbl = SEC_TRANSLATE_YF.get(s_norm) or SEC_TRANSLATE_YF.get(s_raw) or SEC_TRANSLATE_YF.get(s.lower(), s_norm)
                             try:
                                 val = float(v)
                                 if val > 0:
-                                    sectores_etf[lbl] = round(val * 100 if val <= 1 else val, 2)
+                                    # Consolidar en el mismo label (no duplicar)
+                                    sectores_etf[lbl] = sectores_etf.get(lbl, 0) + round(val * 100 if val <= 1 else val, 2)
                             except Exception:
                                 pass
 
                 if holdings and hasattr(holdings, "country_weightings"):
                     cw = holdings.country_weightings
+                    def _add_geo(pais_key, v):
+                        p_norm = str(pais_key).lower().replace('_', ' ').strip()
+                        # Traducir a español
+                        pais_es = GEO_PAISES_ETF.get(p_norm, str(pais_key))
+                        # Agrupar en región del sistema
+                        region = PAIS_A_REGION.get(pais_es, pais_es)
+                        try:
+                            val = float(v)
+                            val = val * 100 if val <= 1 else val
+                            if val > 0.1:
+                                geo_etf[region] = geo_etf.get(region, 0) + round(val, 2)
+                        except Exception:
+                            pass
+
                     if hasattr(cw, 'items'):
                         for p_en, v in cw.items():
-                            lbl = GEO_PAISES_ETF.get(str(p_en).lower(), str(p_en))
-                            try:
-                                val = float(v)
-                                val = val * 100 if val <= 1 else val
-                                if val > 0.1:
-                                    geo_etf[lbl] = round(val, 2)
-                            except Exception:
-                                pass
+                            _add_geo(p_en, v)
                     elif hasattr(cw, 'to_dict'):
                         for p_en, v in cw.to_dict().items():
-                            lbl = GEO_PAISES_ETF.get(str(p_en).lower(), str(p_en))
-                            try:
-                                val = float(v)
-                                val = val * 100 if val <= 1 else val
-                                if val > 0.1:
-                                    geo_etf[lbl] = round(val, 2)
-                            except Exception:
-                                pass
+                            _add_geo(p_en, v)
             except Exception as ex:
                 print(f"[YF ETF holdings] {ticker}: {ex}")
 
@@ -530,16 +628,19 @@ def get_accion_yf(ticker: str) -> dict | None:
         ticker_base = ticker.replace(".MX", "").upper()
         if quote_type == "ETF" and not geo_etf:
             ETF_GEO_FALLBACK = {
-                "ACWI":  {"Estados Unidos": 64.0, "Japón": 5.5, "Reino Unido": 3.8, "Francia": 3.2, "Canadá": 2.9, "Suiza": 2.5, "Alemania": 2.2, "Australia": 2.0, "Taiwán": 1.8, "India": 1.7, "Corea del Sur": 1.5, "Otros": 6.9},
-                "SPY":   {"Estados Unidos": 100.0},
-                "IVV":   {"Estados Unidos": 100.0},
-                "VOO":   {"Estados Unidos": 100.0},
-                "QQQ":   {"Estados Unidos": 100.0},
-                "VTI":   {"Estados Unidos": 100.0},
-                "EEM":   {"China": 26.0, "India": 16.0, "Taiwán": 15.0, "Corea del Sur": 12.0, "Brasil": 5.5, "Arabia Saudita": 4.0, "Sudáfrica": 3.5, "Otros": 18.0},
-                "VWO":   {"China": 29.0, "India": 16.0, "Taiwán": 14.0, "Corea del Sur": 11.0, "Brasil": 5.0, "Arabia Saudita": 4.0, "Sudáfrica": 3.0, "Otros": 18.0},
-                "EFA":   {"Japón": 22.0, "Reino Unido": 14.5, "Francia": 11.5, "Suiza": 10.0, "Alemania": 9.0, "Australia": 7.5, "Países Bajos": 4.5, "Suecia": 3.5, "Hong Kong": 3.5, "Otros": 14.0},
-                "IEFA":  {"Japón": 22.0, "Reino Unido": 14.0, "Francia": 11.0, "Suiza": 10.0, "Alemania": 9.0, "Australia": 7.5, "Otros": 26.5},
+                "ACWI":  {"Norteamérica": 66.9, "Eurozona": 9.8, "Europa ex-Euro": 7.2, "Japón": 5.5, "Asia Desarrollada": 4.8, "Asia Emergente": 2.9, "América Latina": 0.8, "Otros": 2.1},
+                "VT":    {"Norteamérica": 66.0, "Eurozona": 9.5, "Europa ex-Euro": 7.0, "Japón": 5.5, "Asia Desarrollada": 4.5, "Asia Emergente": 3.5, "América Latina": 1.5, "Otros": 2.5},
+                "SPY":   {"Norteamérica": 100.0},
+                "IVV":   {"Norteamérica": 100.0},
+                "VOO":   {"Norteamérica": 100.0},
+                "QQQ":   {"Norteamérica": 100.0},
+                "VTI":   {"Norteamérica": 100.0},
+                "EEM":   {"Asia Emergente": 57.0, "Asia Desarrollada": 12.0, "América Latina": 5.5, "Medio Oriente": 4.0, "África": 3.5, "Otros": 18.0},
+                "VWO":   {"Asia Emergente": 60.0, "Asia Desarrollada": 11.0, "América Latina": 5.0, "Medio Oriente": 4.0, "África": 3.0, "Otros": 17.0},
+                "IEMG":  {"Asia Emergente": 58.0, "Asia Desarrollada": 12.0, "América Latina": 5.5, "Medio Oriente": 4.0, "África": 3.5, "Otros": 17.0},
+                "EFA":   {"Japón": 22.0, "Europa ex-Euro": 18.0, "Eurozona": 18.5, "Australasia": 7.5, "Asia Desarrollada": 4.0, "Norteamérica": 0.0, "Otros": 30.0},
+                "IEFA":  {"Japón": 22.0, "Europa ex-Euro": 18.0, "Eurozona": 18.0, "Australasia": 7.5, "Asia Desarrollada": 4.0, "Otros": 30.5},
+                "VEA":   {"Japón": 22.0, "Europa ex-Euro": 17.0, "Eurozona": 17.5, "Australasia": 7.5, "Asia Desarrollada": 4.0, "Otros": 32.0},
             }
             geo_etf = ETF_GEO_FALLBACK.get(ticker_base, ETF_GEO_FALLBACK.get(ticker, {}))
 
@@ -561,6 +662,14 @@ def get_accion_yf(ticker: str) -> dict | None:
         # Geo para acciones individuales
         if not geo_etf and pais:
             geo_etf = {pais: 100.0}
+
+        # Agrupar geo de acciones individuales en región
+        if not (quote_type == "ETF"):
+            geo_por_region = {}
+            for pais_label, v in geo_etf.items():
+                region = PAIS_A_REGION.get(pais_label, pais_label)
+                geo_por_region[region] = geo_por_region.get(region, 0) + v
+            geo_etf = geo_por_region
 
         result = {
             "ticker":        ticker,
@@ -896,12 +1005,14 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
         elif yfd.get("sector"):
             sec_acc[yfd["sector"]] = sec_acc.get(yfd["sector"], 0) + 100 * w
 
-        # Geo: acción/ETF → país
+        # Geo: acción/ETF → agrupar en regiones del sistema (igual que Morningstar)
         if yfd.get("geo"):
             for g, v in yfd["geo"].items():
-                geo_acc[g] = geo_acc.get(g, 0) + v * w
+                region = PAIS_A_REGION.get(g, g)  # mapear país → región
+                geo_acc[region] = geo_acc.get(region, 0) + v * w
         elif yfd.get("pais"):
-            geo_acc[yfd["pais"]] = geo_acc.get(yfd["pais"], 0) + 100 * w
+            region = PAIS_A_REGION.get(yfd["pais"], yfd["pais"])
+            geo_acc[region] = geo_acc.get(region, 0) + 100 * w
 
     has_mxn = bond_mxn_denom > 0
     has_usd = bond_usd_denom > 0
