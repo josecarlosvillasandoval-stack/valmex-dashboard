@@ -99,7 +99,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 .rh-val{font-size:17px;font-weight:800;color:var(--navy);font-family:'Montserrat',sans-serif;line-height:1.1;white-space:nowrap;}
 .rh-val.pos{color:var(--navy);}.rh-val.neg{color:var(--navy);}.rh-val.flat{color:var(--navy);}
 
-/* Drilldown deuda */
+/* Drilldown deuda — mismo grid que rendimientos 2×3, header fusionado arriba */
 .dd-grid{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(3,1fr);gap:4px;}
 .dd-hdr{border-radius:7px;padding:4px 10px;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:11px;font-weight:800;font-family:'Montserrat',sans-serif;letter-spacing:.5px;text-transform:uppercase;}
 .dd-hdr-mxn{background:var(--navy);color:#fff;}
@@ -123,39 +123,6 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 .accion-del{background:none;border:none;color:#aaa;cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0;}
 .accion-del:hover{color:#e74c3c;}
 .accion-loading{font-size:11px;color:var(--blue);font-style:italic;padding:4px;}
-
-/* ── SLOTS ACCIONES — altura fija, sin expansión por contenido ── */
-#act-acciones-grid .fondo-row,
-#prop-acciones-grid .fondo-row {
-  height: 118px;
-  min-height: 118px;
-  max-height: 118px;
-  overflow: hidden;
-  justify-content: flex-start;
-  gap: 3px;
-}
-/* Nombre de acción/ETF: siempre en una línea, cortado con ellipsis */
-#act-acciones-grid .fondo-row .accion-nombre-slot,
-#prop-acciones-grid .fondo-row .accion-nombre-slot {
-  display: block;
-  font-size: 9px;
-  color: var(--gray);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-  line-height: 1.2;
-}
-/* Precio de cierre */
-#act-acciones-grid .fondo-row .accion-precio-slot,
-#prop-acciones-grid .fondo-row .accion-precio-slot {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--sky);
-  white-space: nowrap;
-  line-height: 1.2;
-}
 
 /* ── CONFIGURACIÓN ── */
 .cfg-layout{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch;}
@@ -264,6 +231,52 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 @media print{
   .topbar,.prop-right{display:none!important;}
   body{background:#fff!important;}
+}
+
+/* ── SLOTS ACCIONES ── */
+#act-acciones-grid .fondo-row,
+#prop-acciones-grid .fondo-row {
+  min-height: 185px;
+  max-height: 185px;
+  height: 185px;
+  overflow: hidden;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 10px 10px;
+}
+#act-acciones-grid .fondo-row .accion-ticker-inp,
+#prop-acciones-grid .fondo-row .accion-ticker-inp {
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  height: 32px;
+}
+#act-acciones-grid .fondo-row .accion-nombre-slot,
+#prop-acciones-grid .fondo-row .accion-nombre-slot {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+#act-acciones-grid .fondo-row .accion-precio-slot,
+#prop-acciones-grid .fondo-row .accion-precio-slot {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sky);
+  white-space: nowrap;
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+#act-acciones-grid .fondo-row .fondo-input:not(.accion-ticker-inp),
+#prop-acciones-grid .fondo-row .fondo-input:not(.accion-ticker-inp) {
+  font-size: 14px;
+  height: 32px;
 }
 </style>
 </head>
@@ -389,17 +402,21 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
           </div>
         </div>
 
-        <!-- Drilldown Deuda -->
+        <!-- Drilldown Deuda — 2 columnas MXN / USD -->
         <div class="pcard card-deuda">
           <div class="ph">Drilldown Deuda</div>
           <div class="pb" style="padding:8px;">
             <div class="dd-grid">
+              <!-- Headers -->
               <div class="dd-hdr dd-hdr-mxn">MX</div>
               <div class="dd-hdr dd-hdr-usd">USD</div>
+              <!-- Duración -->
               <div class="dd-block" id="dd-dur-mxn"><span class="rh-pill" style="font-size:12px;">Duración</span><span class="rh-val" id="dd-val-dur-mxn">—</span></div>
               <div class="dd-block" id="dd-dur-usd"><span class="rh-pill" style="font-size:12px;">Duración</span><span class="rh-val" id="dd-val-dur-usd">—</span></div>
+              <!-- YTM -->
               <div class="dd-block" id="dd-ytm-mxn"><span class="rh-pill">YTM</span><span class="rh-val" id="dd-val-ytm-mxn">—</span></div>
               <div class="dd-block" id="dd-ytm-usd"><span class="rh-pill">YTM</span><span class="rh-val" id="dd-val-ytm-usd">—</span></div>
+              <!-- Calificación -->
               <div class="dd-block" id="dd-cred-mxn"><span class="rh-pill">C.Credit.</span><span class="rh-val" id="dd-val-cred-mxn">—</span></div>
               <div class="dd-block" id="dd-cred-usd"><span class="rh-pill">C.Credit.</span><span class="rh-val" id="dd-val-cred-usd">—</span></div>
             </div>
@@ -590,11 +607,13 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 const ALL_FUNDS = ["VXREPO1", "VXGUBCP", "VXUDIMP", "VXDEUDA", "VXGUBLP", "VXTBILL", "VXCOBER", "VLMXETF", "VLMXDME", "VALMXA", "VALMX20", "VALMX28", "VALMXVL", "VALMXES", "VLMXTEC", "VLMXESG", "VALMXHC", "VXINFRA", "VLMXJUB", "VLMXP24", "VLMXP31", "VLMXP38", "VLMXP45", "VLMXP52", "VLMXP59"];
 
 document.addEventListener('DOMContentLoaded',()=>{
+  // ── Privacidad: sin memoria en inputs + borrado total con selección ──
   document.querySelectorAll('input').forEach(inp => {
     inp.setAttribute('autocomplete', 'off');
     inp.setAttribute('autocorrect', 'off');
     inp.setAttribute('autocapitalize', 'off');
     inp.setAttribute('spellcheck', 'false');
+    // Borrar todo cuando hay selección y se presiona Delete/Backspace
     inp.addEventListener('keydown', e => {
       if ((e.key === 'Delete' || e.key === 'Backspace') &&
           inp.selectionStart !== inp.selectionEnd) {
@@ -636,7 +655,7 @@ function formatMonto(el){
   el.value='$'+(p.length>1?p[0]+'.'+p[1].slice(0,2):p[0]);
   ALL_FUNDS.forEach(f=>{ const el=document.getElementById('act-'+f); if(el&&el.value) onActual(f); });
   ALL_FUNDS.forEach(f=>{ const el=document.getElementById('prop-'+f); if(el&&el.value) onProp(f); });
-  calcTotalActual();
+  calcTotalActual();   // re-evalúa rojo/verde al cambiar monto del contrato
 }
 
 function getMonto(){
@@ -673,6 +692,7 @@ function onProp(f){
   calcTotalPropuesta();
 }
 
+// ── Helpers reporto ──
 function getRepoActualMonto(moneda){
   const el=document.getElementById('act-REPO-'+moneda+'-monto');
   return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
@@ -690,6 +710,7 @@ function getRepoPropTasa(moneda){
   return el?parseFloat(el.value.replace(/[^0-9.]/g,''))||0:0;
 }
 
+// Handler separado: campo MONTO del reporto actual
 function onActualRepoMonto(moneda){
   const mEl=document.getElementById('act-REPO-'+moneda+'-monto');
   if(mEl&&mEl.value){
@@ -703,6 +724,7 @@ function onActualRepoMonto(moneda){
   calcTotalActual();
 }
 
+// Handler separado: campo TASA del reporto actual
 function onActualRepoTasa(moneda){
   const tEl=document.getElementById('act-REPO-'+moneda+'-tasa');
   if(tEl&&tEl.value){
@@ -710,11 +732,13 @@ function onActualRepoTasa(moneda){
     if(v){tEl.value=v+'%';const pos=v.length;setTimeout(()=>{try{tEl.setSelectionRange(pos,pos);}catch(e){}},0);}
     else tEl.value='';
   }
-  calcTotalActual();
+  calcTotalActual(); // actualiza borde y color del total en tiempo real
 }
 
+// Mantener onActualRepo como alias por compatibilidad (ya no se usa en HTML pero por si acaso)
 function onActualRepo(moneda){ onActualRepoMonto(moneda); }
 
+// Handler separado: campo PCT del reporto propuesta
 function onPropRepoPct(moneda){
   const pEl=document.getElementById('prop-REPO-'+moneda+'-pct');
   if(pEl&&pEl.value){
@@ -729,6 +753,7 @@ function onPropRepoPct(moneda){
   calcTotalPropuesta();
 }
 
+// Handler separado: campo TASA del reporto propuesta
 function onPropRepoTasa(moneda){
   const tEl=document.getElementById('prop-REPO-'+moneda+'-tasa');
   if(tEl&&tEl.value){
@@ -736,12 +761,14 @@ function onPropRepoTasa(moneda){
     if(v){tEl.value=v+'%';const pos=v.length;setTimeout(()=>{try{tEl.setSelectionRange(pos,pos);}catch(e){}},0);}
     else tEl.value='';
   }
-  calcTotalPropuesta();
+  calcTotalPropuesta(); // actualiza borde y color del total en tiempo real
 }
 
+// Alias por compatibilidad
 function onPropRepo(moneda){ onPropRepoPct(moneda); }
 
 function _validarTasaRepo(moneda, monto, tasa, idTasa) {
+  // Pone borde rojo en campo tasa si hay monto/pct pero no hay tasa
   const tasaEl = document.getElementById(idTasa);
   if (!tasaEl) return;
   if (monto > 0 && tasa <= 0) {
@@ -757,8 +784,10 @@ function calcTotalActual(){
   const mxnMonto = getRepoActualMonto('MXN');
   const usdMonto = getRepoActualMonto('USD');
   t += mxnMonto + usdMonto;
+  // Acciones actual
   _slotsActual.forEach(s => { t += parseFloat((s.monto||'').replace(/[^0-9.]/g,''))||0; });
 
+  // Validar tasa en tiempo real
   _validarTasaRepo('MXN', mxnMonto, getRepoActualTasa('MXN'), 'act-REPO-MXN-tasa');
   _validarTasaRepo('USD', usdMonto, getRepoActualTasa('USD'), 'act-REPO-USD-tasa');
 
@@ -766,6 +795,7 @@ function calcTotalActual(){
   el.textContent = '$'+t.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
   const contrato = getMonto();
 
+  // Rojo si: monto no coincide con contrato O hay repo sin tasa
   const repoSinTasa = (mxnMonto > 0 && getRepoActualTasa('MXN') <= 0) ||
                       (usdMonto > 0 && getRepoActualTasa('USD') <= 0);
   if (t === 0) { el.className = ''; }
@@ -781,14 +811,17 @@ function calcTotalPropuesta(){
   const mxnPct = getRepoPropPct('MXN');
   const usdPct = getRepoPropPct('USD');
   t += mxnPct + usdPct;
+  // Acciones propuesta
   _slotsProp.forEach(s => { t += parseFloat(s.pct||0)||0; });
 
+  // Validar tasa en tiempo real
   _validarTasaRepo('MXN', mxnPct, getRepoPropTasa('MXN'), 'prop-REPO-MXN-tasa');
   _validarTasaRepo('USD', usdPct, getRepoPropTasa('USD'), 'prop-REPO-USD-tasa');
 
   const el = document.getElementById('total-propuesta');
   el.textContent = t.toFixed(2)+'%';
 
+  // Rojo si: suma ≠ 100% O hay repo sin tasa
   const repoSinTasa = (mxnPct > 0 && getRepoPropTasa('MXN') <= 0) ||
                       (usdPct > 0 && getRepoPropTasa('USD') <= 0);
   if (t === 0) { el.className = ''; }
@@ -797,25 +830,18 @@ function calcTotalPropuesta(){
 }
 
 function guardarCliente(){alert('✅ Datos del cliente guardados.');}
+// Alias para llamadas desde renderAccionProp
 function calcTotalProp() { calcTotalPropuesta(); }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ACCIONES & ETFs — Slots expandibles
+// ACCIONES & ETFs — Slots expandibles (6 iniciales, +3 cuando se llenan)
 // ─────────────────────────────────────────────────────────────────────────────
+// Cada slot: { ticker:'', nombre:'', tipo:'', monto:'', pct:'', loading:false, error:'' }
 const SLOTS_INICIALES = 6;
 const SLOTS_BLOQUE    = 3;
 
-// Cada slot incluye precio_cierre y moneda_precio para mostrar debajo del nombre
-let _slotsActual = Array.from({length: SLOTS_INICIALES}, () => ({
-  ticker:'', nombre:'', tipo:'', monto:'',
-  precio_cierre: null, moneda_precio: 'MXN',
-  loading:false, error:''
-}));
-let _slotsProp = Array.from({length: SLOTS_INICIALES}, () => ({
-  ticker:'', nombre:'', tipo:'', pct:'',
-  precio_cierre: null, moneda_precio: 'MXN',
-  loading:false, error:''
-}));
+let _slotsActual = Array.from({length: SLOTS_INICIALES}, () => ({ticker:'',nombre:'',tipo:'',monto:'',loading:false,error:''}));
+let _slotsProp   = Array.from({length: SLOTS_INICIALES}, () => ({ticker:'',nombre:'',tipo:'',pct:'',loading:false,error:''}));
 
 // ── Render grid ACTUAL ──
 function renderSlotsActual() {
@@ -826,60 +852,44 @@ function renderSlotsActual() {
   _slotsActual.forEach((slot, i) => {
     const val = parseFloat((slot.monto||'').replace(/[^0-9.]/g,'')) || 0;
     const pct = monto > 0 && val > 0 ? (val/monto*100).toFixed(2)+'%' : '0.00%';
-
-    // Precio de cierre formateado
     const precioStr = slot.precio_cierre != null
-      ? (slot.moneda_precio === 'MXN' ? '$' : 'USD ') +
+      ? 'P. Accs.: ' + (slot.moneda_precio === 'MXN' ? '$' : 'USD ') +
         slot.precio_cierre.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})
       : '';
-
     const card = document.createElement('div');
     card.className = 'fondo-row actual';
-    card.style.borderLeftColor = slot.ticker ? 'var(--sky)' : 'var(--silver)';
+    card.style.cssText = 'min-height:185px;max-height:185px;height:185px;overflow:hidden;gap:5px;border-left-color:' + (slot.ticker ? 'var(--sky)' : 'var(--silver)');
     card.innerHTML = `
       <input class="fondo-input accion-ticker-inp" type="text"
              placeholder="Ticker (ej. AMZN)"
              value="${slot.ticker}"
-             style="font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;text-align:left;padding:4px 6px;"
+             style="font-size:14px;font-weight:800;color:var(--navy);text-transform:uppercase;text-align:left;padding:5px 7px;height:32px;"
              onblur="commitSlotActual(${i}, this.value)"
              onkeydown="if(event.key==='Enter'){this.blur();}"
              autocomplete="off">
-      ${slot.loading
-        ? '<span style="font-size:9px;color:var(--blue);font-style:italic;display:block;overflow:hidden;white-space:nowrap;">buscando...</span>'
-        : ''
-      }
-      ${slot.nombre && !slot.loading
-        ? `<span class="accion-nombre-slot" title="${slot.nombre}">${slot.nombre}</span>
-           <span class="accion-precio-slot">${precioStr}</span>`
-        : ''
-      }
-      ${slot.error
-        ? `<span style="font-size:9px;color:#e74c3c;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>`
-        : ''
-      }
-      <input class="fondo-input" type="text" placeholder="$0.00"
+      ${slot.loading ? '<span style="font-size:11px;color:var(--blue);font-style:italic;display:block;line-height:1.5;">Buscando...</span>' : ''}
+      ${slot.nombre && !slot.loading ? `
+        <span style="display:block;font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;margin-top:1px;" title="${slot.nombre}">${slot.nombre}</span>
+        <span style="display:block;font-size:13px;font-weight:700;color:var(--sky);white-space:nowrap;line-height:1.4;margin-bottom:2px;">${precioStr}</span>` : ''}
+      ${slot.error ? `<span style="font-size:11px;color:#e74c3c;display:block;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>` : ''}
+      <input class="fondo-input" type="text" placeholder="Monto $"
              value="${slot.monto}"
-             ${!slot.nombre ? 'disabled style="opacity:0.4;"' : ''}
-             oninput="onSlotActualMonto(${i}, this.value)"
+             ${!slot.nombre ? 'disabled style="opacity:0.4;font-size:13px;"' : 'style="font-size:13px;"'}
+             id="act-slot-monto-${i}"
+             oninput="onSlotActualMontoLive(${i}, this)"
              autocomplete="off">
-      <span class="fondo-pct">${pct}</span>`;
+      <span class="fondo-pct" id="act-slot-pct-${i}" style="font-size:13px;font-weight:700;">${pct}</span>`;
     grid.appendChild(card);
   });
-
   const validados = _slotsActual.filter(s => s.nombre).length;
   const totalSlots = _slotsActual.length;
   if (validados > 0 && validados >= totalSlots) {
-    _slotsActual.push(...Array.from({length: SLOTS_BLOQUE}, () => ({
-      ticker:'', nombre:'', tipo:'', monto:'',
-      precio_cierre: null, moneda_precio: 'MXN',
-      loading:false, error:''
-    })));
+    _slotsActual.push(...Array.from({length: SLOTS_BLOQUE}, () => ({ticker:'',nombre:'',tipo:'',monto:'',precio_cierre:null,moneda_precio:'MXN',loading:false,error:''})));
     renderSlotsActual();
     return;
   }
   calcTotalActual();
 }
-
 // ── Render grid PROPUESTA ──
 function renderSlotsProp() {
   const grid  = document.getElementById('prop-acciones-grid');
@@ -891,74 +901,63 @@ function renderSlotsProp() {
     const mon = monto > 0 && pct > 0
       ? '$'+(monto*pct/100).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})
       : '$0.00';
-
-    // Precio de cierre formateado
     const precioStr = slot.precio_cierre != null
-      ? (slot.moneda_precio === 'MXN' ? '$' : 'USD ') +
+      ? 'P. Accs.: ' + (slot.moneda_precio === 'MXN' ? '$' : 'USD ') +
         slot.precio_cierre.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})
       : '';
-
     const card = document.createElement('div');
     card.className = 'fondo-row propuesta';
-    card.style.borderLeftColor = slot.ticker ? 'var(--sky)' : 'var(--silver)';
+    card.style.cssText = 'min-height:185px;max-height:185px;height:185px;overflow:hidden;gap:5px;border-left-color:' + (slot.ticker ? 'var(--sky)' : 'var(--silver)');
     card.innerHTML = `
       <input class="fondo-input accion-ticker-inp" type="text"
              placeholder="Ticker (ej. AMZN)"
              value="${slot.ticker}"
-             style="font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;text-align:left;padding:4px 6px;"
+             style="font-size:14px;font-weight:800;color:var(--navy);text-transform:uppercase;text-align:left;padding:5px 7px;height:32px;"
              onblur="commitSlotProp(${i}, this.value)"
              onkeydown="if(event.key==='Enter'){this.blur();}"
              autocomplete="off">
-      ${slot.loading
-        ? '<span style="font-size:9px;color:var(--blue);font-style:italic;display:block;overflow:hidden;white-space:nowrap;">buscando...</span>'
-        : ''
-      }
-      ${slot.nombre && !slot.loading
-        ? `<span class="accion-nombre-slot" title="${slot.nombre}">${slot.nombre}</span>
-           <span class="accion-precio-slot">${precioStr}</span>`
-        : ''
-      }
-      ${slot.error
-        ? `<span style="font-size:9px;color:#e74c3c;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>`
-        : ''
-      }
+      ${slot.loading ? '<span style="font-size:11px;color:var(--blue);font-style:italic;display:block;line-height:1.5;">Buscando...</span>' : ''}
+      ${slot.nombre && !slot.loading ? `
+        <span style="display:block;font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;margin-top:1px;" title="${slot.nombre}">${slot.nombre}</span>
+        <span style="display:block;font-size:13px;font-weight:700;color:var(--sky);white-space:nowrap;line-height:1.4;margin-bottom:2px;">${precioStr}</span>` : ''}
+      ${slot.error ? `<span style="font-size:11px;color:#e74c3c;display:block;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>` : ''}
       <input class="fondo-input" type="text" placeholder="0.00%"
              value="${slot.pct ? slot.pct+'%' : ''}"
-             ${!slot.nombre ? 'disabled style="opacity:0.4;"' : ''}
-             oninput="onSlotPropPct(${i}, this.value)"
+             ${!slot.nombre ? 'disabled style="opacity:0.4;font-size:13px;"' : 'style="font-size:13px;"'}
+             id="prop-slot-pct-${i}"
+             oninput="onSlotPropPctLive(${i}, this)"
              autocomplete="off">
-      <span class="fondo-monto">${mon}</span>`;
+      <span class="fondo-monto" id="prop-slot-mon-${i}" style="font-size:13px;font-weight:700;">${mon}</span>`;
     grid.appendChild(card);
   });
-
   const validados = _slotsProp.filter(s => s.nombre).length;
   const totalSlots = _slotsProp.length;
   if (validados > 0 && validados >= totalSlots) {
-    _slotsProp.push(...Array.from({length: SLOTS_BLOQUE}, () => ({
-      ticker:'', nombre:'', tipo:'', pct:'',
-      precio_cierre: null, moneda_precio: 'MXN',
-      loading:false, error:''
-    })));
+    _slotsProp.push(...Array.from({length: SLOTS_BLOQUE}, () => ({ticker:'',nombre:'',tipo:'',pct:'',precio_cierre:null,moneda_precio:'MXN',loading:false,error:''})));
     renderSlotsProp();
     return;
   }
   calcTotalProp();
 }
-
 // ── Handlers ticker ──
+// commit: se llama al blur/Enter — actualiza estado y valida sin re-render en cada tecla
 function commitSlotActual(i, val) {
   const ticker = val.toUpperCase().trim();
   if (!ticker) {
-    _slotsActual[i] = { ticker:'', nombre:'', tipo:'', monto: _slotsActual[i].monto || '', precio_cierre: null, moneda_precio: 'MXN', loading:false, error:'' };
+    // Campo vacío — limpiar slot sin validar
+    _slotsActual[i].ticker = '';
+    _slotsActual[i].nombre = '';
+    _slotsActual[i].tipo   = '';
+    _slotsActual[i].error  = '';
     renderSlotsActual();
     return;
   }
+  // Si el ticker no cambió y ya está validado, no hacer nada
   const tickerMX = ticker.endsWith('.MX') ? ticker : ticker + '.MX';
   if (_slotsActual[i].nombre && _slotsActual[i].ticker === tickerMX) return;
   _slotsActual[i].ticker = ticker;
   _slotsActual[i].nombre = '';
   _slotsActual[i].tipo   = '';
-  _slotsActual[i].precio_cierre = null;
   _slotsActual[i].error  = '';
   validarSlotActual(i);
 }
@@ -966,7 +965,10 @@ function commitSlotActual(i, val) {
 function commitSlotProp(i, val) {
   const ticker = val.toUpperCase().trim();
   if (!ticker) {
-    _slotsProp[i] = { ticker:'', nombre:'', tipo:'', pct: _slotsProp[i].pct || '', precio_cierre: null, moneda_precio: 'MXN', loading:false, error:'' };
+    _slotsProp[i].ticker = '';
+    _slotsProp[i].nombre = '';
+    _slotsProp[i].tipo   = '';
+    _slotsProp[i].error  = '';
     renderSlotsProp();
     return;
   }
@@ -975,7 +977,6 @@ function commitSlotProp(i, val) {
   _slotsProp[i].ticker = ticker;
   _slotsProp[i].nombre = '';
   _slotsProp[i].tipo   = '';
-  _slotsProp[i].precio_cierre = null;
   _slotsProp[i].error  = '';
   validarSlotProp(i);
 }
@@ -984,7 +985,6 @@ function onSlotActualTicker(i, val) {
   _slotsActual[i].ticker  = val.toUpperCase().trim();
   _slotsActual[i].nombre  = '';
   _slotsActual[i].tipo    = '';
-  _slotsActual[i].precio_cierre = null;
   _slotsActual[i].error   = '';
   renderSlotsActual();
 }
@@ -992,15 +992,14 @@ function onSlotPropTicker(i, val) {
   _slotsProp[i].ticker = val.toUpperCase().trim();
   _slotsProp[i].nombre = '';
   _slotsProp[i].tipo   = '';
-  _slotsProp[i].precio_cierre = null;
   _slotsProp[i].error  = '';
   renderSlotsProp();
 }
 
-// ── Validar ticker contra backend ──
+// ── Validar ticker contra backend al salir del campo ──
 async function validarSlotActual(i) {
   const ticker = _slotsActual[i].ticker;
-  if (!ticker || _slotsActual[i].nombre) return;
+  if (!ticker || _slotsActual[i].nombre) return; // ya validado
   _slotsActual[i].loading = true;
   renderSlotsActual();
   try {
@@ -1012,12 +1011,11 @@ async function validarSlotActual(i) {
     const d = await r.json();
     _slotsActual[i].loading = false;
     if (d.ok) {
+      // Normalizar ticker con .MX si no lo tiene
       if (!_slotsActual[i].ticker.endsWith('.MX')) _slotsActual[i].ticker += '.MX';
-      _slotsActual[i].nombre        = d.data.nombre;
-      _slotsActual[i].tipo          = d.data.tipo;
-      _slotsActual[i].precio_cierre = d.data.precio_cierre ?? null;   // ← precio último cierre
-      _slotsActual[i].moneda_precio = d.data.moneda_precio ?? 'MXN';  // ← moneda del precio
-      _slotsActual[i].error         = '';
+      _slotsActual[i].nombre = d.data.nombre;
+      _slotsActual[i].tipo   = d.data.tipo;
+      _slotsActual[i].error  = '';
     } else {
       _slotsActual[i].error  = d.error || 'No encontrado';
       _slotsActual[i].ticker = '';
@@ -1043,12 +1041,11 @@ async function validarSlotProp(i) {
     const d = await r.json();
     _slotsProp[i].loading = false;
     if (d.ok) {
+      // Normalizar ticker con .MX si no lo tiene
       if (!_slotsProp[i].ticker.endsWith('.MX')) _slotsProp[i].ticker += '.MX';
-      _slotsProp[i].nombre        = d.data.nombre;
-      _slotsProp[i].tipo          = d.data.tipo;
-      _slotsProp[i].precio_cierre = d.data.precio_cierre ?? null;   // ← precio último cierre
-      _slotsProp[i].moneda_precio = d.data.moneda_precio ?? 'MXN';  // ← moneda del precio
-      _slotsProp[i].error         = '';
+      _slotsProp[i].nombre = d.data.nombre;
+      _slotsProp[i].tipo   = d.data.tipo;
+      _slotsProp[i].error  = '';
     } else {
       _slotsProp[i].error  = d.error || 'No encontrado';
       _slotsProp[i].ticker = '';
@@ -1061,16 +1058,83 @@ async function validarSlotProp(i) {
 }
 
 // ── Handlers monto/pct ──
+// Versión "live" — no re-renderiza, actualiza solo el DOM local
+function onSlotActualMontoLive(i, inp) {
+  // Limpiar caracteres no numéricos pero NO reformatear el valor del input
+  // para no mover el cursor mientras el usuario escribe
+  let v = inp.value.replace(/[^0-9.]/g,'');
+  // Solo un punto decimal permitido
+  const parts = v.split('.');
+  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+  // Guardar en estado (con $ para que se muestre bien al re-render)
+  _slotsActual[i].monto = v ? '$' + v : '';
+  // Actualizar SOLO el span de porcentaje, sin re-render del input
+  const monto = parseFloat(v) || 0;
+  const contrato = getMontoContrato();
+  const pctSpan = document.getElementById('act-slot-pct-' + i);
+  if (pctSpan) pctSpan.textContent = contrato > 0 && monto > 0
+    ? (monto/contrato*100).toFixed(2)+'%' : '0.00%';
+  calcTotalActual();
+}
+
+function onSlotPropPctLive(i, inp) {
+  // Limpiar % y no-numéricos sin tocar el valor visible del input
+  let v = inp.value.replace(/[^0-9.]/g,'');
+  const parts = v.split('.');
+  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+  _slotsProp[i].pct = v;
+  // Solo actualizar el span de monto, sin re-render
+  const pct = parseFloat(v) || 0;
+  const contrato = getMontoContrato();
+  const monSpan = document.getElementById('prop-slot-mon-' + i);
+  if (monSpan) monSpan.textContent = contrato > 0 && pct > 0
+    ? '$'+(contrato*pct/100).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})
+    : '$0.00';
+  calcTotalProp();
+}
+
+// ── Handlers monto/pct ──
 function onSlotActualMonto(i, val) {
+  // Permitir cualquier número, incluyendo decimales pequeños (ej. 0.001)
   let v = val.replace(/[^0-9.]/g,'');
-  const p = v.split('.');
-  p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
-  _slotsActual[i].monto = '$'+(p.length>1?p[0]+'.'+p[1].slice(0,2):p[0]);
-  renderSlotsActual();
+  // Solo un punto decimal
+  const dotIdx = v.indexOf('.');
+  if (dotIdx >= 0) v = v.slice(0, dotIdx+1) + v.slice(dotIdx+1).replace(/\./g, '');
+  // Guardar sin '$' para no interferir con el cursor del input
+  _slotsActual[i].monto = v;
+  // Actualizar pct sin destruir el input
+  const grid = document.getElementById('act-acciones-grid');
+  if (!grid) { calcTotalActual(); return; }
+  const contrato = getMontoContrato();
+  const val2 = parseFloat(v) || 0;
+  const pct = contrato > 0 && val2 > 0 ? (val2/contrato*100).toFixed(3)+'%' : '0.00%';
+  const cards = grid.querySelectorAll('.fondo-row');
+  if (cards[i]) {
+    const pctEl = cards[i].querySelector('.fondo-pct');
+    if (pctEl) pctEl.textContent = pct;
+  }
+  calcTotalActual();
 }
 function onSlotPropPct(i, val) {
-  _slotsProp[i].pct = val.replace(/[^0-9.]/g,'');
-  renderSlotsProp();
+  // Guardar valor sin formatear — solo números y punto
+  let v = val.replace(/[^0-9.]/g,'');
+  const parts = v.split('.');
+  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+  _slotsProp[i].pct = v;
+  // NO hacer renderSlotsProp() — solo actualizar monto sin destruir el input
+  const grid = document.getElementById('prop-acciones-grid');
+  if (!grid) return;
+  const monto = getMontoContrato();
+  const pct = parseFloat(v) || 0;
+  const mon = monto > 0 && pct > 0
+    ? '$'+(monto*pct/100).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})
+    : '$0.00';
+  const cards = grid.querySelectorAll('.fondo-row');
+  if (cards[i]) {
+    const monEl = cards[i].querySelector('.fondo-monto');
+    if (monEl) monEl.textContent = mon;
+  }
+  calcTotalProp();
 }
 
 // ── Init al cargar ──
@@ -1098,6 +1162,7 @@ function guardarActual(){
   } else if (tasaUSDEl) tasaUSDEl.style.border = '';
   alert('✅ Cartera Actual guardada.');
 }
+// guardarPropuesta — definida en sección principal
 
 // ── FECHA DINÁMICA ──
 (function(){
@@ -1116,7 +1181,7 @@ function guardarActual(){
 })();
 
 
-// ── TASA DE REFERENCIA ──
+// ── TASA DE REFERENCIA (Banxico Fondeo / SOFR) ──
 let _tasaRefMXN = null, _tasaRefUSD = null;
 async function cargarTasasRef(){
   try{
@@ -1301,6 +1366,10 @@ requestAnimationFrame(()=>{
   charts.geo    = donut('c-geo',   ['Norte-América','Eurozona','Europa','América Latina','Otros emergentes','Asia Emergente','Japón','Asia-Pacífico'],[65.49,12.81,7.66,3.89,3.25,2.37,2.3,2.23],PAL.slice(0,8),refRadius);
 });
 
+// ══════════════════════════════════════════════════════════════════════════
+// Auto-cargar comparativa al entrar a la pestaña — pendiente de implementar
+// ══════════════════════════════════════════════════════════════════════════
+
 // PDF Export
 document.getElementById('btn-pdf').addEventListener('click',async()=>{
   const {jsPDF}=window.jspdf;
@@ -1371,10 +1440,12 @@ async function cargarPortafolio() {
       const v  = parseFloat((el?.value || '').replace(/[^0-9.]/g, '')) || 0;
       if (v > 0) { fondos[f] = v; total += v; }
     });
+    // reporto actual
     const repoMXNMonto = getRepoActualMonto('MXN');
     const repoUSDMonto = getRepoActualMonto('USD');
     const repoMXNTasa  = getRepoActualTasa('MXN');
     const repoUSDTasa  = getRepoActualTasa('USD');
+    // Validación: monto sin tasa → bloquear
     const tasaMXNEl = document.getElementById('act-REPO-MXN-tasa');
     const tasaUSDEl = document.getElementById('act-REPO-USD-tasa');
     if (repoMXNMonto > 0 && repoMXNTasa <= 0) {
@@ -1388,12 +1459,21 @@ async function cargarPortafolio() {
       if (sel) sel.value = 'perfil_3'; return;
     } else if (tasaUSDEl) tasaUSDEl.style.border = '';
     total += repoMXNMonto + repoUSDMonto;
+    // Sumar montos de acciones & ETFs al total
+    const accionesActualPayload = _slotsActual
+      .filter(s => s.ticker && s.nombre && parseFloat((s.monto||'').replace(/[^0-9.]/g,'')) > 0)
+      .map(s => ({ ticker: s.ticker, monto: parseFloat((s.monto||'').replace(/[^0-9.]/g,'')) }));
+    const totalAccionesActual = accionesActualPayload.reduce((sum, a) => sum + a.monto, 0);
+    total += totalAccionesActual;
     if (total === 0) { alert('⚠️ Cartera Actual vacía.\nLlena los montos en Configuración → Cartera Actual.'); if (sel) sel.value = 'perfil_3'; return; }
     const pcts = {};
     Object.entries(fondos).forEach(([f, v]) => { pcts[f] = (v / total) * 100; });
     body.modo = 'actual'; body.fondos = pcts;
     if (repoMXNMonto > 0) body.repo_mxn = { pct: (repoMXNMonto / total) * 100, tasa: repoMXNTasa };
     if (repoUSDMonto > 0) body.repo_usd = { pct: (repoUSDMonto / total) * 100, tasa: repoUSDTasa };
+    if (accionesActualPayload.length > 0) {
+      body.acciones = accionesActualPayload.map(a => ({ ticker: a.ticker, pct: (a.monto / total) * 100 }));
+    }
   } else {
     const fondos = {}; let total = 0;
     ALL_FUNDS.forEach(f => {
@@ -1401,10 +1481,12 @@ async function cargarPortafolio() {
       const v  = parseFloat((el?.value || '').replace(/[^0-9.%]/g, '')) || 0;
       if (v > 0) { fondos[f] = v; total += v; }
     });
+    // reporto propuesta
     const repoMXNPct  = getRepoPropPct('MXN');
     const repoUSDPct  = getRepoPropPct('USD');
     const repoMXNTasa = getRepoPropTasa('MXN');
     const repoUSDTasa = getRepoPropTasa('USD');
+    // Validación: % sin tasa → bloquear
     const tasaMXNPEl = document.getElementById('prop-REPO-MXN-tasa');
     const tasaUSDPEl = document.getElementById('prop-REPO-USD-tasa');
     if (repoMXNPct > 0 && repoMXNTasa <= 0) {
@@ -1417,6 +1499,7 @@ async function cargarPortafolio() {
       alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
       if (sel) sel.value = 'perfil_3'; return;
     } else if (tasaUSDPEl) tasaUSDPEl.style.border = '';
+    // Acciones & ETFs propuesta
     const accionesPropPayload = _slotsProp
       .filter(s => s.ticker && s.nombre && parseFloat(s.pct) > 0)
       .map(s => ({ ticker: s.ticker, pct: parseFloat(s.pct) }));
@@ -1465,26 +1548,43 @@ function aplicarDatos(data, valor) {
     charts.comp.update('none');
   }
 
-  // ── Backtesting: curva de reporto ──
+  // ── Backtesting: agregar curva de reporto si existe ──
   if (charts.linea && data.bt_repo?.length) {
     const btRepo = data.bt_repo;
-    const años = charts.linea.data.labels;
+
+    // Alinear fechas con el eje X existente (años enteros)
+    // Construir serie mensual base 100 desde primer punto disponible
+    // Normalizar a base 100 en la fecha de inicio del gráfico
+    const primeraFecha = btRepo[0].fecha;
+    const primerValor  = btRepo[0].valor;
+
+    // Filtrar solo puntos de enero de cada año para coincidir con el eje
+    const años = charts.linea.data.labels;  // ej. ['2016','2017',...,'2024']
     const serieRepo = años.map(anio => {
+      // Buscar punto de enero de ese año en bt_repo
       const pt = btRepo.find(p => p.fecha.startsWith(anio + '-01') || p.fecha.startsWith(anio));
       if (!pt) return null;
+      // Normalizar a base 100 desde el primer punto del gráfico
       const primerPtAnio = btRepo.find(p => p.fecha.startsWith(años[0]));
       const base = primerPtAnio ? primerPtAnio.valor : pt.valor;
       return Math.round((pt.valor / base) * 100 * 100) / 100;
     });
 
+    // Verificar si ya existe dataset de reporto
     const dsExistente = charts.linea.data.datasets.findIndex(ds => ds._esRepo);
     const dsRepo = {
-      label:'Reporto directo', data:serieRepo,
-      borderColor:'#F59E0B', backgroundColor:'transparent',
-      borderWidth:2, borderDash:[3,3],
-      pointRadius:2, pointBackgroundColor:'#F59E0B',
-      pointBorderColor:'#fff', pointBorderWidth:1.5,
-      tension:.35, _esRepo:true,
+      label:           'Reporto directo',
+      data:            serieRepo,
+      borderColor:     '#F59E0B',
+      backgroundColor: 'transparent',
+      borderWidth:     2,
+      borderDash:      [3, 3],
+      pointRadius:     2,
+      pointBackgroundColor: '#F59E0B',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 1.5,
+      tension:         .35,
+      _esRepo:         true,
     };
 
     if (dsExistente >= 0) {
@@ -1494,10 +1594,13 @@ function aplicarDatos(data, valor) {
     }
     charts.linea.update('none');
   } else if (charts.linea) {
+    // Quitar curva de reporto si no hay datos
     charts.linea.data.datasets = charts.linea.data.datasets.filter(ds => !ds._esRepo);
     charts.linea.update('none');
   }
 
+  // ── Clase de activos — "Reporto" ya viene del backend ──
+  // Helper: ordena labels+values de mayor a menor, filtra < 0.01, asigna PAL
   function sortedPie(labels, values) {
     const pairs = labels.map((l, i) => [l, values[i]]).filter(p => p[1] > 0.01);
     pairs.sort((a, b) => b[1] - a[1]);
@@ -1521,6 +1624,7 @@ function aplicarDatos(data, valor) {
     charts.clase.update();
   }
 
+  // ── Pie central: Geo RV si hay RV, Tipo de Deuda si solo deuda ──
   if (charts.geo) {
     charts.geo.data.labels = [];
     charts.geo.data.datasets[0].data = [];
@@ -1542,6 +1646,7 @@ function aplicarDatos(data, valor) {
     charts.geo.update();
   }
 
+  // ── Sectores ──
   if (charts.sector) {
     const pcardSector = document.getElementById('pcard-sector');
     charts.sector.data.labels = [];
@@ -1554,23 +1659,27 @@ function aplicarDatos(data, valor) {
       charts.sector.data.datasets[0].backgroundColor = colors;
       if (pcardSector) pcardSector.style.display = '';
     } else {
+      // Sin RV: ocultar pie sectorial completamente
       if (pcardSector) pcardSector.style.display = 'none';
     }
     charts.sector.update();
   }
 
-  // ── Drilldown Deuda ──
+  // ── Drilldown Deuda — MXN / USD ──
   if (data.deuda) {
     const d = data.deuda;
 
+    // Helpers
     const setVal = (id, txt, empty) => {
       const el = document.getElementById(id);
       if (!el) return;
       el.textContent = txt;
+      // Marcar bloque vacío si no hay datos
       const block = el.closest('.dd-block');
       if (block) block.classList.toggle('empty', !!empty);
     };
 
+    // Helper especial para duración — número grande + "años" pequeño misma línea
     const setDur = (id, val, empty) => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -1624,6 +1733,7 @@ function guardarPropuesta() {
   cargarPortafolio();
 }
 
+// Cargar tasas al inicio (sin bloquear navegación)
 window.addEventListener('DOMContentLoaded', () => { cargarTasasRef(); });
 </script>
 </body>
