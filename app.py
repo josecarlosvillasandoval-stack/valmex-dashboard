@@ -174,7 +174,7 @@ def cargar_catalogo_emisoras(forzar: bool = False) -> dict:
         return {}
 
     catalogo = {}
-    # DataBursatil permite filtrar por mercado; sin 'letra' devuelve todas
+    # Respuesta de DataBursatil: {emisora: {serie: {campos}}}
     for mercado in ["local", "global"]:
         try:
             r = requests.get(
@@ -183,32 +183,37 @@ def cargar_catalogo_emisoras(forzar: bool = False) -> dict:
                 timeout=30,
             )
             r.raise_for_status()
-            em_raw = r.json()
-            items  = em_raw if isinstance(em_raw, list) else em_raw.get("data", [])
-            for item in items:
-                e = (item.get("Emisora") or "").strip().upper()
-                s = (item.get("Serie")   or "").strip().upper()
-                if not e:
+            data  = r.json()  # {emisora: {serie: {campos}}}
+            count = 0
+            for emisora, series in data.items():
+                if not isinstance(series, dict):
                     continue
-                ticker_db = e + s          # formato DataBursatil: "GMEXICOB"
-                yf_ticker = ticker_db + ".MX"  # formato Yahoo Finance: "GMEXICOB.MX"
-                tv = (item.get("tipo_valor_descripcion") or "").upper()
-                if "FIBRA" in tv or "FIDEICOMISO" in tv:
-                    tipo = "FIBRA"
-                elif "ETF" in tv or "TRAC" in tv or "FONDO" in tv:
-                    tipo = "ETF"
-                else:
-                    tipo = "Acción"
-                catalogo[ticker_db] = {
-                    "ticker_db": ticker_db,
-                    "yf_ticker": yf_ticker,
-                    "nombre":    item.get("razon_social") or ticker_db,
-                    "bolsa":     item.get("bolsa", "").upper(),
-                    "tipo":      tipo,
-                    "mercado":   mercado,   # "local" = BMV/BIVA, "global" = SIC
-                    "isin":      item.get("isin", ""),
-                }
-            print(f"[CATALOGO] {mercado}: {len(items)} emisoras cargadas")
+                for serie, campos in series.items():
+                    if not isinstance(campos, dict):
+                        continue
+                    ticker_db = emisora.strip().upper() + serie.strip().upper()
+                    yf_ticker = ticker_db + ".MX"
+                    tv = (campos.get("tipo_valor_descripcion") or "").upper()
+                    if "FIBRA" in tv or "FIDEICOMISO" in tv:
+                        tipo = "FIBRA"
+                    elif "ETF" in tv or "TRAC" in tv or "FONDO" in tv:
+                        tipo = "ETF"
+                    elif "SIC" in tv or "SISTEMA INTERNACIONAL" in tv:
+                        tipo = "SIC"
+                    else:
+                        tipo = "Acción"
+                    catalogo[ticker_db] = {
+                        "ticker_db": ticker_db,
+                        "yf_ticker": yf_ticker,
+                        "nombre":    campos.get("razon_social") or ticker_db,
+                        "bolsa":     (campos.get("bolsa") or "").upper(),
+                        "tipo":      tipo,
+                        "mercado":   mercado,
+                        "isin":      campos.get("isin", ""),
+                        "estatus":   campos.get("estatus", ""),
+                    }
+                    count += 1
+            print(f"[CATALOGO] {mercado}: {count} emisoras cargadas")
         except Exception as e:
             print(f"[CATALOGO ERROR] mercado={mercado}: {e}")
 
