@@ -173,6 +173,64 @@ SEC_TRANSLATE_YF = {
 }
 
 
+
+# ── Cookie cache para Yahoo Finance ──
+_yf_cookie_cache: dict = {}   # {"cookie": str, "crumb": str, "ts": float}
+_YF_COOKIE_TTL = 3600  # renovar cookie cada hora
+
+def _ensure_yf_cookie(session: requests.Session) -> None:
+    """
+    Obtiene y cachea cookie + crumb de Yahoo Finance.
+    Sin esto, Yahoo bloquea requests desde servidores cloud.
+    """
+    global _yf_cookie_cache
+    now = time.time()
+
+    # Si tenemos cookie válida, aplicarla a la sesión y listo
+    if _yf_cookie_cache.get("cookie") and (now - _yf_cookie_cache.get("ts", 0)) < _YF_COOKIE_TTL:
+        session.cookies.set("B", _yf_cookie_cache["cookie"], domain=".yahoo.com")
+        return
+
+    try:
+        # Paso 1: obtener cookie visitando Yahoo Finance
+        r1 = requests.get(
+            "https://fc.yahoo.com",
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            },
+            timeout=10,
+            allow_redirects=True
+        )
+        cookie_val = r1.cookies.get("B") or ""
+
+        # Paso 2: obtener crumb con la cookie
+        r2 = requests.get(
+            "https://query2.finance.yahoo.com/v1/test/getcrumb",
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Cookie": f"B={cookie_val}",
+            },
+            timeout=10
+        )
+        crumb = r2.text.strip()
+
+        if cookie_val and crumb and crumb != "":
+            _yf_cookie_cache = {"cookie": cookie_val, "crumb": crumb, "ts": now}
+            session.cookies.set("B", cookie_val, domain=".yahoo.com")
+            # Configurar crumb en yfinance globalmente
+            try:
+                yf.utils.get_crumb = lambda *a, **kw: crumb
+            except Exception:
+                pass
+            print(f"[YF COOKIE] OK — crumb={crumb[:8]}...")
+        else:
+            print(f"[YF COOKIE] No se pudo obtener cookie/crumb")
+
+    except Exception as e:
+        print(f"[YF COOKIE ERROR] {e}")
+
+
 def get_accion_yf(ticker: str) -> dict | None:
     now = time.time()
     if ticker in _accion_cache and (now - _accion_cache_ts.get(ticker, 0)) < ACCION_CACHE_TTL:
