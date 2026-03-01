@@ -266,10 +266,12 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 #act-acciones-grid .fondo-row .accion-precio-slot,
 #prop-acciones-grid .fondo-row .accion-precio-slot {
   display: block;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--sky);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 1.4;
   margin-bottom: 2px;
 }
@@ -853,7 +855,7 @@ function renderSlotsActual() {
     const val = parseFloat((slot.monto||'').replace(/[^0-9.]/g,'')) || 0;
     const pct = monto > 0 && val > 0 ? (val/monto*100).toFixed(2)+'%' : '0.00%';
     const precioStr = slot.precio_cierre != null
-      ? 'P. Accs.: ' + (slot.moneda_precio === 'MXN' ? '$' : 'USD ') +
+      ? 'P. Accs: ' + (slot.moneda_precio === 'MXN' ? '$' : 'USD ') +
         slot.precio_cierre.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})
       : '';
     const card = document.createElement('div');
@@ -870,13 +872,15 @@ function renderSlotsActual() {
       ${slot.loading ? '<span style="font-size:11px;color:var(--blue);font-style:italic;display:block;line-height:1.5;">Buscando...</span>' : ''}
       ${slot.nombre && !slot.loading ? `
         <span style="display:block;font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;margin-top:1px;" title="${slot.nombre}">${slot.nombre}</span>
-        <span style="display:block;font-size:13px;font-weight:700;color:var(--sky);white-space:nowrap;line-height:1.4;margin-bottom:2px;">${precioStr}</span>` : ''}
+        <span style="display:block;font-size:11px;font-weight:700;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;margin-bottom:2px;">${precioStr}</span>` : ''}
       ${slot.error ? `<span style="font-size:11px;color:#e74c3c;display:block;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>` : ''}
       <input class="fondo-input" type="text" placeholder="Monto $"
-             value="${slot.monto}"
+             value="${slot.monto_fmt || slot.monto || ''}"
              ${!slot.nombre ? 'disabled style="opacity:0.4;font-size:13px;"' : 'style="font-size:13px;"'}
              id="act-slot-monto-${i}"
              oninput="onSlotActualMontoLive(${i}, this)"
+             onfocus="fmtMontoFocus(this)"
+             onblur="fmtMontoBlur(${i}, this, 'act')"
              autocomplete="off">
       <span class="fondo-pct" id="act-slot-pct-${i}" style="font-size:13px;font-weight:700;">${pct}</span>`;
     grid.appendChild(card);
@@ -902,7 +906,7 @@ function renderSlotsProp() {
       ? '$'+(monto*pct/100).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})
       : '$0.00';
     const precioStr = slot.precio_cierre != null
-      ? 'P. Accs.: ' + (slot.moneda_precio === 'MXN' ? '$' : 'USD ') +
+      ? 'P. Accs: ' + (slot.moneda_precio === 'MXN' ? '$' : 'USD ') +
         slot.precio_cierre.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})
       : '';
     const card = document.createElement('div');
@@ -919,13 +923,15 @@ function renderSlotsProp() {
       ${slot.loading ? '<span style="font-size:11px;color:var(--blue);font-style:italic;display:block;line-height:1.5;">Buscando...</span>' : ''}
       ${slot.nombre && !slot.loading ? `
         <span style="display:block;font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;margin-top:1px;" title="${slot.nombre}">${slot.nombre}</span>
-        <span style="display:block;font-size:13px;font-weight:700;color:var(--sky);white-space:nowrap;line-height:1.4;margin-bottom:2px;">${precioStr}</span>` : ''}
+        <span style="display:block;font-size:11px;font-weight:700;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;margin-bottom:2px;">${precioStr}</span>` : ''}
       ${slot.error ? `<span style="font-size:11px;color:#e74c3c;display:block;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>` : ''}
       <input class="fondo-input" type="text" placeholder="0.00%"
              value="${slot.pct ? slot.pct+'%' : ''}"
              ${!slot.nombre ? 'disabled style="opacity:0.4;font-size:13px;"' : 'style="font-size:13px;"'}
              id="prop-slot-pct-${i}"
              oninput="onSlotPropPctLive(${i}, this)"
+             onfocus="fmtPctFocus(this)"
+             onblur="fmtPctBlur(${i}, this)"
              autocomplete="off">
       <span class="fondo-monto" id="prop-slot-mon-${i}" style="font-size:13px;font-weight:700;">${mon}</span>`;
     grid.appendChild(card);
@@ -1063,6 +1069,40 @@ async function validarSlotProp(i) {
 
 // ── Handlers monto/pct ──
 // Versión "live" — no re-renderiza, actualiza solo el DOM local
+// ── Formato visual inputs de monto y porcentaje ──
+function fmtMontoFocus(inp) {
+  // Al enfocar: mostrar solo número para fácil edición
+  const raw = inp.value.replace(/[$,\s]/g,'');
+  inp.value = raw || '';
+  inp.select();
+}
+function fmtMontoBlur(i, inp, tipo) {
+  // Al salir: formatear con $ y comas
+  const raw = inp.value.replace(/[^0-9.]/g,'');
+  const num = parseFloat(raw);
+  if (!isNaN(num) && num > 0) {
+    inp.value = '$' + num.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+  } else {
+    inp.value = '';
+  }
+}
+function fmtPctFocus(inp) {
+  // Al enfocar: mostrar solo número
+  const raw = inp.value.replace(/[%\s]/g,'');
+  inp.value = raw || '';
+  inp.select();
+}
+function fmtPctBlur(i, inp) {
+  // Al salir: agregar %
+  const raw = inp.value.replace(/[^0-9.]/g,'');
+  const num = parseFloat(raw);
+  if (!isNaN(num) && num > 0) {
+    inp.value = num.toFixed(2) + '%';
+  } else {
+    inp.value = '';
+  }
+}
+
 function onSlotActualMontoLive(i, inp) {
   // Limpiar caracteres no numéricos pero NO reformatear el valor del input
   // para no mover el cursor mientras el usuario escribe
@@ -1607,11 +1647,15 @@ function aplicarDatos(data, valor) {
   // Helper: ordena labels+values de mayor a menor, filtra < 0.01, asigna PAL
   function sortedPie(labels, values) {
     const pairs = labels.map((l, i) => [l, values[i]]).filter(p => p[1] > 0.01);
-    pairs.sort((a, b) => b[1] - a[1]);
+    // "Otros" siempre al final
+    const otros = pairs.filter(p => p[0] === 'Otros');
+    const resto = pairs.filter(p => p[0] !== 'Otros');
+    resto.sort((a, b) => b[1] - a[1]);
+    const sorted = [...resto, ...otros];
     return {
-      labels: pairs.map(p => p[0]),
-      values: pairs.map(p => p[1]),
-      colors: pairs.map((_, i) => PAL[i]),
+      labels: sorted.map(p => p[0]),
+      values: sorted.map(p => p[1]),
+      colors: sorted.map((_, i) => PAL[i]),
     };
   }
 
