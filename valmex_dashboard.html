@@ -870,8 +870,8 @@ function renderSlotsActual() {
              autocomplete="off">
       ${slot.loading ? '<span style="font-size:11px;color:var(--blue);font-style:italic;display:block;line-height:1.5;">Buscando...</span>' : ''}
       ${slot.nombre && !slot.loading ? `
-        <span style="display:block;font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;margin-top:1px;" title="${slot.nombre}">${slot.nombre}</span>
-        <span style="display:block;font-size:11px;font-weight:700;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;margin-bottom:2px;">${precioStr}</span>` : ''}
+        <span class="accion-nombre-slot" title="${slot.nombre}">${slot.nombre}</span>
+        <span class="accion-precio-slot">${precioStr}</span>` : ''}
       ${slot.error ? `<span style="font-size:11px;color:#e74c3c;display:block;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>` : ''}
       <input class="fondo-input" type="text" placeholder="Monto $"
              value="${slot.monto_fmt || slot.monto || ''}"
@@ -921,8 +921,8 @@ function renderSlotsProp() {
              autocomplete="off">
       ${slot.loading ? '<span style="font-size:11px;color:var(--blue);font-style:italic;display:block;line-height:1.5;">Buscando...</span>' : ''}
       ${slot.nombre && !slot.loading ? `
-        <span style="display:block;font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;margin-top:1px;" title="${slot.nombre}">${slot.nombre}</span>
-        <span style="display:block;font-size:11px;font-weight:700;color:var(--sky);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;margin-bottom:2px;">${precioStr}</span>` : ''}
+        <span class="accion-nombre-slot" title="${slot.nombre}">${slot.nombre}</span>
+        <span class="accion-precio-slot">${precioStr}</span>` : ''}
       ${slot.error ? `<span style="font-size:11px;color:#e74c3c;display:block;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>` : ''}
       <input class="fondo-input" type="text" placeholder="0.00%"
              value="${slot.pct ? slot.pct+'%' : ''}"
@@ -1081,7 +1081,7 @@ function fmtMontoBlur(i, inp, tipo) {
   const num = parseFloat(raw);
   if (!isNaN(num) && num > 0) {
     inp.value = '$' + num.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
-    if (tipo === 'act') _slotsActual[i].monto = '$' + raw;
+    if (tipo === 'act') _slotsActual[i].monto = '$' + num.toFixed(2);
   } else {
     inp.value = '';
     if (tipo === 'act') _slotsActual[i].monto = '';
@@ -1109,15 +1109,12 @@ function fmtPctBlur(i, inp) {
 }
 
 function onSlotActualMontoLive(i, inp) {
-  // Limpiar caracteres no numéricos pero NO reformatear el valor del input
-  // para no mover el cursor mientras el usuario escribe
-  let v = inp.value.replace(/[^0-9.]/g,'');
-  // Solo un punto decimal permitido
-  const parts = v.split('.');
-  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
-  // Guardar en estado (con $ para que se muestre bien al re-render)
-  _slotsActual[i].monto = v ? '$' + v : '';
-  // Actualizar SOLO el span de porcentaje, sin re-render del input
+  // Limpiar caracteres no numéricos del input activo (el usuario está tecleando)
+  const raw = inp.value.replace(/[^0-9.]/g,'');
+  const parts = raw.split('.');
+  const v = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
+  // NO modificar inp.value aquí — dejar que el usuario escriba libremente
+  _slotsActual[i].monto = v ? v : '';
   const monto = parseFloat(v) || 0;
   const contrato = getMontoContrato();
   const pctSpan = document.getElementById('act-slot-pct-' + i);
@@ -1127,12 +1124,11 @@ function onSlotActualMontoLive(i, inp) {
 }
 
 function onSlotPropPctLive(i, inp) {
-  // Limpiar % y no-numéricos sin tocar el valor visible del input
-  let v = inp.value.replace(/[^0-9.]/g,'');
-  const parts = v.split('.');
-  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+  // NO modificar inp.value aquí — dejar que el usuario escriba libremente
+  const raw = inp.value.replace(/[^0-9.]/g,'');
+  const parts = raw.split('.');
+  const v = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
   _slotsProp[i].pct = v;
-  // Solo actualizar el span de monto, sin re-render
   const pct = parseFloat(v) || 0;
   const contrato = getMontoContrato();
   const monSpan = document.getElementById('prop-slot-mon-' + i);
