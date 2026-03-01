@@ -20,7 +20,7 @@ USERS = {
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PERFILES MODELO — composiciones oficiales VALMEX
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────── ESTO POR NADA DEL MUNDO SE MUEVE ──────────────────────────
 PERFILES = {
     "0": {"VXGUBCP": 5.00,  "VXDEUDA": 90.00, "VXUDIMP": 5.00},
     "1": {"VXGUBCP": 25.00, "VXDEUDA": 12.00, "VXUDIMP": 7.00,  "VXGUBLP": 52.00, "VXTBILL": 4.00},
@@ -73,8 +73,8 @@ def weighted_credit_rating(cred_acc: dict, local_to_global: bool = False) -> str
     return CREDIT_SCALE[idx]
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAPA ISIN
-# ─────────────────────────────────────────────────────────────────────────────
+# MAPA ISIN / SERIES / TIPO CLIENTE
+# ──────────────── ESTO POR NADA DEL MUNDO SE MUEVE ──────────────────────────
 ISIN_MAP = {
   "VXREPO1": {"A":"MXP800461008","B0CF":"MX51VA2J00C5","B0CO":"MX51VA2J0058","B0FI":"MX51VA2J0074","B0NC":"MX51VA2J0041","B1CF":"MX51VA2J00D3","B1CO":"MX51VA2J0082","B1FI":"MX51VA2J00F8","B1NC":"MX51VA2J0066","B2FI":"MX51VA2J0090"},
   "VXGUBCP": {"A":"MXP800501001","B0CF":"MX51VA2L00B3","B0CO":"MX51VA2L0054","B0FI":"MX51VA2L0039","B0NC":"MX51VA2L0047","B1CF":"MX51VA2L00C1","B1CO":"MX51VA2L0088","B1FI":"MX51VA2L0062","B1NC":"MX51VA2L0070","B2CF":"MX51VA2L00D9","B2FI":"MX51VA2L00E7","B2NC":"MX51VA2L0096"},
@@ -439,6 +439,253 @@ def yf_quote(symbol: str) -> dict:
     return result
 
 # ─────────────────────────────────────────────────────────────────────────────
+# TRADUCCIÓN Y UTILIDADES PARA ANÁLISIS DE INSTRUMENTOS (Comparativa)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Sectores: soporta tanto las claves internas de yfinance (camelCase/snake) como
+# los strings de Morningstar (Title Case).
+SECTORES_YF_ES = {
+    "technology":"Tecnología","healthcare":"Salud","financialServices":"Servicios Financieros",
+    "financialservices":"Servicios Financieros","consumerCyclical":"Consumo Cíclico",
+    "consumercyclical":"Consumo Cíclico","consumerDefensive":"Consumo Básico",
+    "consumerdefensive":"Consumo Básico","industrials":"Industrial","energy":"Energía",
+    "basicMaterials":"Materiales Básicos","basicmaterials":"Materiales Básicos",
+    "realestate":"Bienes Raíces","real_estate":"Bienes Raíces",
+    "communicationServices":"Comunicaciones","communicationservices":"Comunicaciones",
+    "utilities":"Servicios Públicos","Technology":"Tecnología","Healthcare":"Salud",
+    "Financial Services":"Servicios Financieros","Consumer Cyclical":"Consumo Cíclico",
+    "Consumer Defensive":"Consumo Básico","Industrials":"Industrial","Energy":"Energía",
+    "Basic Materials":"Materiales Básicos","Real Estate":"Bienes Raíces",
+    "Communication Services":"Comunicaciones","Utilities":"Servicios Públicos",
+    "Consumer Staples":"Consumo Básico","Consumer Discretionary":"Consumo Cíclico",
+    "Information Technology":"Tecnología","Health Care":"Salud",
+    "Materials":"Materiales Básicos","Financials":"Servicios Financieros",
+}
+
+PAISES_ES = {
+    "United States":"Estados Unidos","Mexico":"México","Canada":"Canadá",
+    "United Kingdom":"Reino Unido","Germany":"Alemania","France":"Francia",
+    "Japan":"Japón","China":"China","Brazil":"Brasil","India":"India",
+    "South Korea":"Corea del Sur","Australia":"Australia","Switzerland":"Suiza",
+    "Netherlands":"Países Bajos","Taiwan":"Taiwán","Hong Kong":"Hong Kong",
+    "Italy":"Italia","Spain":"España","Sweden":"Suecia","Denmark":"Dinamarca",
+    "Singapore":"Singapur","Saudi Arabia":"Arabia Saudita","South Africa":"Sudáfrica",
+    "Argentina":"Argentina","Chile":"Chile","Colombia":"Colombia","Belgium":"Bélgica",
+    "Norway":"Noruega","Finland":"Finlandia","Ireland":"Irlanda","Austria":"Austria",
+    "Israel":"Israel","Indonesia":"Indonesia","Thailand":"Tailandia",
+    "Malaysia":"Malasia","Philippines":"Filipinas","Poland":"Polonia",
+    "Turkey":"Turquía","Russia":"Rusia","Greece":"Grecia","Portugal":"Portugal",
+    "New Zealand":"Nueva Zelanda","United Arab Emirates":"Emiratos Árabes",
+}
+
+TIPOS_ES = {
+    "EQUITY":"Acción","ETF":"ETF","INDEX":"Índice","MUTUALFUND":"Fondo Mutuo",
+    "FUTURE":"Futuro","CURRENCY":"Divisa","CRYPTOCURRENCY":"Criptomoneda","BOND":"Bono",
+}
+
+# Nombres limpios para ETFs e índices conocidos (sin marca corporativa)
+ETF_NOMBRES_LIMPIOS = {
+    "SPY":"S&P 500","IVV":"S&P 500","VOO":"S&P 500","CSPX":"S&P 500",
+    "QQQ":"Nasdaq 100","QQQM":"Nasdaq 100","ONEQ":"Nasdaq Composite",
+    "DIA":"Dow Jones Industrial","IWM":"Russell 2000","IWB":"Russell 1000",
+    "IWF":"Russell 1000 Crecimiento","IWD":"Russell 1000 Valor",
+    "EEM":"Mercados Emergentes","VWO":"Mercados Emergentes","IEMG":"Mercados Emergentes",
+    "EFA":"Mercados Desarrollados Ex-EUA","VXUS":"Acciones Internacionales",
+    "VEA":"Mercados Desarrollados","VTI":"Mercado Total EUA",
+    "ITOT":"Mercado Total EUA","ACWI":"Mercado Global","VT":"Mercado Global",
+    "EWW":"Acciones México","NAFTRAC.MX":"IPC México",
+    "XLK":"Tecnología S&P","XLF":"Financiero S&P","XLV":"Salud S&P",
+    "XLE":"Energía S&P","XLI":"Industrial S&P","XLB":"Materiales S&P",
+    "XLY":"Consumo Discrecional S&P","XLP":"Consumo Básico S&P",
+    "XLU":"Servicios Públicos S&P","XLRE":"Bienes Raíces S&P","XLC":"Comunicaciones S&P",
+    "AGG":"Bonos EUA Amplio","BND":"Bonos EUA Amplio",
+    "TLT":"Bonos Tesoro 20+ Años","IEF":"Bonos Tesoro 7-10 Años",
+    "SHY":"Bonos Tesoro 1-3 Años","LQD":"Bonos Corporativos IG",
+    "HYG":"Bonos Alto Rendimiento","EMB":"Bonos Mercados Emergentes",
+    "GLD":"Oro","IAU":"Oro","SLV":"Plata","PDBC":"Materias Primas","DBC":"Materias Primas",
+    "VNQ":"Bienes Raíces EUA","IYR":"Bienes Raíces EUA",
+    "^GSPC":"S&P 500","^SPX":"S&P 500","^NDX":"Nasdaq 100","^IXIC":"Nasdaq Composite",
+    "^DJI":"Dow Jones Industrial","^RUT":"Russell 2000","^FTSE":"FTSE 100",
+    "^N225":"Nikkei 225","^HSI":"Hang Seng","^DAX":"DAX 40","^MXX":"IPC México",
+}
+
+# Geografía predefinida para ETFs conocidos (datos aproximados de referencia)
+ETF_GEO = {
+    "SPY":[{"nombre":"Estados Unidos","pct":100.0}],
+    "IVV":[{"nombre":"Estados Unidos","pct":100.0}],
+    "VOO":[{"nombre":"Estados Unidos","pct":100.0}],
+    "QQQ":[{"nombre":"Estados Unidos","pct":100.0}],
+    "QQQM":[{"nombre":"Estados Unidos","pct":100.0}],
+    "DIA":[{"nombre":"Estados Unidos","pct":100.0}],
+    "IWM":[{"nombre":"Estados Unidos","pct":100.0}],
+    "VTI":[{"nombre":"Estados Unidos","pct":100.0}],
+    "ITOT":[{"nombre":"Estados Unidos","pct":100.0}],
+    "EWW":[{"nombre":"México","pct":100.0}],
+    "NAFTRAC.MX":[{"nombre":"México","pct":100.0}],
+    "^MXX":[{"nombre":"México","pct":100.0}],
+    "^GSPC":[{"nombre":"Estados Unidos","pct":100.0}],
+    "^NDX":[{"nombre":"Estados Unidos","pct":100.0}],
+    "^DJI":[{"nombre":"Estados Unidos","pct":100.0}],
+    "EEM":[{"nombre":"China","pct":27.5},{"nombre":"India","pct":17.0},
+           {"nombre":"Taiwán","pct":15.2},{"nombre":"Corea del Sur","pct":12.7},
+           {"nombre":"Brasil","pct":6.1},{"nombre":"Otros","pct":21.5}],
+    "VWO":[{"nombre":"China","pct":26.8},{"nombre":"India","pct":18.5},
+           {"nombre":"Taiwán","pct":14.2},{"nombre":"Brasil","pct":8.5},
+           {"nombre":"Otros","pct":32.0}],
+    "IEMG":[{"nombre":"China","pct":25.3},{"nombre":"India","pct":17.8},
+            {"nombre":"Taiwán","pct":14.0},{"nombre":"Corea del Sur","pct":11.9},
+            {"nombre":"Brasil","pct":5.8},{"nombre":"Otros","pct":25.2}],
+    "EFA":[{"nombre":"Japón","pct":21.1},{"nombre":"Reino Unido","pct":15.8},
+           {"nombre":"Francia","pct":11.2},{"nombre":"Alemania","pct":9.0},
+           {"nombre":"Suiza","pct":8.7},{"nombre":"Otros","pct":34.2}],
+    "VEA":[{"nombre":"Japón","pct":22.5},{"nombre":"Reino Unido","pct":13.1},
+           {"nombre":"Canadá","pct":10.2},{"nombre":"Francia","pct":9.8},
+           {"nombre":"Alemania","pct":8.4},{"nombre":"Otros","pct":36.0}],
+    "ACWI":[{"nombre":"Estados Unidos","pct":64.5},{"nombre":"Japón","pct":5.5},
+            {"nombre":"Reino Unido","pct":4.0},{"nombre":"Francia","pct":3.2},
+            {"nombre":"Alemania","pct":2.8},{"nombre":"Otros","pct":20.0}],
+    "VT":[{"nombre":"Estados Unidos","pct":62.8},{"nombre":"Japón","pct":6.0},
+          {"nombre":"Reino Unido","pct":4.2},{"nombre":"China","pct":3.8},
+          {"nombre":"Otros","pct":23.2}],
+    "VXUS":[{"nombre":"Japón","pct":14.5},{"nombre":"Reino Unido","pct":10.2},
+            {"nombre":"China","pct":9.8},{"nombre":"Francia","pct":6.5},
+            {"nombre":"Otros","pct":59.0}],
+}
+
+# Prefijos y sufijos de marca a eliminar de nombres de ETFs
+_ETF_PREF = ["iShares MSCI ","iShares Core ","iShares ","Vanguard ","SPDR S&P ",
+             "SPDR ","Invesco QQQ Trust ","Invesco ","Schwab ","Fidelity ",
+             "JPMorgan ","ProShares ","WisdomTree ","VanEck ","First Trust ",
+             "Direxion ","ARK ","Global X ","BlackRock "]
+_ETF_SUF  = [" ETF"," Trust"," Index Fund"," Fund"," Portfolio"," Index"," Shares"]
+
+
+def _limpiar_nombre(ticker: str, nombre: str, qt: str) -> str:
+    """Devuelve nombre limpio: sin marca para ETFs/índices, shortName para acciones."""
+    tb = ticker.upper().split(".")[0]
+    if tb in ETF_NOMBRES_LIMPIOS:
+        return ETF_NOMBRES_LIMPIOS[tb]
+    if ticker in ETF_NOMBRES_LIMPIOS:
+        return ETF_NOMBRES_LIMPIOS[ticker]
+    if qt in ("ETF", "INDEX"):
+        r = nombre
+        for p in _ETF_PREF:
+            if r.startswith(p):
+                r = r[len(p):]; break
+        for s in _ETF_SUF:
+            if r.endswith(s):
+                r = r[:-len(s)]; break
+        return r.strip() or nombre
+    return nombre
+
+
+def _calcular_rendimientos(hist) -> dict:
+    """Calcula rendimientos MTD/3M/YTD/12M/24M/36M desde DataFrame de precios."""
+    import pandas as pd
+    from datetime import date, timedelta
+    if hist is None or hist.empty:
+        return {}
+    prices = hist["Close"].dropna()
+    if len(prices) < 2:
+        return {}
+    tz     = prices.index.tz
+    ultimo = float(prices.iloc[-1])
+
+    def p_prev(d):
+        try:
+            ts   = pd.Timestamp(d).tz_localize(tz) if tz else pd.Timestamp(d)
+            mask = prices.index <= ts
+            return float(prices[mask].iloc[-1]) if mask.any() else None
+        except:
+            return None
+
+    def ret(p0, anios=None):
+        if not p0:
+            return None
+        r = (ultimo / p0 - 1) * 100
+        if anios and anios > 1:
+            r = ((ultimo / p0) ** (1.0 / anios) - 1) * 100
+        return round(r, 2)
+
+    hoy = date.today()
+    return {
+        "mtd": ret(p_prev(hoy.replace(day=1))),
+        "3m":  ret(p_prev(hoy - timedelta(days=92))),
+        "ytd": ret(p_prev(hoy.replace(month=1, day=1))),
+        "12m": ret(p_prev(hoy.replace(year=hoy.year - 1))),
+        "24m": ret(p_prev(hoy.replace(year=hoy.year - 2)), anios=2),
+        "36m": ret(p_prev(hoy.replace(year=hoy.year - 3)), anios=3),
+    }
+
+
+def _get_sectores(tk, info: dict, qt: str) -> list:
+    """Sectores en español para una acción o ETF."""
+    if qt == "EQUITY":
+        s = info.get("sector", "")
+        if s:
+            return [{"nombre": SECTORES_YF_ES.get(s, s), "pct": 100.0}]
+        ind = info.get("industry", "")
+        return [{"nombre": ind, "pct": 100.0}] if ind else []
+
+    # ETF / INDEX / MUTUALFUND — intento 1: sectorWeightings en info
+    try:
+        sw = info.get("sectorWeightings")
+        if sw and isinstance(sw, list):
+            out = []
+            for item in sw:
+                for k, v in item.items():
+                    nom = SECTORES_YF_ES.get(k, SECTORES_YF_ES.get(k.lower(), k))
+                    pct = round(float(v) * 100, 1)
+                    if pct >= 0.5:
+                        out.append({"nombre": nom, "pct": pct})
+            if out:
+                return sorted(out, key=lambda x: -x["pct"])[:8]
+    except Exception:
+        pass
+
+    # intento 2: funds_data (yfinance >=0.2.40)
+    try:
+        fd  = tk.funds_data
+        sw2 = getattr(fd, "sector_weightings", None)
+        if sw2 is not None and len(sw2) > 0:
+            out = []
+            for k, v in sw2.items():
+                nom = SECTORES_YF_ES.get(k, SECTORES_YF_ES.get(k.lower(), k))
+                pct = round(float(v) * 100, 1)
+                if pct >= 0.5:
+                    out.append({"nombre": nom, "pct": pct})
+            if out:
+                return sorted(out, key=lambda x: -x["pct"])[:8]
+    except Exception:
+        pass
+
+    return []
+
+
+def _get_geografia(ticker: str, info: dict, qt: str) -> list:
+    """Exposición geográfica del instrumento."""
+    tb = ticker.upper().split(".")[0]
+    if tb  in ETF_GEO: return ETF_GEO[tb]
+    if ticker in ETF_GEO: return ETF_GEO[ticker]
+    # Acción individual → país del emisor
+    pais_en = info.get("country", "")
+    pais_es = PAISES_ES.get(pais_en, pais_en)
+    if pais_es:
+        return [{"nombre": pais_es, "pct": 100.0}]
+    # Fallback por bolsa
+    _exchange_pais = {
+        "NMS":"Estados Unidos","NYQ":"Estados Unidos","NYSEArca":"Estados Unidos",
+        "NGM":"Estados Unidos","BTS":"Estados Unidos","PCX":"Estados Unidos",
+        "MEX":"México","BMV":"México","TSX":"Canadá","LSE":"Reino Unido",
+        "PAR":"Francia","XETR":"Alemania","MIL":"Italia","MCE":"España",
+        "TYO":"Japón","SHH":"China","SHZ":"China","HKG":"Hong Kong",
+        "ASX":"Australia","BSE":"India","NSE":"India","KSC":"Corea del Sur","SAO":"Brasil",
+    }
+    p = _exchange_pais.get(info.get("exchange", ""), "")
+    return [{"nombre": p, "pct": 100.0}] if p else []
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # RUTAS
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -508,6 +755,78 @@ def api_propuesta():
             return jsonify({"ok": False, "error": "Sin fondos con % > 0"}), 400
 
     return jsonify(calcular_portafolio(fondos_pct, tipo_cliente))
+
+
+@app.route("/api/accion/data", methods=["POST"])
+def api_accion_data():
+    """Datos completos de un instrumento para la sección Comparativa."""
+    if "usuario" not in session:
+        return jsonify({"ok": False, "error": "No autenticado"}), 401
+    body   = request.get_json(force=True)
+    ticker = body.get("ticker", "").strip().upper()
+    if not ticker:
+        return jsonify({"ok": False, "error": "ticker requerido"}), 400
+
+    now       = time.time()
+    cache_key = f"data_{ticker}"
+    with _yf_lock:
+        cached = _yf_cache.get(cache_key)
+        if cached and now - cached["ts"] < YF_TICKER_TTL:
+            return jsonify(cached["data"])
+    try:
+        tk    = yf.Ticker(ticker)
+        info  = tk.info
+        qt    = info.get("quoteType", "EQUITY")
+        precio = info.get("regularMarketPrice") or info.get("currentPrice")
+        if not info or precio is None:
+            result = {"ok": False, "error": "Ticker no encontrado o sin precio", "ticker": ticker}
+        else:
+            nombre_largo = info.get("longName") or info.get("shortName") or ticker
+            nombre_corto = _limpiar_nombre(ticker, nombre_largo, qt)
+            tipo_es      = TIPOS_ES.get(qt, qt)
+
+            # Histórico 3 años diario
+            hist = tk.history(period="3y", interval="1d")
+
+            # Rendimientos
+            rends = _calcular_rendimientos(hist)
+
+            # Base-100 semanal (menos payload)
+            hist_base = {}
+            if not hist.empty:
+                prices_w = hist["Close"].dropna().resample("W").last().dropna()
+                if not prices_w.empty:
+                    base_val = float(prices_w.iloc[0])
+                    if base_val > 0:
+                        fechas  = [d.strftime("%Y-%m-%d") for d in prices_w.index]
+                        base100 = [round(float(v) / base_val * 100, 2) for v in prices_w]
+                        hist_base = {"fechas": fechas, "base100": base100}
+
+            sectores  = _get_sectores(tk, info, qt)
+            geografia = _get_geografia(ticker, info, qt)
+
+            result = {
+                "ok":          True,
+                "ticker":      ticker,
+                "nombre":      nombre_corto,
+                "nombre_full": nombre_largo,
+                "precio":      precio,
+                "moneda":      info.get("currency", "MXN"),
+                "cambio_pct":  round(info.get("regularMarketChangePercent") or 0.0, 4),
+                "tipo":        tipo_es,
+                "exchange":    info.get("exchange", ""),
+                "rendimientos": rends,
+                "historico":   hist_base,
+                "sectores":    sectores,
+                "geografia":   geografia,
+            }
+            print(f"[YF DATA] {ticker}: {nombre_corto} @ {precio} {info.get('currency','')}")
+    except Exception as e:
+        print(f"[YF DATA ERROR] {ticker}: {e}")
+        result = {"ok": False, "error": str(e), "ticker": ticker}
+    with _yf_lock:
+        _yf_cache[cache_key] = {"ts": time.time(), "data": result}
+    return jsonify(result)
 
 
 @app.route("/api/diag-repo")

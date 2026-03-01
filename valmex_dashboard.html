@@ -220,6 +220,39 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   .topbar,.prop-right{display:none!important;}
   body{background:#fff!important;}
 }
+
+/* ── ANÁLISIS DE INSTRUMENTO (Comparativa) ── */
+.cmp-search-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.cmp-input{padding:11px 16px;border:2px solid var(--silver);border-radius:8px;font-size:17px;font-weight:700;font-family:'Montserrat',sans-serif;color:var(--navy);outline:none;text-transform:uppercase;letter-spacing:.5px;transition:border-color .18s;width:240px;}
+.cmp-input:focus{border-color:var(--sky);}
+.cmp-msg{font-size:14px;color:var(--gray);font-family:'Montserrat',sans-serif;}
+.cmp-row1{display:grid;grid-template-columns:1fr 2fr 1fr;gap:16px;margin-bottom:16px;}
+.cmp-row3{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
+/* Instrumento: nombre separado del precio, sin empalme */
+.cmp-nombre{font-size:24px;font-weight:900;color:var(--navy);font-family:'Montserrat',sans-serif;margin-bottom:4px;line-height:1.2;word-break:break-word;}
+.cmp-tipo{font-size:14px;font-weight:600;color:var(--gray);font-family:'Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.5px;margin-bottom:18px;}
+.cmp-plabel{font-size:13px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.4px;font-family:'Montserrat',sans-serif;margin-bottom:3px;}
+.cmp-precio-wrap{display:flex;align-items:baseline;gap:7px;margin-bottom:4px;}
+.cmp-precio{font-size:34px;font-weight:900;color:var(--navy);font-family:'Montserrat',sans-serif;line-height:1;}
+.cmp-moneda{font-size:16px;font-weight:700;color:var(--gray);font-family:'Montserrat',sans-serif;}
+.cmp-cambio{font-size:19px;font-weight:800;font-family:'Montserrat',sans-serif;margin-top:6px;}
+.cmp-cambio.pos{color:#16a34a;}.cmp-cambio.neg{color:#dc2626;}.cmp-cambio.flat{color:var(--gray);}
+/* Clase de activo */
+.cmp-clase-badge{display:inline-block;padding:10px 22px;background:var(--navy);color:#fff;border-radius:8px;font-size:20px;font-weight:900;font-family:'Montserrat',sans-serif;margin:10px 0 6px;}
+/* Listas geografía / sectores */
+.cmp-list-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #F0F4F8;}
+.cmp-list-row:last-child{border-bottom:none;}
+.cmp-list-nom{font-size:15px;font-weight:700;color:var(--navy);font-family:'Montserrat',sans-serif;}
+.cmp-list-pct{font-size:15px;font-weight:800;color:var(--sky);font-family:'Montserrat',sans-serif;}
+/* Colores rendimientos para acciones (verde/rojo) */
+.rh-val.cmp-pos{color:#16a34a!important;font-size:18px!important;}
+.rh-val.cmp-neg{color:#dc2626!important;font-size:18px!important;}
+.rh-val.cmp-neu{color:var(--navy)!important;font-size:18px!important;}
+/* rh-pill tamaño ligeramente mayor en Comparativa */
+.cmp-row1 .rh-pill{font-size:12px;}
+/* Responsive */
+@media(max-width:1024px){.cmp-row1{grid-template-columns:1fr 1fr;}.cmp-row1>.pcard:nth-child(2){grid-column:1/-1;}}
+@media(max-width:600px){.cmp-row1,.cmp-row3{grid-template-columns:1fr;}.cmp-input{width:100%;}}
 </style>
 </head>
 <body>
@@ -512,12 +545,92 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
     </div>
   </div>
 
-  <!-- COMPARATIVA -->
+  <!-- COMPARATIVA — Análisis de Instrumento -->
   <div id="page-comparativa" class="page">
-    <div class="cmp-card">
-      <div class="cmp-hdr"><h3>Comparativa de Portafolios</h3></div>
-      <div class="cmp-body"><canvas id="c-comp2"></canvas></div>
+
+    <!-- Buscador -->
+    <div class="cmp-search-bar">
+      <input type="text" id="cmp-input" class="cmp-input"
+             placeholder="Ticker: AMZN.MX · SPY · ^MXX" maxlength="20"
+             onkeydown="if(event.key==='Enter')buscarInstrumento()">
+      <button class="btn-primary" id="cmp-btn" onclick="buscarInstrumento()"
+              style="width:auto;margin:0;padding:11px 30px;">Buscar</button>
+      <span id="cmp-msg" class="cmp-msg"></span>
     </div>
+
+    <!-- Dashboard del instrumento (oculto hasta buscar) -->
+    <div id="cmp-result" style="display:none;">
+
+      <!-- FILA 1: Instrumento · Rendimientos · Clase de activo -->
+      <div class="cmp-row1">
+
+        <!-- Instrumento -->
+        <div class="pcard">
+          <div class="ph">Instrumento</div>
+          <div class="pb" style="padding:20px 22px;">
+            <div class="cmp-nombre" id="cmp-nombre">—</div>
+            <div class="cmp-tipo"   id="cmp-tipo">—</div>
+            <div class="cmp-plabel">P. Accs.:</div>
+            <div class="cmp-precio-wrap">
+              <span class="cmp-precio" id="cmp-precio">—</span>
+              <span class="cmp-moneda" id="cmp-moneda"></span>
+            </div>
+            <div class="cmp-cambio flat" id="cmp-cambio">—</div>
+          </div>
+        </div>
+
+        <!-- Rendimientos (reutiliza rh-grid/rh-block/rh-pill/rh-val) -->
+        <div class="pcard">
+          <div class="ph">Rendimientos</div>
+          <div class="pb" style="padding:10px;">
+            <div class="rh-grid">
+              <div class="rh-block"><span class="rh-pill">MTD</span>      <span class="rh-val" id="crend-mtd">—</span></div>
+              <div class="rh-block"><span class="rh-pill">3 Meses</span>  <span class="rh-val" id="crend-3m">—</span></div>
+              <div class="rh-block"><span class="rh-pill">YTD</span>       <span class="rh-val" id="crend-ytd">—</span></div>
+              <div class="rh-block"><span class="rh-pill">12 Meses</span> <span class="rh-val" id="crend-12m">—</span></div>
+              <div class="rh-block"><span class="rh-pill">24 Meses</span> <span class="rh-val" id="crend-24m">—</span></div>
+              <div class="rh-block"><span class="rh-pill">36 Meses</span> <span class="rh-val" id="crend-36m">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clase de activo -->
+        <div class="pcard">
+          <div class="ph">Clase de Activo</div>
+          <div class="pb" style="padding:20px 22px;">
+            <div class="cmp-plabel">Tipo</div>
+            <div class="cmp-clase-badge" id="cmp-clase">—</div>
+            <div id="cmp-sector-blk" style="margin-top:14px;display:none;">
+              <div class="cmp-plabel" style="margin-bottom:4px;">Sector</div>
+              <div class="cmp-nombre" style="font-size:18px;line-height:1.3;" id="cmp-sector">—</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /cmp-row1 -->
+
+      <!-- FILA 2: Histórico Base 100 -->
+      <div class="pcard">
+        <div class="ph">Histórico Base 100 · 3 Años</div>
+        <div class="pb" style="padding:12px;height:240px;">
+          <canvas id="c-acc-hist"></canvas>
+        </div>
+      </div>
+
+      <!-- FILA 3: Geografía + Sectores -->
+      <div class="cmp-row3">
+        <div class="pcard">
+          <div class="ph">Exposición Geográfica</div>
+          <div class="pb" style="padding:14px 18px;" id="cmp-geo"></div>
+        </div>
+        <div class="pcard">
+          <div class="ph">Exposición Sectorial</div>
+          <div class="pb" style="padding:14px 18px;" id="cmp-sec"></div>
+        </div>
+      </div>
+
+    </div><!-- /cmp-result -->
+
   </div>
 
   <!-- ELITE -->
@@ -595,13 +708,14 @@ function onProp(f){
   const el=document.getElementById('prop-'+f);
   let v=el.value.replace(/[^0-9.]/g,'');
   if(!v){el.value='';const mEl=document.getElementById('prop-monto-'+f);if(mEl)mEl.textContent='$0.00';calcTotalPropuesta();return;}
-  el.value=v+'%';
-  const pos=v.length;
-  setTimeout(()=>{try{el.setSelectionRange(pos,pos);}catch(e){}},0);
   const pct=parseFloat(v)||0;
   const total=getMonto();
   const mEl=document.getElementById('prop-monto-'+f);
   if(mEl) mEl.textContent=total>0?'$'+(pct/100*total).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}):'$0.00';
+  // Actualizar valor con cursor antes del % (sincrónico — sin setTimeout para evitar saltos)
+  const pos=v.length;
+  el.value=v+'%';
+  try{el.setSelectionRange(pos,pos);}catch(e){}
   calcTotalPropuesta();
 }
 
@@ -804,21 +918,7 @@ requestAnimationFrame(()=>{
   charts.geo    = donut('c-geo',   ['Norte-América','Eurozona','Europa','América Latina','Otros emergentes','Asia Emergente','Japón','Asia-Pacífico'],[65.49,12.81,7.66,3.89,3.25,2.37,2.3,2.23],null,refRadius);
 });
 
-charts.comp2 = new Chart(document.getElementById('c-comp2'),{
-  type:'bar',
-  data:{
-    labels:['Conservador','Moderado','Balanceado','Crecimiento','Agresivo'],
-    datasets:[
-      {label:'Rendimiento 1A (%)',data:[4.2,6.8,9.4,12.1,15.7],backgroundColor:'#00205C',borderRadius:4,barPercentage:.5},
-      {label:'Benchmark 1A (%)', data:[3.1,5.2,7.6,9.8,12.4], backgroundColor:'#41BBC9',borderRadius:4,barPercentage:.5}
-    ]
-  },
-  options:{
-    responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'top',labels:{font:{size:12},padding:14}}},
-    scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(0,0,0,.05)'},border:{display:false},ticks:{callback:v=>v+'%'}}}
-  }
-});
+// charts.comp2 reemplazado por análisis de instrumento en Comparativa
 
 // PDF Export
 document.getElementById('btn-pdf').addEventListener('click',async()=>{
@@ -1059,6 +1159,179 @@ function guardarPropuesta() {
     }
   };
 })();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ANÁLISIS DE INSTRUMENTO — Sección Comparativa
+// ══════════════════════════════════════════════════════════════════════════════
+let _cmpHistChart = null;
+
+async function buscarInstrumento() {
+  const inputEl = document.getElementById('cmp-input');
+  const btnEl   = document.getElementById('cmp-btn');
+  const msgEl   = document.getElementById('cmp-msg');
+  const ticker  = inputEl.value.trim().toUpperCase();
+  if (!ticker) { inputEl.focus(); return; }
+
+  btnEl.disabled    = true;
+  btnEl.textContent = 'Buscando…';
+  msgEl.textContent = '';
+
+  try {
+    const resp = await fetch('/api/accion/data', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({ ticker }),
+    });
+    const d = await resp.json();
+
+    if (!d.ok) {
+      msgEl.textContent = '⚠ ' + (d.error || 'Ticker no encontrado');
+      return;
+    }
+    _renderInstrumento(d);
+    document.getElementById('cmp-result').style.display = 'block';
+    // Redimensionar chart en caso de que el contenedor acabe de mostrarse
+    setTimeout(() => { if (_cmpHistChart) _cmpHistChart.resize(); }, 80);
+  } catch (e) {
+    msgEl.textContent = '⚠ Error de conexión';
+  } finally {
+    btnEl.disabled    = false;
+    btnEl.textContent = 'Buscar';
+  }
+}
+
+function _renderInstrumento(d) {
+  // ── Nombre y precio (en bloques distintos, sin empalme) ──
+  document.getElementById('cmp-nombre').textContent = d.nombre  || d.ticker;
+  document.getElementById('cmp-tipo').textContent   =
+    (d.tipo || '') + (d.exchange ? '  ·  ' + d.exchange : '');
+  document.getElementById('cmp-precio').textContent =
+    d.precio != null ? _fmtPrecio(d.precio) : '—';
+  document.getElementById('cmp-moneda').textContent = d.moneda || '';
+
+  // ── Variación del día ──
+  const cp  = d.cambio_pct || 0;
+  const cEl = document.getElementById('cmp-cambio');
+  cEl.textContent = (cp > 0 ? '+' : '') + cp.toFixed(2) + '%';
+  cEl.className   = 'cmp-cambio ' + (cp > 0.05 ? 'pos' : cp < -0.05 ? 'neg' : 'flat');
+
+  // ── Rendimientos (MTD/3M/YTD/12M/24M/36M) ──
+  const R = d.rendimientos || {};
+  [['crend-mtd','mtd'],['crend-3m','3m'],['crend-ytd','ytd'],
+   ['crend-12m','12m'],['crend-24m','24m'],['crend-36m','36m']].forEach(([id, key]) => {
+    const el  = document.getElementById(id);
+    const val = R[key];
+    if (val == null) {
+      el.textContent = '—';
+      el.className   = 'rh-val';
+    } else {
+      el.textContent = (val > 0 ? '+' : '') + val.toFixed(2) + '%';
+      el.className   = 'rh-val ' + (val > 0.05 ? 'cmp-pos' : val < -0.05 ? 'cmp-neg' : 'cmp-neu');
+    }
+  });
+
+  // ── Clase de activo + sector ──
+  document.getElementById('cmp-clase').textContent = d.tipo || '—';
+  const sBlk = document.getElementById('cmp-sector-blk');
+  const sEl  = document.getElementById('cmp-sector');
+  // Mostrar sector solo si hay exactamente 1 y cubre 100% (acción individual)
+  const secs = d.sectores || [];
+  if (secs.length === 1 && secs[0].pct === 100.0) {
+    sEl.textContent     = secs[0].nombre;
+    sBlk.style.display  = '';
+  } else {
+    sBlk.style.display  = 'none';
+  }
+
+  // ── Histórico base 100 ──
+  const hist = d.historico || {};
+  if (hist.fechas && hist.fechas.length > 1) {
+    _renderHistChart(hist.fechas, hist.base100, d.nombre || d.ticker);
+  }
+
+  // ── Exposición geográfica ──
+  const geoEl = document.getElementById('cmp-geo');
+  geoEl.innerHTML = '';
+  if (d.geografia && d.geografia.length > 0) {
+    d.geografia.forEach(g => {
+      geoEl.innerHTML +=
+        `<div class="cmp-list-row">` +
+        `<span class="cmp-list-nom">${g.nombre}</span>` +
+        `<span class="cmp-list-pct">${g.pct.toFixed(1)}%</span></div>`;
+    });
+  } else {
+    geoEl.innerHTML = '<div style="color:var(--gray);font-size:14px;padding:8px 0;">Sin datos disponibles</div>';
+  }
+
+  // ── Exposición sectorial ──
+  const secEl = document.getElementById('cmp-sec');
+  secEl.innerHTML = '';
+  if (secs.length > 0) {
+    secs.forEach(s => {
+      secEl.innerHTML +=
+        `<div class="cmp-list-row">` +
+        `<span class="cmp-list-nom">${s.nombre}</span>` +
+        `<span class="cmp-list-pct">${s.pct.toFixed(1)}%</span></div>`;
+    });
+  } else {
+    secEl.innerHTML = '<div style="color:var(--gray);font-size:14px;padding:8px 0;">Sin datos disponibles</div>';
+  }
+}
+
+function _fmtPrecio(v) {
+  if (v == null) return '—';
+  const opts = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  return v >= 1000 ? v.toLocaleString('es-MX', opts) : v.toFixed(2);
+}
+
+function _renderHistChart(fechas, base100, nombre) {
+  const ctx = document.getElementById('c-acc-hist');
+  if (_cmpHistChart) { _cmpHistChart.destroy(); _cmpHistChart = null; }
+  _cmpHistChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: fechas,
+      datasets: [{
+        label:           nombre,
+        data:            base100,
+        borderColor:     '#00205C',
+        backgroundColor: 'rgba(0,32,92,0.07)',
+        fill:            true,
+        borderWidth:     2.5,
+        pointRadius:     0,
+        pointHoverRadius: 4,
+        tension:         0.3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#00205C',
+          titleFont: { size: 12, family: 'Montserrat' },
+          bodyFont:  { size: 12, family: 'Montserrat' },
+          callbacks: { label: ctx => ' Base 100: ' + ctx.raw.toFixed(1) }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          grid:    { display: false },
+          ticks:   { font: { size: 11, family: 'Montserrat' }, color: '#00205C',
+                     maxTicksLimit: 12, maxRotation: 0 },
+          border:  { display: false },
+        },
+        y: {
+          grid:   { color: 'rgba(0,32,92,0.06)' },
+          ticks:  { font: { size: 11, family: 'Montserrat' }, color: '#00205C' },
+          border: { display: false },
+        }
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
