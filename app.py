@@ -180,6 +180,7 @@ def load_ms_universe():
 _accion_cache: dict = {}
 _accion_cache_ts: dict = {}
 ACCION_CACHE_TTL = 3600  # 1 hora
+ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "YFUB8EA3CMFYEWKH")
 
 GEO_TRANSLATE_YF = {
     "united states": "Estados Unidos", "mexico": "México", "canada": "Canadá",
@@ -199,58 +200,175 @@ SEC_TRANSLATE_YF = {
     "utilities": "Utilidades",
 }
 
+# ── Yahoo Finance cookie/crumb cache ──
+_yf_session   = None
+_yf_crumb     = None
+_yf_cookie_ts = 0
+
+def _get_yf_session():
+    """
+    Obtiene sesión con cookies válidas de Yahoo Finance.
+    Yahoo requiere: primero visitar finance.yahoo.com para obtener cookie,
+    luego obtener crumb token, y usarlo en todas las peticiones.
+    """
+    global _yf_session, _yf_crumb, _yf_cookie_ts
+    now = time.time()
+    # Renovar cada 2 horas
+    if _yf_session and _yf_crumb and (now - _yf_cookie_ts) < 7200:
+        return _yf_session, _yf_crumb
+
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Referer": "https://finance.yahoo.com/",
+    })
+
+    try:
+        # Paso 1: obtener cookies visitando Yahoo Finance
+        r = session.get("https://finance.yahoo.com/", timeout=10)
+        r.raise_for_status()
+
+        # Paso 2: obtener crumb
+        r2 = session.get(
+            "https://query1.finance.yahoo.com/v1/test/csrfToken",
+            headers={"Accept": "application/json"},
+            timeout=10
+        )
+        crumb = None
+        if r2.status_code == 200:
+            try:
+                crumb = r2.json().get("crumb")
+            except Exception:
+                pass
+
+        # Fallback crumb endpoint
+        if not crumb:
+            r3 = session.get(
+                "https://query2.finance.yahoo.com/v1/test/csrfToken",
+                timeout=10
+            )
+            if r3.status_code == 200:
+                try:
+                    crumb = r3.json().get("crumb")
+                except Exception:
+                    pass
+
+        _yf_session   = session
+        _yf_crumb     = crumb or ""
+        _yf_cookie_ts = now
+        print(f"[YF SESSION] Cookie OK, crumb={'OK' if crumb else 'vacío'}")
+        return _yf_session, _yf_crumb
+
+    except Exception as e:
+        print(f"[YF SESSION ERROR] {e}")
+        _yf_session   = session  # usar igual aunque falle el crumb
+        _yf_crumb     = ""
+        _yf_cookie_ts = now
+        return session, ""
+
+
+
+# ── Cookie cache para Yahoo Finance ──
+_yf_cookie_cache: dict = {}   # {"cookie": str, "crumb": str, "ts": float}
+_YF_COOKIE_TTL = 3600  # renovar cookie cada hora
+
+def _ensure_yf_cookie(session: requests.Session) -> None:
+    """
+    Obtiene y cachea cookie + crumb de Yahoo Finance.
+    Sin esto, Yahoo bloquea requests desde servidores cloud.
+    """
+    global _yf_cookie_cache
+    now = time.time()
+
+    # Si tenemos cookie válida, aplicarla a la sesión y listo
+    if _yf_cookie_cache.get("cookie") and (now - _yf_cookie_cache.get("ts", 0)) < _YF_COOKIE_TTL:
+        session.cookies.set("B", _yf_cookie_cache["cookie"], domain=".yahoo.com")
+        return
+
+    try:
+        # Paso 1: obtener cookie visitando Yahoo Finance
+        r1 = requests.get(
+            "https://fc.yahoo.com",
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            },
+            timeout=10,
+            allow_redirects=True
+        )
+        cookie_val = r1.cookies.get("B") or ""
+
+        # Paso 2: obtener crumb con la cookie
+        r2 = requests.get(
+            "https://query2.finance.yahoo.com/v1/test/getcrumb",
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Cookie": f"B={cookie_val}",
+            },
+            timeout=10
+        )
+        crumb = r2.text.strip()
+
+        if cookie_val and crumb and crumb != "":
+            _yf_cookie_cache = {"cookie": cookie_val, "crumb": crumb, "ts": now}
+            session.cookies.set("B", cookie_val, domain=".yahoo.com")
+            # Configurar crumb en yfinance globalmente
+            try:
+                yf.utils.get_crumb = lambda *a, **kw: crumb
+            except Exception:
+                pass
+            print(f"[YF COOKIE] OK — crumb={crumb[:8]}...")
+        else:
+            print(f"[YF COOKIE] No se pudo obtener cookie/crumb")
+
+    except Exception as e:
+        print(f"[YF COOKIE ERROR] {e}")
+
 def get_accion_yf(ticker: str) -> dict | None:
     """
-    Obtiene datos de una acción/ETF via Yahoo Finance usando requests directo
-    con headers de browser para evitar bloqueos en servidores cloud.
+    Obtiene datos via Yahoo Finance usando cookie + crumb para evitar rate limit.
+    yfinance >= 0.2.40 maneja esto automáticamente con YF_CRUMB / YF_COOKIE env vars,
+    o podemos obtener el crumb manualmente al inicio.
     """
     now = time.time()
     if ticker in _accion_cache and (now - _accion_cache_ts.get(ticker, 0)) < ACCION_CACHE_TTL:
         return _accion_cache[ticker]
 
-    # Headers que simulan un browser real — necesario en servidores cloud
-    YF_HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate, br",
-        "DNT": "1",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-    }
-
     try:
-        # Configurar sesión yfinance con headers de browser
-        import yfinance as yf
+        # yfinance con session personalizada y headers anti-bloqueo
         session = requests.Session()
-        session.headers.update(YF_HEADERS)
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Origin": "https://finance.yahoo.com",
+            "Referer": "https://finance.yahoo.com/",
+        })
+
+        # Obtener cookie válida de Yahoo si no tenemos una en caché
+        _ensure_yf_cookie(session)
 
         t = yf.Ticker(ticker, session=session)
-        info = t.info or {}
 
-        # Verificar que existe — yfinance retorna dict vacío o con symbol si no existe
-        symbol = info.get("symbol", "")
-        has_price = (info.get("regularMarketPrice") or
-                     info.get("currentPrice") or
-                     info.get("previousClose") or
-                     info.get("regularMarketPreviousClose"))
-        if not has_price and not symbol:
-            print(f"[YF] {ticker}: no encontrado (sin precio ni symbol)")
-            return None
-
-        quote_type = info.get("quoteType", "").upper()
-        tipo = "ETF" if quote_type == "ETF" else "Acción"
-
-        # Historial de precios — 3 años
+        # Obtener historial primero — más ligero que info
         hist = t.history(period="3y", auto_adjust=True)
         if hist.empty:
-            # Intentar con período menor
             hist = t.history(period="1y", auto_adjust=True)
         if hist.empty:
             print(f"[YF] {ticker}: historial vacío")
             return None
 
-        today = datetime.now().date()
+        # Info después del historial (ya tenemos cookie válida)
+        try:
+            info = t.info or {}
+        except Exception:
+            info = {}
+
+        today  = datetime.now().date()
         prices = hist["Close"]
         idx    = prices.index
 
@@ -276,17 +394,18 @@ def get_accion_yf(ticker: str) -> dict | None:
 
         def rend_anual(p_ini, years):
             if p_ini and p_ini > 0:
-                r = (p_hoy / p_ini) ** (1 / years) - 1
-                return round(r * 100, 2)
+                return round(((p_hoy / p_ini) ** (1 / years) - 1) * 100, 2)
             return None
 
-        sector_en = (info.get("sector") or "").strip().lower()
-        sector    = SEC_TRANSLATE_YF.get(sector_en, info.get("sector") or "")
-        pais_en   = (info.get("country") or "").strip().lower()
-        pais      = GEO_TRANSLATE_YF.get(pais_en, info.get("country") or "")
+        quote_type = info.get("quoteType", "").upper()
+        tipo       = "ETF" if quote_type == "ETF" else "Acción"
+        sector_en  = (info.get("sector") or "").strip().lower()
+        sector     = SEC_TRANSLATE_YF.get(sector_en, info.get("sector") or "")
+        pais_en    = (info.get("country") or "").strip().lower()
+        pais       = GEO_TRANSLATE_YF.get(pais_en, info.get("country") or "Estados Unidos")
+        nombre     = info.get("shortName") or info.get("longName") or ticker
 
         sectores_etf = {}
-        geo_etf      = {}
         if quote_type == "ETF":
             try:
                 holdings = t.funds_data
@@ -297,15 +416,13 @@ def get_accion_yf(ticker: str) -> dict | None:
             except Exception:
                 pass
 
-        nombre = info.get("shortName") or info.get("longName") or info.get("symbol") or ticker
-
         result = {
             "ticker":   ticker,
             "nombre":   nombre,
             "tipo":     tipo,
             "sector":   sector,
             "pais":     pais,
-            "moneda":   info.get("currency", "MXN"),
+            "moneda":   "MXN" if ticker.endswith(".MX") else "USD",
             "r1m":      rend_efectivo(p_mtd),
             "r3m":      rend_efectivo(p_3m),
             "ytd":      rend_efectivo(p_ytd),
@@ -313,19 +430,17 @@ def get_accion_yf(ticker: str) -> dict | None:
             "r2y":      rend_anual(p_2y, 2),
             "r3y":      rend_anual(p_3y, 3),
             "sectores": sectores_etf,
-            "geo":      geo_etf,
+            "geo":      {},
         }
 
-        _accion_cache[ticker] = result
+        _accion_cache[ticker]    = result
         _accion_cache_ts[ticker] = now
-        print(f"[YF OK] {ticker}: {nombre} | precio={p_hoy:.2f}")
+        print(f"[YF OK] {ticker}: {nombre} | p={p_hoy:.2f}")
         return result
 
     except Exception as e:
         print(f"[YF ERROR] {ticker}: {e}")
         return None
-
-
 
 def safe_float(val, default=0.0):
     try:    return float(val)
