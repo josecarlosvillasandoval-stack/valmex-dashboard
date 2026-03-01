@@ -1,6 +1,7 @@
 import os
 import time
 import requests
+import pandas as pd
 import yfinance as yf
 from datetime import date, timedelta, datetime
 from flask import Flask, send_file, request, jsonify, redirect, url_for, session, send_from_directory
@@ -178,10 +179,11 @@ SEC_TRANSLATE_YF = {
 _yf_cookie_cache: dict = {}   # {"cookie": str, "crumb": str, "ts": float}
 _YF_COOKIE_TTL = 3600  # renovar cookie cada hora
 
-def _ensure_yf_cookie(session: requests.Session) -> None:
+def _ensure_yf_cookie(session: requests.Session) -> bool:
     """
     Obtiene y cachea cookie + crumb de Yahoo Finance.
     Sin esto, Yahoo bloquea requests desde servidores cloud.
+    Retorna True si tuvo éxito.
     """
     global _yf_cookie_cache
     now = time.time()
@@ -189,46 +191,46 @@ def _ensure_yf_cookie(session: requests.Session) -> None:
     # Si tenemos cookie válida, aplicarla a la sesión y listo
     if _yf_cookie_cache.get("cookie") and (now - _yf_cookie_cache.get("ts", 0)) < _YF_COOKIE_TTL:
         session.cookies.set("B", _yf_cookie_cache["cookie"], domain=".yahoo.com")
-        return
+        return True
 
-    try:
-        # Paso 1: obtener cookie visitando Yahoo Finance
-        r1 = requests.get(
-            "https://fc.yahoo.com",
-            headers={
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            },
-            timeout=10,
-            allow_redirects=True
-        )
-        cookie_val = r1.cookies.get("B") or ""
+    ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-        # Paso 2: obtener crumb con la cookie
-        r2 = requests.get(
-            "https://query2.finance.yahoo.com/v1/test/getcrumb",
-            headers={
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Cookie": f"B={cookie_val}",
-            },
-            timeout=10
-        )
-        crumb = r2.text.strip()
+    # Intento A: fc.yahoo.com (URL de consentimiento)
+    for consent_url in ["https://fc.yahoo.com", "https://finance.yahoo.com"]:
+        try:
+            r1 = requests.get(
+                consent_url,
+                headers={"User-Agent": ua, "Accept": "text/html,application/xhtml+xml"},
+                timeout=10, allow_redirects=True
+            )
+            cookie_val = r1.cookies.get("B") or ""
+            if not cookie_val:
+                # Buscar cualquier cookie útil
+                for c in r1.cookies:
+                    if c.name in ("B", "A1", "A1S"):
+                        cookie_val = c.value
+                        break
+            if not cookie_val:
+                continue
 
-        if cookie_val and crumb and crumb != "":
-            _yf_cookie_cache = {"cookie": cookie_val, "crumb": crumb, "ts": now}
-            session.cookies.set("B", cookie_val, domain=".yahoo.com")
-            # Configurar crumb en yfinance globalmente
-            try:
-                yf.utils.get_crumb = lambda *a, **kw: crumb
-            except Exception:
-                pass
-            print(f"[YF COOKIE] OK — crumb={crumb[:8]}...")
-        else:
-            print(f"[YF COOKIE] No se pudo obtener cookie/crumb")
+            # Paso 2: obtener crumb
+            r2 = requests.get(
+                "https://query2.finance.yahoo.com/v1/test/getcrumb",
+                headers={"User-Agent": ua, "Cookie": f"B={cookie_val}"},
+                timeout=10
+            )
+            crumb = r2.text.strip()
 
-    except Exception as e:
-        print(f"[YF COOKIE ERROR] {e}")
+            if crumb and crumb != "" and "<" not in crumb:
+                _yf_cookie_cache = {"cookie": cookie_val, "crumb": crumb, "ts": now}
+                session.cookies.set("B", cookie_val, domain=".yahoo.com")
+                print(f"[YF COOKIE] OK ({consent_url}) — crumb={crumb[:8]}...")
+                return True
+        except Exception as e:
+            print(f"[YF COOKIE] {consent_url} falló: {e}")
+
+    print("[YF COOKIE] No se pudo obtener cookie/crumb — se usará yfinance sin autenticación")
+    return False
 
 
 def get_accion_yf(ticker: str) -> dict | None:
@@ -236,34 +238,67 @@ def get_accion_yf(ticker: str) -> dict | None:
     if ticker in _accion_cache and (now - _accion_cache_ts.get(ticker, 0)) < ACCION_CACHE_TTL:
         return _accion_cache[ticker]
 
+    hist = None
+    info = {}
+    t    = None
+
+    ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+    # ── Intento 1: sesión autenticada con cookie/crumb ──
     try:
-        session = requests.Session()
-        session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "*/*", "Accept-Language": "en-US,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
+        sess = requests.Session()
+        sess.headers.update({
+            "User-Agent": ua, "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
             "Origin": "https://finance.yahoo.com",
             "Referer": "https://finance.yahoo.com/",
         })
-        _ensure_yf_cookie(session)
-
-        t = yf.Ticker(ticker, session=session)
-
+        _ensure_yf_cookie(sess)
+        t    = yf.Ticker(ticker, session=sess)
         hist = t.history(period="3y", auto_adjust=True)
         if hist.empty:
             hist = t.history(period="1y", auto_adjust=True)
-        if hist.empty:
-            print(f"[YF] {ticker}: historial vacío")
-            return None
+    except Exception as e:
+        print(f"[YF] {ticker} intento-sesión falló: {e}")
 
+    # ── Intento 2: yfinance nativo sin sesión ──
+    if hist is None or hist.empty:
+        try:
+            t    = yf.Ticker(ticker)
+            hist = t.history(period="3y", auto_adjust=True)
+            if hist.empty:
+                hist = t.history(period="1y", auto_adjust=True)
+        except Exception as e:
+            print(f"[YF] {ticker} intento-nativo falló: {e}")
+
+    # ── Intento 3: yf.download (más estable en servidores cloud) ──
+    if hist is None or hist.empty:
+        try:
+            hist = yf.download(ticker, period="1y", auto_adjust=True,
+                               progress=False, threads=False)
+            # yf.download retorna MultiIndex si solo es un ticker en algunas versiones
+            if isinstance(hist.columns, pd.MultiIndex):
+                hist.columns = hist.columns.get_level_values(0)
+        except Exception as e:
+            print(f"[YF] {ticker} intento-download falló: {e}")
+
+    if hist is None or hist.empty:
+        print(f"[YF] {ticker}: sin datos después de 3 intentos")
+        return None
+
+    # ── Obtener info (nombre, sector, país) ──
+    if t is not None:
         try:
             info = t.info or {}
         except Exception:
             info = {}
 
+    try:
         today  = datetime.now().date()
-        prices = hist["Close"]
-        idx    = prices.index
+        prices = hist["Close"].dropna()
+        if prices.empty:
+            return None
+        idx = prices.index
 
         def precio_en(d: date):
             ts = [i for i in idx if i.date() <= d]
@@ -297,9 +332,8 @@ def get_accion_yf(ticker: str) -> dict | None:
         sector_en  = (info.get("sector") or "").strip().lower()
         sector     = SEC_TRANSLATE_YF.get(sector_en, info.get("sector") or "")
         pais_en    = (info.get("country") or "").strip().lower()
-        pais       = GEO_TRANSLATE_YF.get(pais_en, info.get("country") or "Estados Unidos")
+        pais       = GEO_TRANSLATE_YF.get(pais_en, info.get("country") or "México")
         moneda     = "MXN" if ticker.endswith(".MX") else "USD"
-
         nombre     = info.get("shortName") or info.get("longName") or ticker
 
         sectores_etf = {}
@@ -307,7 +341,7 @@ def get_accion_yf(ticker: str) -> dict | None:
 
         if quote_type == "ETF":
             try:
-                holdings = t.funds_data
+                holdings = t.funds_data if t else None
                 if holdings and hasattr(holdings, "sector_weightings"):
                     for s, v in (holdings.sector_weightings or {}).items():
                         lbl = SEC_TRANSLATE_YF.get(s.lower(), s)
@@ -315,26 +349,11 @@ def get_accion_yf(ticker: str) -> dict | None:
                             sectores_etf[lbl] = round(v * 100, 2)
             except Exception:
                 pass
-
-            # Para ETFs: intentar obtener geo de holdings
-            try:
-                if holdings and hasattr(holdings, "equity_holdings"):
-                    eq = holdings.equity_holdings
-                    # equity_holdings puede tener country breakdown
-                    pass
-            except Exception:
-                pass
-
-            # Si no hay sector de ETF, usar sector del info
             if not sectores_etf and sector:
                 sectores_etf[sector] = 100.0
-
-            # Geo del ETF: usar país del ETF como proxy si no hay breakdown
             if not geo_etf and pais:
                 geo_etf[pais] = 100.0
-
         else:
-            # Acción individual
             if sector:
                 sectores_etf[sector] = 100.0
             if pais:
@@ -361,7 +380,7 @@ def get_accion_yf(ticker: str) -> dict | None:
 
         _accion_cache[ticker]    = result
         _accion_cache_ts[ticker] = now
-        print(f"[YF OK] {ticker}: {nombre} | p={precio_cierre:.2f} | tipo={tipo} | geo={pais} | sector={sector}")
+        print(f"[YF OK] {ticker}: {nombre} | p={precio_cierre:.2f} | tipo={tipo} | pais={pais}")
         return result
 
     except Exception as e:
