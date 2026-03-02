@@ -13,6 +13,25 @@
 body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 :root{--navy:#00205C;--sky:#41BBC9;--blue:#3DA5E0;--silver:#D3DDE6;--gray:#5B6670;--white:#fff;--bg:#FFFFFF;}
 
+/* ── Toast notification (modal para warn/err) ── */
+.vx-toast-overlay{position:fixed;inset:0;background:rgba(0,32,92,.25);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease;}
+.vx-toast-overlay.show{opacity:1;}
+.vx-toast{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,32,92,.18),0 4px 16px rgba(0,0,0,.08);max-width:420px;width:90%;padding:28px 32px 24px;text-align:center;transform:scale(.92) translateY(12px);transition:transform .25s cubic-bezier(.34,1.56,.64,1);font-family:'Montserrat',sans-serif;}
+.vx-toast-overlay.show .vx-toast{transform:scale(1) translateY(0);}
+.vx-toast-icon{width:48px;height:48px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:22px;}
+.vx-toast-icon.warn{background:rgba(245,158,11,.12);color:#F59E0B;}
+.vx-toast-icon.ok{background:rgba(65,187,201,.12);color:var(--sky);}
+.vx-toast-icon.err{background:rgba(239,68,68,.10);color:#EF4444;}
+.vx-toast-title{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:8px;line-height:1.3;}
+.vx-toast-msg{font-size:13.5px;font-weight:500;color:var(--gray);line-height:1.5;margin-bottom:20px;}
+.vx-toast-btn{background:var(--navy);color:#fff;border:none;border-radius:10px;padding:10px 36px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s,transform .1s;letter-spacing:.3px;}
+.vx-toast-btn:hover{background:#003080;}
+.vx-toast-btn:active{transform:scale(.97);}
+/* ── Snackbar (auto-dismiss para ok) ── */
+.vx-snack{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;border-radius:12px;padding:14px 28px;font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;box-shadow:0 8px 32px rgba(0,32,92,.25);z-index:9999;display:flex;align-items:center;gap:10px;opacity:0;transition:opacity .25s ease,transform .25s cubic-bezier(.34,1.56,.64,1);}
+.vx-snack.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.vx-snack-icon{width:28px;height:28px;border-radius:50%;background:var(--sky);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;}
+
 /* ── TOPBAR ── */
 .topbar{background:var(--navy);width:100%;box-shadow:0 2px 12px rgba(0,0,0,.25);}
 .brand{max-width:1600px;margin:0 auto;padding:0 40px;height:72px;display:flex;align-items:center;justify-content:space-between;}
@@ -53,7 +72,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   gap:16px;
   align-content:start;
 }
-.page{display:none;background:#fff;}.page.active{display:block;background:#fff;} #page-presentacion.active{display:flex;} #page-propuesta.active{display:flex;flex-direction:column;margin-top:-24px;}
+.page{display:none;background:#fff;}.page.active{display:block;background:#fff;} #page-presentacion.active{display:flex;} #page-propuesta.active{display:flex;flex-direction:column;margin-top:-24px;} #page-comparativa.active{display:flex;flex-direction:column;margin-top:-24px;}
 
 /* ── BOTÓN DESCARGA ── */
 .btn-dl{width:36px;height:36px;border-radius:8px;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background .18s;text-decoration:none;flex-shrink:0;}
@@ -69,7 +88,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 /* ── PROPUESTA ── */
 .prop-titlebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;padding:4px 0;}
 .prop-title-left{display:flex;align-items:center;gap:10px;}
-.prop-accent{width:8px;height:36px;background:var(--sky);border-radius:3px;flex-shrink:0;}
+.prop-accent{width:8px;align-self:stretch;background:var(--sky);border-radius:3px;flex-shrink:0;}
 .prop-title{font-size:32px;font-weight:900;letter-spacing:.3px;color:var(--navy);text-transform:uppercase;}
 .prop-rule{height:2px;background:var(--navy);border-radius:2px;margin-bottom:14px;}
 .prop-right{display:flex;align-items:center;gap:12px;} 
@@ -151,11 +170,30 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 .total-ok{color:var(--navy)!important;}
 .total-err{color:#DC2626!important;}
 
-/* ── COMPARATIVA ── */
-.cmp-card{background:#fff;border:1px solid var(--silver);border-radius:12px;box-shadow:0 2px 14px rgba(0,32,92,.08);overflow:hidden;}
-.cmp-hdr{background:var(--navy);padding:12px 20px;}
-.cmp-hdr h3{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px;}
-.cmp-body{padding:20px;height:360px;}
+/* ── COMPARATIVA TAB ── */
+.cmp-select{padding:7px 12px;border:1.5px solid var(--silver);border-radius:7px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;color:var(--navy);background:#fff;outline:none;cursor:pointer;transition:border-color .18s;max-width:260px;}
+.cmp-select:focus{border-color:var(--sky);}
+/* Fila 1: Composición span 2 + Backtesting span 4 */
+#cmp-dash .cmp-comp{grid-column:span 2;height:420px;}
+#cmp-dash .cmp-back{grid-column:span 4;height:420px;}
+/* Fila 2: Rendimientos span 2 + Clase span 2 + Deuda span 2 */
+#cmp-dash .cmp-rend{grid-column:span 2;height:360px;}
+#cmp-dash .cmp-clase{grid-column:span 2;height:360px;}
+#cmp-dash .cmp-deuda{grid-column:span 2;height:360px;}
+/* Fila 3: TipoDeuda span 2 + Geo span 2 + Sectores span 2 (or Geo 3 + Sector 3 without debt) */
+#cmp-dash .cmp-tipodeuda{grid-column:span 2;height:360px;}
+#cmp-dash .cmp-geo{grid-column:span 3;height:360px;}
+#cmp-dash .cmp-sector{grid-column:span 3;height:360px;}
+#cmp-tipodeuda-legend,#cmp-geo-legend,#cmp-sector-legend{min-height:60px!important;align-content:flex-start;}
+/* Badges */
+.cmp-badge-a{display:inline-block;background:var(--navy);color:#fff;font-size:11px;font-weight:800;padding:3px 14px;border-radius:10px;text-align:center;font-family:'Montserrat',sans-serif;}
+.cmp-badge-b{display:inline-block;background:var(--sky);color:#fff;font-size:11px;font-weight:800;padding:3px 14px;border-radius:10px;text-align:center;font-family:'Montserrat',sans-serif;}
+/* (comparativa reutiliza rh-grid y dd-grid de propuesta) */
+/* Paired pie doughnuts */
+.cmp-pie-pair{display:flex;gap:8px;height:100%;}
+.cmp-pie-half{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;}
+.cmp-pie-half canvas{flex:1;width:100%!important;min-height:0;}
+@media(max-width:600px) and (orientation:portrait){#cmp-dash{grid-template-columns:1fr!important;} #cmp-dash .pcard{grid-column:span 1!important;height:auto!important;min-height:260px;} #cmp-dash .cmp-rend,#cmp-dash .cmp-deuda{min-height:480px!important;}}
 
 /* ── ELITE ── */
 .elite-hero{background:linear-gradient(130deg,var(--navy) 0%,#0A3580 100%);border-radius:14px;padding:36px 40px;display:flex;align-items:center;gap:28px;box-shadow:0 8px 32px rgba(0,32,92,.22);}
@@ -175,6 +213,20 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   .card-pie{grid-column:span 2;}
   .cfg-layout{grid-template-columns:1fr;}
   .elite-features{grid-template-columns:1fr;}
+  /* Responsive: CMP grid 3 columnas */
+  #cmp-dash{grid-template-columns:repeat(3,1fr)!important;}
+  #cmp-dash .cmp-comp{grid-column:span 1!important;}
+  #cmp-dash .cmp-back{grid-column:span 2!important;}
+  #cmp-dash .cmp-rend,#cmp-dash .cmp-clase,#cmp-dash .cmp-deuda{grid-column:span 3!important;}
+  #cmp-dash .cmp-tipodeuda{grid-column:span 1!important;}
+  #cmp-dash .cmp-geo{grid-column:span 1!important;}
+  #cmp-dash .cmp-sector{grid-column:span 1!important;}
+  /* Responsive: fondos-list 2 columnas */
+  .fondos-list{grid-template-columns:1fr 1fr!important;}
+  /* Responsive: acciones-grid 2 columnas */
+  #act-acciones-grid,#prop-acciones-grid{grid-template-columns:1fr 1fr!important;}
+  /* Responsive: comparativa toolbar wrap */
+  #page-comparativa .prop-titlebar .prop-right{flex-wrap:wrap;gap:8px;}
 }
 
 /* ══ MOBILE PORTRAIT (≤600px vertical) ══ */
@@ -196,6 +248,35 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   .elite-features{grid-template-columns:1fr;}
   .cmp-body{height:260px;}
   .prop-row1 .pcard,.prop-row2 .pcard{min-height:200px;}
+  /* Responsive: fondos-list 1 columna */
+  .fondos-list{grid-template-columns:1fr!important;max-height:60vh;}
+  /* Responsive: acciones-grid 1 columna */
+  #act-acciones-grid,#prop-acciones-grid{grid-template-columns:1fr!important;}
+  /* Responsive: comparativa toolbar stacked */
+  #page-comparativa .prop-titlebar .prop-right{flex-wrap:wrap;gap:6px;justify-content:center;}
+  #page-comparativa .prop-titlebar .prop-right .cmp-select{max-width:100%!important;width:100%;}
+  /* Responsive: propuesta toolbar wrap */
+  #prop-toolbar .prop-right{flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+  /* Responsive: CMP rend/deuda A|B → stack vertical */
+  #cmp-dash .cmp-rend .pb>div,#cmp-dash .cmp-deuda .pb>div{flex-direction:column!important;}
+  /* Responsive: CMP divider vertical → horizontal */
+  #cmp-dash .cmp-rend .pb>div>div[style*="width:1px"],
+  #cmp-dash .cmp-deuda .pb>div>div[style*="width:1px"]{width:100%!important;height:1px!important;margin:6px 0!important;}
+  /* Responsive: CMP pie pairs side-by-side, reduced gap/badges */
+  .cmp-pie-pair{gap:4px!important;}
+  .cmp-badge-a,.cmp-badge-b{font-size:9px!important;padding:2px 8px!important;}
+  /* Responsive: CMP font sizes */
+  .ph{font-size:11px!important;}
+  #cmp-dash .rh-val,.rh-val{font-size:14px!important;}
+  #cmp-dash .rh-pill{font-size:10px!important;}
+  #cmp-dash .dd-block .rh-val{font-size:13px!important;}
+  #cmp-dash .dd-block .rh-pill{font-size:9px!important;}
+  /* Responsive: CMP rend/deuda min-height for stacked A|B */
+  #cmp-dash .cmp-rend,#cmp-dash .cmp-deuda{min-height:480px!important;}
+  /* Responsive: prop-dash-title stack */
+  .prop-dash-title{flex-direction:column!important;align-items:flex-start!important;gap:8px!important;}
+  .prop-dash-title img{height:50px!important;}
+  #prop-title-sub,#cmp-title-sub{font-size:13px!important;}
 }
 
 /* ══ LANDSCAPE CELULAR ══ */
@@ -219,6 +300,25 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   .ph{padding:4px 10px;font-size:9.5px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .prop-note{display:none;}
   .pres-body{height:78vh;}
+  /* Responsive: fondos-list 2 columnas, max-height */
+  .fondos-list{grid-template-columns:1fr 1fr!important;max-height:50vh;}
+  /* Responsive: acciones-grid 2 columnas */
+  #act-acciones-grid,#prop-acciones-grid{grid-template-columns:1fr 1fr!important;}
+  /* Responsive: CMP grid 3 columnas */
+  #cmp-dash{grid-template-columns:repeat(3,1fr)!important;}
+  #cmp-dash .cmp-comp{grid-column:span 1!important;}
+  #cmp-dash .cmp-back{grid-column:span 2!important;}
+  #cmp-dash .cmp-rend,#cmp-dash .cmp-clase,#cmp-dash .cmp-deuda{grid-column:span 3!important;}
+  #cmp-dash .cmp-tipodeuda,#cmp-dash .cmp-geo,#cmp-dash .cmp-sector{grid-column:span 1!important;}
+  /* Responsive: CMP font sizes reducidos */
+  #cmp-dash .rh-val{font-size:11px!important;}
+  #cmp-dash .rh-pill{font-size:8px!important;}
+  #cmp-dash .dd-block .rh-val{font-size:10px!important;}
+  .cmp-badge-a,.cmp-badge-b{font-size:8px!important;padding:1px 6px!important;}
+  /* Responsive: CMP toolbar wrap */
+  #page-comparativa .prop-titlebar .prop-right{flex-wrap:wrap;gap:4px;}
+  /* Responsive: cfg-layout 1 columna */
+  .cfg-layout{grid-template-columns:1fr!important;}
 }
 
 /* ══ TABLET LANDSCAPE ══ */
@@ -226,6 +326,29 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   .card-comp,.card-rend,.card-deuda{grid-column:span 1;}
   .card-back{grid-column:span 3;}
   .card-pie{grid-column:span 2;min-height:220px;}
+  /* Responsive: CMP min-heights */
+  #cmp-dash .cmp-rend,#cmp-dash .cmp-deuda{min-height:320px;}
+  #cmp-dash .cmp-clase,#cmp-dash .cmp-tipodeuda,#cmp-dash .cmp-geo,#cmp-dash .cmp-sector{min-height:280px;}
+}
+
+/* ══ PHONES MUY PEQUEÑOS (≤380px) ══ */
+@media(max-width:380px){
+  .brand{padding:0 10px!important;height:56px!important;}
+  .logo-img{height:28px!important;}
+  .prop-title{font-size:13px!important;}
+  #prop-title-sub,#cmp-title-sub{font-size:11px!important;}
+  .ph{font-size:10px!important;}
+  .rh-val{font-size:13px!important;}
+  .rh-pill{font-size:9px!important;}
+  .dd-block .rh-val{font-size:12px!important;}
+  .fg label{font-size:10px!important;}
+  .fg input,.fg select{font-size:12px!important;padding:7px 10px!important;}
+  .fondo-nombre{font-size:11px!important;}
+  .fondo-input{font-size:12px!important;padding:5px 6px!important;}
+  .cmp-select{font-size:12px!important;padding:6px 10px!important;}
+  .btn-primary{font-size:12px!important;padding:9px 16px!important;}
+  .container{padding:8px!important;}
+  .mobile-panel{width:220px!important;}
 }
 
 @media print{
@@ -279,6 +402,9 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   font-size: 14px;
   height: 32px;
 }
+
+/* ── RESPONSIVE: prop-dash-scaler containment ── */
+.prop-dash-scaler{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
 </style>
 </head>
 <body>
@@ -332,7 +458,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
   <div id="page-presentacion" class="page active">
     <div class="pres-card">
       <div class="pres-hdr">
-        <a href="/PC.pdf" download="PRESENTACIÓN COMERCIAL VALMEX.pdf" class="btn-dl" title="Descargar">
+        <a href="#" onclick="descargarPresentacion(event)" class="btn-dl" title="Descargar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </a>
       </div>
@@ -374,9 +500,12 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
       <div class="prop-dash-title">
         <div class="prop-title-left">
           <div class="prop-accent"></div>
-          <span class="prop-title">Estrategia Portafolio</span>
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <span class="prop-title" id="prop-title-main">Estrategia de inversión</span>
+            <span id="prop-title-sub" style="font-size:18px;font-weight:700;color:var(--sky);letter-spacing:.2px;text-transform:uppercase;"></span>
+          </div>
         </div>
-        <img src="/VALMEX2.png" style="height:38px;width:auto;" alt="VALMEX">
+        <img src="/VALMEX2.png" style="height:75px;width:auto;" alt="VALMEX">
       </div>
       <div class="prop-rule-full"></div>
 
@@ -433,11 +562,11 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 
       <!-- FILA 2 -->
       <div class="prop-row2">
-        <div class="pcard card-pie">
+        <div class="pcard card-pie" id="pcard-clase">
           <div class="ph">Clase de activos</div>
           <div class="pb" style="padding:6px;"><canvas id="c-clase"></canvas></div>
         </div>
-        <div class="pcard card-pie">
+        <div class="pcard card-pie" id="pcard-geo">
           <div class="ph" id="ph-geo">Exposición Geográfica RV</div>
           <div class="pb" style="padding:6px;"><canvas id="c-geo"></canvas></div>
         </div>
@@ -465,10 +594,10 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
           <div class="fg"><label>No. Contrato</label><input type="text" id="cfg-contrato" placeholder="Ej. 123456"></div>
           <div class="fg"><label>Perfil de Riesgo</label>
             <select id="cfg-perfil">
-              <option value="0">Perfil 0 - 100% RF low risk</option>
+              <option value="0" selected>Perfil 0 - 100% RF low risk</option>
               <option value="1">Perfil 1 - 100% RF high risk</option>
               <option value="2">Perfil 2 - 80% RF / 20% RV</option>
-              <option value="3" selected>Perfil 3 - 60% RF / 40% RV</option>
+              <option value="3">Perfil 3 - 60% RF / 40% RV</option>
               <option value="4">Perfil 4 - 40% RF / 60% RV</option>
             </select>
           </div>
@@ -527,7 +656,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 <div class="fondo-row actual"><span class="fondo-nombre">VLMXP45</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXP45" oninput="onActual('VLMXP45')"><span class="fondo-pct" id="act-pct-VLMXP45">0.00%</span></div>
 <div class="fondo-row actual"><span class="fondo-nombre">VLMXP52</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXP52" oninput="onActual('VLMXP52')"><span class="fondo-pct" id="act-pct-VLMXP52">0.00%</span></div>
 <div class="fondo-row actual"><span class="fondo-nombre">VLMXP59</span><input class="fondo-input" type="text" placeholder="$0.00" id="act-VLMXP59" oninput="onActual('VLMXP59')"><span class="fondo-pct" id="act-pct-VLMXP59">0.00%</span></div>
-<div class="fsec-hdr">Acciones &amp; ETFs</div>
+<div class="fsec-hdr">Acciones &amp; ETF's</div>
 <div id="act-acciones-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;grid-column:1/-1;"></div>
 <div id="act-accion-msg" style="font-size:11px;color:var(--navy);padding:2px 4px;min-height:16px;grid-column:1/-1;"></div>
           </div>
@@ -570,7 +699,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 <div class="fondo-row propuesta"><span class="fondo-nombre">VLMXP45</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXP45" oninput="onProp('VLMXP45')"><span class="fondo-monto" id="prop-monto-VLMXP45">$0.00</span></div>
 <div class="fondo-row propuesta"><span class="fondo-nombre">VLMXP52</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXP52" oninput="onProp('VLMXP52')"><span class="fondo-monto" id="prop-monto-VLMXP52">$0.00</span></div>
 <div class="fondo-row propuesta"><span class="fondo-nombre">VLMXP59</span><input class="fondo-input" type="text" placeholder="0.00%" id="prop-VLMXP59" oninput="onProp('VLMXP59')"><span class="fondo-monto" id="prop-monto-VLMXP59">$0.00</span></div>
-<div class="fsec-hdr">Acciones &amp; ETFs</div>
+<div class="fsec-hdr">Acciones &amp; ETF's</div>
 <div id="prop-acciones-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;grid-column:1/-1;"></div>
 <div id="prop-accion-msg" style="font-size:11px;color:var(--navy);padding:2px 4px;min-height:16px;grid-column:1/-1;"></div>
           </div>
@@ -584,6 +713,180 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 
   <!-- COMPARATIVA -->
   <div id="page-comparativa" class="page">
+    <!-- Toolbar: selectores + PDF -->
+    <div class="prop-titlebar">
+      <div></div>
+      <div class="prop-right">
+        <label style="font-size:13px;font-weight:700;color:var(--navy);font-family:'Montserrat',sans-serif;">A:</label>
+        <select id="cmp-sel-a" class="cmp-select" onchange="cargarComparativa()">
+          <option value="perfil_0">Perfil 0 - 100% RF low risk</option>
+          <option value="perfil_1">Perfil 1 - 100% RF high risk</option>
+          <option value="perfil_2">Perfil 2 - 80% RF / 20% RV</option>
+          <option value="perfil_3">Perfil 3 - 60% RF / 40% RV</option>
+          <option value="perfil_4">Perfil 4 - 40% RF / 60% RV</option>
+          <option value="actual" selected>Cartera Actual</option>
+          <option value="propuesta">Cartera Propuesta</option>
+        </select>
+        <span style="font-size:16px;font-weight:800;color:var(--navy);font-family:'Montserrat',sans-serif;padding:0 4px;">vs</span>
+        <label style="font-size:13px;font-weight:700;color:var(--navy);font-family:'Montserrat',sans-serif;">B:</label>
+        <select id="cmp-sel-b" class="cmp-select" onchange="cargarComparativa()">
+          <option value="perfil_0">Perfil 0 - 100% RF low risk</option>
+          <option value="perfil_1">Perfil 1 - 100% RF high risk</option>
+          <option value="perfil_2">Perfil 2 - 80% RF / 20% RV</option>
+          <option value="perfil_3" selected>Perfil 3 - 60% RF / 40% RV</option>
+          <option value="perfil_4">Perfil 4 - 40% RF / 60% RV</option>
+          <option value="actual">Cartera Actual</option>
+          <option value="propuesta">Cartera Propuesta</option>
+        </select>
+        <button class="btn-dl" id="btn-pdf-cmp" title="Descargar PDF Comparativa">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="prop-dash-scaler"><div id="cmp-dash" style="width:100%;background:#fff;padding:4px 16px;display:grid;grid-template-columns:repeat(6,1fr);gap:16px;align-content:start;">
+
+      <!-- Header: título + logo -->
+      <div class="prop-dash-title">
+        <div class="prop-title-left">
+          <div class="prop-accent"></div>
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <span class="prop-title" id="cmp-title-main">Estrategia de inversión</span>
+            <span id="cmp-title-sub" style="font-size:18px;font-weight:700;color:var(--sky);letter-spacing:.2px;text-transform:uppercase;"></span>
+          </div>
+        </div>
+        <img src="/VALMEX2.png" style="height:75px;width:auto;" alt="VALMEX">
+      </div>
+      <div class="prop-rule-full"></div>
+
+      <!-- ═══ FILA 1: Composición + Backtesting ═══ -->
+      <div class="pcard cmp-comp" id="cmp-card-comp">
+        <div class="ph">Composición</div>
+        <div class="pb" style="padding:8px 6px;"><canvas id="c-cmp-comp"></canvas></div>
+      </div>
+      <div class="pcard cmp-back" id="cmp-card-back">
+        <div class="ph">Backtesting</div>
+        <div class="pb" style="padding:10px;"><canvas id="c-cmp-linea"></canvas></div>
+      </div>
+
+      <!-- ═══ FILA 2: Rendimientos + Clase de activos + Deuda ═══ -->
+      <div class="pcard cmp-rend" id="cmp-card-rend">
+        <div class="ph">Rendimientos</div>
+        <div class="pb" style="padding:6px;">
+          <div style="display:flex;gap:0;width:100%;height:100%;">
+            <!-- Col A -->
+            <div style="flex:1;display:flex;flex-direction:column;gap:4px;padding-right:6px;">
+              <div style="text-align:center;"><span class="cmp-badge-a" id="cmp-rend-badge-a" style="font-size:9px;padding:2px 10px;">A</span></div>
+              <div class="rh-grid" style="flex:1;">
+                <div class="rh-block"><span class="rh-pill">MTD</span><span class="rh-val" id="cmp-r-mtd-a">—</span></div>
+                <div class="rh-block"><span class="rh-pill">3 Meses</span><span class="rh-val" id="cmp-r-3m-a">—</span></div>
+                <div class="rh-block"><span class="rh-pill">YTD</span><span class="rh-val" id="cmp-r-ytd-a">—</span></div>
+                <div class="rh-block"><span class="rh-pill">12 Meses</span><span class="rh-val" id="cmp-r-1y-a">—</span></div>
+                <div class="rh-block"><span class="rh-pill">24 Meses</span><span class="rh-val" id="cmp-r-2y-a">—</span></div>
+                <div class="rh-block"><span class="rh-pill">36 Meses</span><span class="rh-val" id="cmp-r-3y-a">—</span></div>
+              </div>
+            </div>
+            <div style="width:1px;background:rgba(0,32,92,0.12);flex-shrink:0;margin:24px 0 4px;"></div>
+            <!-- Col B -->
+            <div style="flex:1;display:flex;flex-direction:column;gap:4px;padding-left:6px;">
+              <div style="text-align:center;"><span class="cmp-badge-b" id="cmp-rend-badge-b" style="font-size:9px;padding:2px 10px;">B</span></div>
+              <div class="rh-grid" style="flex:1;">
+                <div class="rh-block"><span class="rh-pill">MTD</span><span class="rh-val" id="cmp-r-mtd-b">—</span></div>
+                <div class="rh-block"><span class="rh-pill">3 Meses</span><span class="rh-val" id="cmp-r-3m-b">—</span></div>
+                <div class="rh-block"><span class="rh-pill">YTD</span><span class="rh-val" id="cmp-r-ytd-b">—</span></div>
+                <div class="rh-block"><span class="rh-pill">12 Meses</span><span class="rh-val" id="cmp-r-1y-b">—</span></div>
+                <div class="rh-block"><span class="rh-pill">24 Meses</span><span class="rh-val" id="cmp-r-2y-b">—</span></div>
+                <div class="rh-block"><span class="rh-pill">36 Meses</span><span class="rh-val" id="cmp-r-3y-b">—</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pcard cmp-clase" id="cmp-pcard-clase">
+        <div class="ph">Clase de activos</div>
+        <div class="pb" style="padding:2px;flex-direction:column;overflow:hidden;">
+          <div class="cmp-pie-pair" style="flex:1;min-height:0;gap:4px;">
+            <div class="cmp-pie-half"><span class="cmp-badge-a" id="cmp-clase-badge-a" style="font-size:10px;margin:0;">A</span><canvas id="c-cmp-clase-a"></canvas></div>
+            <div class="cmp-pie-half"><span class="cmp-badge-b" id="cmp-clase-badge-b" style="font-size:10px;margin:0;">B</span><canvas id="c-cmp-clase-b"></canvas></div>
+          </div>
+          <div id="cmp-clase-legend" style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;padding:2px 4px 0;flex-shrink:0;min-height:20px;"></div>
+        </div>
+      </div>
+      <div class="pcard cmp-deuda" id="cmp-card-deuda">
+        <div class="ph">Detalle Deuda</div>
+        <div class="pb" style="padding:6px;">
+          <div style="display:flex;gap:0;width:100%;height:100%;">
+            <!-- Col A -->
+            <div style="flex:1;display:flex;flex-direction:column;gap:4px;padding-right:6px;">
+              <div style="text-align:center;"><span class="cmp-badge-a" id="cmp-deuda-badge-a" style="font-size:9px;padding:2px 10px;">A</span></div>
+              <div class="dd-grid" style="flex:1;">
+                <div class="dd-hdr dd-hdr-mxn">MX</div>
+                <div class="dd-hdr dd-hdr-usd">USD</div>
+                <div class="dd-block"><span class="rh-pill" style="font-size:10px;">Duración</span><span class="rh-val" id="cmp-d-dur-mxn-a">—</span></div>
+                <div class="dd-block"><span class="rh-pill" style="font-size:10px;">Duración</span><span class="rh-val" id="cmp-d-dur-usd-a">—</span></div>
+                <div class="dd-block"><span class="rh-pill">YTM</span><span class="rh-val" id="cmp-d-ytm-mxn-a">—</span></div>
+                <div class="dd-block"><span class="rh-pill">YTM</span><span class="rh-val" id="cmp-d-ytm-usd-a">—</span></div>
+                <div class="dd-block"><span class="rh-pill">C.Credit.</span><span class="rh-val" id="cmp-d-cred-mxn-a">—</span></div>
+                <div class="dd-block"><span class="rh-pill">C.Credit.</span><span class="rh-val" id="cmp-d-cred-usd-a">—</span></div>
+              </div>
+            </div>
+            <div style="width:1px;background:rgba(0,32,92,0.12);flex-shrink:0;margin:24px 0 4px;"></div>
+            <!-- Col B -->
+            <div style="flex:1;display:flex;flex-direction:column;gap:4px;padding-left:6px;">
+              <div style="text-align:center;"><span class="cmp-badge-b" id="cmp-deuda-badge-b" style="font-size:9px;padding:2px 10px;">B</span></div>
+              <div class="dd-grid" style="flex:1;">
+                <div class="dd-hdr dd-hdr-mxn">MX</div>
+                <div class="dd-hdr dd-hdr-usd">USD</div>
+                <div class="dd-block"><span class="rh-pill" style="font-size:10px;">Duración</span><span class="rh-val" id="cmp-d-dur-mxn-b">—</span></div>
+                <div class="dd-block"><span class="rh-pill" style="font-size:10px;">Duración</span><span class="rh-val" id="cmp-d-dur-usd-b">—</span></div>
+                <div class="dd-block"><span class="rh-pill">YTM</span><span class="rh-val" id="cmp-d-ytm-mxn-b">—</span></div>
+                <div class="dd-block"><span class="rh-pill">YTM</span><span class="rh-val" id="cmp-d-ytm-usd-b">—</span></div>
+                <div class="dd-block"><span class="rh-pill">C.Credit.</span><span class="rh-val" id="cmp-d-cred-mxn-b">—</span></div>
+                <div class="dd-block"><span class="rh-pill">C.Credit.</span><span class="rh-val" id="cmp-d-cred-usd-b">—</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ FILA 3: Tipo de Deuda + Geo + Sectores ═══ -->
+      <div class="pcard cmp-tipodeuda" id="cmp-pcard-tipodeuda" style="display:none;">
+        <div class="ph">Tipo de Deuda</div>
+        <div class="pb" style="padding:2px;flex-direction:column;overflow:hidden;">
+          <div class="cmp-pie-pair" style="flex:1;min-height:0;gap:4px;">
+            <div class="cmp-pie-half"><span class="cmp-badge-a" id="cmp-tipodeuda-badge-a" style="font-size:10px;margin:0;">A</span><canvas id="c-cmp-tipodeuda-a"></canvas></div>
+            <div class="cmp-pie-half"><span class="cmp-badge-b" id="cmp-tipodeuda-badge-b" style="font-size:10px;margin:0;">B</span><canvas id="c-cmp-tipodeuda-b"></canvas></div>
+          </div>
+          <div id="cmp-tipodeuda-legend" style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;padding:2px 4px 0;flex-shrink:0;min-height:20px;"></div>
+        </div>
+      </div>
+      <div class="pcard cmp-geo" id="cmp-pcard-geo">
+        <div class="ph" id="cmp-ph-geo">Exposición Geográfica</div>
+        <div class="pb" style="padding:2px;flex-direction:column;overflow:hidden;">
+          <div class="cmp-pie-pair" style="flex:1;min-height:0;gap:4px;">
+            <div class="cmp-pie-half"><span class="cmp-badge-a" id="cmp-geo-badge-a" style="font-size:10px;margin:0;">A</span><canvas id="c-cmp-geo-a"></canvas></div>
+            <div class="cmp-pie-half"><span class="cmp-badge-b" id="cmp-geo-badge-b" style="font-size:10px;margin:0;">B</span><canvas id="c-cmp-geo-b"></canvas></div>
+          </div>
+          <div id="cmp-geo-legend" style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;padding:2px 4px 0;flex-shrink:0;min-height:20px;"></div>
+        </div>
+      </div>
+      <div class="pcard cmp-sector" id="cmp-pcard-sector">
+        <div class="ph">Exposición Sectorial</div>
+        <div class="pb" style="padding:2px;flex-direction:column;overflow:hidden;">
+          <div class="cmp-pie-pair" style="flex:1;min-height:0;gap:4px;">
+            <div class="cmp-pie-half"><span class="cmp-badge-a" id="cmp-sector-badge-a" style="font-size:10px;margin:0;">A</span><canvas id="c-cmp-sector-a"></canvas></div>
+            <div class="cmp-pie-half"><span class="cmp-badge-b" id="cmp-sector-badge-b" style="font-size:10px;margin:0;">B</span><canvas id="c-cmp-sector-b"></canvas></div>
+          </div>
+          <div id="cmp-sector-legend" style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;padding:2px 4px 0;flex-shrink:0;min-height:20px;"></div>
+        </div>
+      </div>
+
+      <!-- Nota al pie -->
+      <div style="grid-column:1/-1;padding:4px 4px 2px;border-top:1px solid rgba(0,32,92,0.12);margin-top:2px;">
+        <p class="prop-note">*Rendimientos con plazo menor a un año están expresados en términos efectivos y los rendimientos mayores a un año en términos anualizados. Los rendimientos se encuentran actualizados al <span id="cmp-fecha-actualizacion"></span>.</p>
+      </div>
+    </div>
+    </div>
   </div>
 
   <!-- ELITE -->
@@ -830,12 +1133,12 @@ function calcTotalPropuesta(){
   else { el.className = Math.abs(t-100) < 0.01 ? 'total-ok' : 'total-err'; }
 }
 
-function guardarCliente(){alert('✅ Datos del cliente guardados.');}
+function guardarCliente(){vxToast('Datos del cliente guardados.','ok');}
 // Alias para llamadas desde renderAccionProp
 function calcTotalProp() { calcTotalPropuesta(); }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ACCIONES & ETFs — Slots expandibles (6 iniciales, +3 cuando se llenan)
+// ACCIONES & ETF's — Slots expandibles (6 iniciales, +3 cuando se llenan)
 // ─────────────────────────────────────────────────────────────────────────────
 // Cada slot: { ticker:'', nombre:'', tipo:'', monto:'', pct:'', loading:false, error:'' }
 const SLOTS_INICIALES = 6;
@@ -1227,12 +1530,18 @@ function onSlotPropTitulosLive(i, inp) {
 }
 
 function onSlotActualMontoLive(i, inp) {
-  // Limpiar caracteres no numéricos del input activo (el usuario está tecleando)
   const raw = inp.value.replace(/[^0-9.]/g,'');
   const parts = raw.split('.');
   const v = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
-  // NO modificar inp.value aquí — dejar que el usuario escriba libremente
   _slotsActual[i].monto = v ? v : '';
+  // Formatear con $ y comas mientras escribe
+  if (v) {
+    const p = v.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    inp.value = '$' + (p.length > 1 ? p[0] + '.' + p[1].slice(0, 2) : p[0]);
+    const pos = inp.value.length;
+    setTimeout(() => { try { inp.setSelectionRange(pos, pos); } catch(e) {} }, 0);
+  }
   // Auto-calcular títulos = monto / precio_cierre
   const monto = parseFloat(v) || 0;
   const precio = _slotsActual[i].precio_cierre || 0;
@@ -1253,11 +1562,16 @@ function onSlotActualMontoLive(i, inp) {
 }
 
 function onSlotPropPctLive(i, inp) {
-  // NO modificar inp.value aquí — dejar que el usuario escriba libremente
   const raw = inp.value.replace(/[^0-9.]/g,'');
   const parts = raw.split('.');
   const v = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
   _slotsProp[i].pct = v;
+  // Formatear con % mientras escribe
+  if (v) {
+    inp.value = v + '%';
+    const pos = v.length;
+    setTimeout(() => { try { inp.setSelectionRange(pos, pos); } catch(e) {} }, 0);
+  }
   // Auto-calcular títulos = (pct/100 * contrato) / precio_cierre
   const pct = parseFloat(v) || 0;
   const contrato = getMontoContrato();
@@ -1330,6 +1644,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function guardarActual(){
+  // Validar que el total coincida con el monto del contrato
+  const contrato = getMonto();
+  let totalActual = 0;
+  ALL_FUNDS.forEach(f => { const el = document.getElementById('act-'+f); if(el) totalActual += parseFloat(el.value.replace(/[^0-9.]/g,'')) || 0; });
+  totalActual += getRepoActualMonto('MXN') + getRepoActualMonto('USD');
+  _slotsActual.forEach(s => { totalActual += parseFloat((s.monto||'').replace(/[^0-9.]/g,'')) || 0; });
+
+  if (totalActual === 0) {
+    vxToast('Cartera Actual vacía.<br>Ingresa al menos un instrumento con monto.');
+    return;
+  }
+  if (contrato > 0 && Math.abs(totalActual - contrato) >= 1) {
+    const diff = totalActual - contrato;
+    const signo = diff > 0 ? '+' : '';
+    vxToast(`El total ($${totalActual.toLocaleString('es-MX',{minimumFractionDigits:2})}) no coincide con el monto del contrato ($${contrato.toLocaleString('es-MX',{minimumFractionDigits:2})}).<br>Diferencia: ${signo}$${diff.toLocaleString('es-MX',{minimumFractionDigits:2})}`);
+    return;
+  }
+  // Validar tasas de reporto
   const repoMXNMonto = getRepoActualMonto('MXN');
   const repoUSDMonto = getRepoActualMonto('USD');
   const repoMXNTasa  = getRepoActualTasa('MXN');
@@ -1338,15 +1670,15 @@ function guardarActual(){
   const tasaUSDEl = document.getElementById('act-REPO-USD-tasa');
   if (repoMXNMonto > 0 && repoMXNTasa <= 0) {
     if (tasaMXNEl) { tasaMXNEl.style.border = '2px solid #EF4444'; tasaMXNEl.focus(); }
-    alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
+    vxToast('Reporto MXN: falta la tasa neta.<br>Ingresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
     return;
   } else if (tasaMXNEl) tasaMXNEl.style.border = '';
   if (repoUSDMonto > 0 && repoUSDTasa <= 0) {
     if (tasaUSDEl) { tasaUSDEl.style.border = '2px solid #EF4444'; tasaUSDEl.focus(); }
-    alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
+    vxToast('Reporto USD: falta la tasa neta.<br>Ingresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
     return;
   } else if (tasaUSDEl) tasaUSDEl.style.border = '';
-  alert('✅ Cartera Actual guardada.');
+  vxToast('Cartera Actual guardada.','ok');
 }
 // guardarPropuesta — definida en sección principal
 
@@ -1364,6 +1696,8 @@ function guardarActual(){
   const str = fecha.getDate() + ' de ' + meses[fecha.getMonth()] + ' de ' + fecha.getFullYear();
   const el = document.getElementById('fecha-actualizacion');
   if(el) el.textContent = str;
+  const el2 = document.getElementById('cmp-fecha-actualizacion');
+  if(el2) el2.textContent = str;
 })();
 
 
@@ -1418,10 +1752,28 @@ function showPage(name, el) {
     setTimeout(() => { Object.values(charts).forEach(c => c && c.resize && c.resize()); }, 80);
     if (!_propuestaCargada) {
       _propuestaCargada = true;
+      // Si no hay cartera actual guardada, mostrar perfil 0
+      const sel = document.getElementById('prop-selector');
+      if (sel) {
+        let hayActual = false;
+        ALL_FUNDS.forEach(f => { const el = document.getElementById('act-'+f); if (el && parseFloat(el.value.replace(/[^0-9.]/g,'')) > 0) hayActual = true; });
+        if (!hayActual && (getRepoActualMonto('MXN') > 0 || getRepoActualMonto('USD') > 0)) hayActual = true;
+        if (!hayActual) _slotsActual.forEach(s => { if (parseFloat((s.monto||'').replace(/[^0-9.]/g,'')) > 0) hayActual = true; });
+        if (!hayActual) sel.value = 'perfil_0';
+      }
       cargarTasasRef().then(() => setTimeout(() => cargarPortafolio(), 300));
     }
   }
   if (name === 'configuracion') { cargarTasasRef(); }
+  if (name === 'comparativa') {
+    initCmpCharts();
+    if (!_cmpLoaded) {
+      _cmpLoaded = true;
+      cargarComparativa();
+    } else {
+      setTimeout(() => { Object.values(cmpCharts).forEach(c => c && c.resize && c.resize()); }, 80);
+    }
+  }
   window.scrollTo(0,0);
 }
 function openMobileNav()  { document.getElementById('mobile-nav').style.display='block'; document.body.style.overflow='hidden'; }
@@ -1450,8 +1802,8 @@ const charts = {};
 charts.comp = new Chart(document.getElementById('c-comp'),{
   type:'bar',
   data:{
-    labels:['VLMXETF','VXDEUDA','VXGUBCP','VXUDIMP','VALMX28','VALMXVL','VLMXTEC','VLMXDME'],
-    datasets:[{data:[34.37,22.52,10.00,10.00,6.90,6.90,5.00,4.31],backgroundColor:'#3DA5E0',borderRadius:3,barPercentage:.82,categoryPercentage:.92}]
+    labels:[],
+    datasets:[{data:[],backgroundColor:'#3DA5E0',borderRadius:3,barPercentage:.82,categoryPercentage:.92}]
   },
   options:{
     indexAxis:'y',responsive:true,maintainAspectRatio:false,
@@ -1496,7 +1848,7 @@ charts.linea = new Chart(document.getElementById('c-linea'),{
       legend:{position:'bottom',labels:{boxWidth:8,font:{size:13,family:'Montserrat',weight:'600'},padding:16,usePointStyle:true,pointStyleWidth:12,color:'#00205C'}},
       tooltip:{backgroundColor:'#00205C',titleFont:{size:10,weight:'600'},bodyFont:{size:10},padding:10,cornerRadius:6,callbacks:{label:ctx=>' '+ctx.dataset.label+': '+ctx.raw}}
     },
-    layout:{padding:{right:30,top:18}},
+    layout:{padding:{right:55,top:18}},
     scales:{
       x:{grid:{display:false},ticks:{font:{size:13,family:'Montserrat'},color:'#00205C'},border:{display:false}},
       y:{min:90,grid:{color:'rgba(0,32,92,0.06)'},ticks:{font:{size:13,family:'Montserrat'},color:'#00205C'},border:{display:false}}
@@ -1554,40 +1906,607 @@ requestAnimationFrame(()=>{
 });
 
 // ══════════════════════════════════════════════════════════════════════════
-// Auto-cargar comparativa al entrar a la pestaña — pendiente de implementar
+// COMPARATIVA — Charts unificados A vs B
 // ══════════════════════════════════════════════════════════════════════════
+let _cmpInited = false, _cmpLoaded = false;
+const cmpCharts = {};
+
+function initCmpCharts() {
+  if (_cmpInited) return;
+  _cmpInited = true;
+  // Grouped bar — composición A vs B
+  cmpCharts.comp = new Chart(document.getElementById('c-cmp-comp'), {
+    type:'bar',
+    data:{labels:[],datasets:[
+      {label:'B',data:[],backgroundColor:'#41BBC9',borderRadius:4,barPercentage:.92,categoryPercentage:.96},
+      {label:'A',data:[],backgroundColor:'#00205C',borderRadius:4,barPercentage:.92,categoryPercentage:.96}
+    ]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{reverse:true,position:'bottom',labels:{boxWidth:10,font:{size:13,family:'Montserrat',weight:'700'},padding:12,color:'#00205C',usePointStyle:true,pointStyleWidth:10}},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+ctx.raw.toFixed(2)+'%'},backgroundColor:'#00205C',titleFont:{size:10},bodyFont:{size:10},padding:8,cornerRadius:6}
+      },
+      layout:{padding:{right:60,left:8,top:0,bottom:0}},
+      scales:{
+        x:{display:false,grid:{display:false}},
+        y:{grid:{display:false},ticks:{font:{size:13,weight:'700',family:'Montserrat'},color:'#00205C'},border:{display:false},afterFit(s){s.width=82;}}
+      }
+    },
+    plugins:[{id:'pctGrouped',afterDatasetsDraw(chart){
+      const {ctx,scales:{x}}=chart; ctx.save();
+      chart.data.datasets.forEach((ds,di)=>{
+        const meta=chart.getDatasetMeta(di);
+        meta.data.forEach((bar,i)=>{
+          const val=ds.data[i]; if(val==null||val===0)return;
+          const barRight=x.getPixelForValue(val);
+          const barLeft=x.getPixelForValue(0);
+          const barWidth=barRight-barLeft;
+          const label=val.toFixed(2)+'%';
+          ctx.font='700 11px Montserrat,sans-serif';
+          ctx.textBaseline='middle';
+          const textW=ctx.measureText(label).width;
+          if(barWidth>textW+12){ctx.fillStyle='#fff';ctx.textAlign='right';ctx.fillText(label,barRight-5,bar.y);}
+          else{ctx.fillStyle='#00205C';ctx.textAlign='left';ctx.fillText(label,barRight+5,bar.y);}
+        });
+      });
+      ctx.restore();
+    }}]
+  });
+  // 2-line backtesting (matches propuesta line chart style)
+  cmpCharts.linea = new Chart(document.getElementById('c-cmp-linea'), {
+    type:'line',
+    data:{labels:[],datasets:[
+      {label:'A',data:[],borderColor:'#00205C',backgroundColor:'rgba(61,165,224,0.08)',fill:true,borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#00205C',pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverRadius:5,tension:.35},
+      {label:'B',data:[],borderColor:'#41BBC9',backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],pointRadius:3,pointBackgroundColor:'#41BBC9',pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverRadius:5,tension:.35}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'bottom',labels:{boxWidth:8,font:{size:13,family:'Montserrat',weight:'600'},padding:16,usePointStyle:true,pointStyleWidth:12,color:'#00205C'}},
+        tooltip:{backgroundColor:'#00205C',titleFont:{size:10,weight:'600'},bodyFont:{size:10},padding:10,cornerRadius:6,callbacks:{label:ctx=>' '+ctx.dataset.label+': '+ctx.raw}}
+      },
+      layout:{padding:{right:55,top:18}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11,family:'Montserrat'},color:'#00205C'},border:{display:false}},
+        y:{grid:{color:'rgba(0,32,92,0.06)'},ticks:{font:{size:11,family:'Montserrat'},color:'#00205C'},border:{display:false}}
+      }
+    },
+    plugins:[{id:'endLabels',afterDatasetsDraw(chart){
+      const {ctx}=chart; ctx.save();
+      const pts=chart.data.datasets.map((ds,i)=>{
+        const meta=chart.getDatasetMeta(i);const lp=meta.data[meta.data.length-1];
+        if(!lp||!ds.data.length)return null;
+        return{x:lp.x,y:lp.y,val:ds.data[ds.data.length-1],color:ds.borderColor};
+      }).filter(Boolean);
+      if(pts.length>=2&&Math.abs(pts[0].y-pts[1].y)<18){pts[0].y=Math.min(pts[0].y,pts[1].y)-9;pts[1].y=Math.min(pts[0].y,pts[1].y)+18;}
+      pts.forEach(p=>{ctx.fillStyle=p.color;ctx.font='bold 12px Montserrat,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(p.val,p.x+6,p.y);});
+      ctx.restore();
+    }}]
+  });
+  // Mini doughnuts (same style as propuesta pies with bottom legend)
+  function cmpMiniDonut(id, hideLegend){
+    return new Chart(document.getElementById(id),{
+      type:'doughnut',
+      data:{labels:[],datasets:[{data:[],backgroundColor:PAL,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+        layout:{padding:2},
+        plugins:{
+          legend:{display:!hideLegend,position:'bottom',labels:{boxWidth:8,font:{size:9,family:'Montserrat',weight:'600'},padding:6,color:'#00205C',usePointStyle:true,pointStyleWidth:8}},
+          tooltip:{backgroundColor:'#00205C',titleFont:{size:9,weight:'700',family:'Montserrat'},bodyFont:{size:9,family:'Montserrat'},padding:6,cornerRadius:4,callbacks:{label:ctx=>' '+ctx.label+': '+ctx.raw.toFixed(2)+'%'}}
+        }
+      },
+      plugins:[{id:'pctLabel',afterDatasetsDraw(chart){
+        const {ctx,data}=chart;ctx.save();
+        const fs=Math.max(11,Math.round(Math.min(chart.width,chart.height)*0.04));
+        chart.getDatasetMeta(0).data.forEach((arc,i)=>{
+          const val=data.datasets[0].data[i];if(val<5)return;
+          const{x,y}=arc.tooltipPosition();
+          ctx.fillStyle='#fff';ctx.font='bold '+fs+'px Montserrat,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText(val.toFixed(1)+'%',x,y);
+        });
+        ctx.restore();
+      }}]
+    });
+  }
+  cmpCharts.claseA=cmpMiniDonut('c-cmp-clase-a',true);cmpCharts.claseB=cmpMiniDonut('c-cmp-clase-b',true);
+  cmpCharts.tipoDeudaA=cmpMiniDonut('c-cmp-tipodeuda-a',true);cmpCharts.tipoDeudaB=cmpMiniDonut('c-cmp-tipodeuda-b',true);
+  cmpCharts.geoA=cmpMiniDonut('c-cmp-geo-a',true);cmpCharts.geoB=cmpMiniDonut('c-cmp-geo-b',true);
+  cmpCharts.sectorA=cmpMiniDonut('c-cmp-sector-a',true);cmpCharts.sectorB=cmpMiniDonut('c-cmp-sector-b',true);
+}
+
+function aplicarDatosCmp(dataA, dataB, valA, valB) {
+  const fmtR = v => (v == null) ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+  const setT = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  const setH = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  const labelMap = {
+    perfil_0:'Perfil 0 · 100% RF low risk', perfil_1:'Perfil 1 · 100% RF high risk',
+    perfil_2:'Perfil 2 · 80% RF / 20% RV',  perfil_3:'Perfil 3 · 60% RF / 40% RV',
+    perfil_4:'Perfil 4 · 40% RF / 60% RV',  actual:'Cartera Actual', propuesta:'Cartera Propuesta',
+  };
+  // ── Título + Subtítulo dinámico ──
+  const cmpMain = document.getElementById('cmp-title-main');
+  if (cmpMain) {
+    const contrato = document.getElementById('cfg-contrato')?.value?.trim() || '';
+    cmpMain.textContent = contrato ? `Estrategia de inversión - ${contrato}` : 'Estrategia de inversión';
+  }
+  const sub = document.getElementById('cmp-title-sub');
+  if (sub) sub.innerHTML = (labelMap[valA]||valA) + '  <span style="color:var(--navy)">vs</span>  ' + (labelMap[valB]||valB);
+  // Short labels for chart legends
+  const shortMap = {
+    perfil_0:'Perfil 0', perfil_1:'Perfil 1', perfil_2:'Perfil 2',
+    perfil_3:'Perfil 3', perfil_4:'Perfil 4', actual:'C. Actual', propuesta:'C. Propuesta',
+  };
+  const lblA = shortMap[valA] || 'A';
+  const lblB = shortMap[valB] || 'B';
+  if (cmpCharts.comp) { cmpCharts.comp.data.datasets[0].label = lblB; cmpCharts.comp.data.datasets[1].label = lblA; }
+  if (cmpCharts.linea) { cmpCharts.linea.data.datasets[0].label = lblA; cmpCharts.linea.data.datasets[1].label = lblB; }
+
+  // ── Dynamic titles & badges ──
+  const setT2 = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+  setT2('cmp-rend-badge-a', lblA);
+  setT2('cmp-rend-badge-b', lblB);
+  setT2('cmp-clase-badge-a', lblA);
+  setT2('cmp-clase-badge-b', lblB);
+  setT2('cmp-deuda-badge-a', lblA);
+  setT2('cmp-deuda-badge-b', lblB);
+  setT2('cmp-tipodeuda-badge-a', lblA);
+  setT2('cmp-tipodeuda-badge-b', lblB);
+  setT2('cmp-geo-badge-a', lblA);
+  setT2('cmp-geo-badge-b', lblB);
+  setT2('cmp-sector-badge-a', lblA);
+  setT2('cmp-sector-badge-b', lblB);
+
+  // ── Rendimientos cards ──
+  const periods = ['mtd','3m','ytd','1y','2y','3y'];
+  const rKeys   = ['mtd','r3m','ytd','r1y','r2y','r3y'];
+  periods.forEach((p, i) => {
+    const k = rKeys[i];
+    ['a','b'].forEach(side => {
+      const d = side === 'a' ? dataA : dataB;
+      const el = document.getElementById('cmp-r-'+p+'-'+side);
+      if (!el || !d) return;
+      const v = d.rendimientos ? d.rendimientos[k] : null;
+      el.textContent = fmtR(v);
+      el.className = 'rh-val ' + ((v ?? 0) >= 0 ? 'pos' : 'neg');
+    });
+  });
+
+  // ── Deuda visibility & data ──
+  const cardDeuda = document.getElementById('cmp-card-deuda');
+  const cardClase = document.getElementById('cmp-pcard-clase');
+  const cardRend = document.getElementById('cmp-card-rend');
+  const anyDeuda = (dataA && dataA.has_deuda !== false) || (dataB && dataB.has_deuda !== false);
+  if (cardDeuda) cardDeuda.style.display = anyDeuda ? '' : 'none';
+  if (cardClase) cardClase.style.gridColumn = anyDeuda ? '' : 'span 3';
+  if (cardRend) cardRend.style.gridColumn = anyDeuda ? '' : 'span 3';
+  if (anyDeuda) {
+    const setDur = (id, val) => {
+      const el = document.getElementById(id); if (!el) return;
+      if (val != null && val !== '—') el.innerHTML = parseFloat(val).toFixed(2) + '<br><span style="font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);">años</span>';
+      else el.textContent = '—';
+    };
+    ['a','b'].forEach(side => {
+      const d = (side === 'a' ? dataA : dataB);
+      if (!d || !d.deuda) {
+        ['dur-mxn','ytm-mxn','cred-mxn','dur-usd','ytm-usd','cred-usd'].forEach(m => setT('cmp-d-'+m+'-'+side, '—'));
+        return;
+      }
+      const dd = d.deuda;
+      if (dd.has_mxn) {
+        setDur('cmp-d-dur-mxn-'+side, dd.dur_mxn);
+        setT('cmp-d-ytm-mxn-'+side, dd.ytm_mxn > 0 ? dd.ytm_mxn.toFixed(2)+'%' : '—');
+        setT('cmp-d-cred-mxn-'+side, dd.cred_mxn || '—');
+      } else { setT('cmp-d-dur-mxn-'+side,'—'); setT('cmp-d-ytm-mxn-'+side,'—'); setT('cmp-d-cred-mxn-'+side,'—'); }
+      if (dd.has_usd) {
+        setDur('cmp-d-dur-usd-'+side, dd.dur_usd);
+        setT('cmp-d-ytm-usd-'+side, dd.ytm_usd > 0 ? dd.ytm_usd.toFixed(2)+'%' : '—');
+        setT('cmp-d-cred-usd-'+side, dd.cred_usd || '—');
+      } else { setT('cmp-d-dur-usd-'+side,'—'); setT('cmp-d-ytm-usd-'+side,'—'); setT('cmp-d-cred-usd-'+side,'—'); }
+    });
+  }
+
+  // ── Composición: grouped bar ──
+  if (cmpCharts.comp) {
+    const FUND_ORDER = ['Reporto MXN','Reporto USD','VXREPO1','VXGUBCP','VLMXETF','VXUDIMP','VXDEUDA','VXGUBLP','VXCOBER','VXTBILL','VLMXDME','VALMXA','VALMX28','VALMX20','VALMXVL','VALMXES','VLMXTEC','VLMXESG','VALMXHC','VXINFRA','Fondos Ciclo de Vida','Acciones',"ETF's"];
+    const allFunds = new Set();
+    const mapA = {}, mapB = {};
+    if (dataA && dataA.composicion) dataA.composicion.slice(0,10).forEach(f => { allFunds.add(f.fondo); mapA[f.fondo] = f.pct; });
+    if (dataB && dataB.composicion) dataB.composicion.slice(0,10).forEach(f => { allFunds.add(f.fondo); mapB[f.fondo] = f.pct; });
+    const labels = [...allFunds];
+    labels.sort((a,b) => {
+      const iA = FUND_ORDER.indexOf(a), iB = FUND_ORDER.indexOf(b);
+      if (iA !== -1 && iB !== -1) return iA - iB;
+      if (iA !== -1) return -1;
+      if (iB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+    const top = labels.slice(0, 10);
+    cmpCharts.comp.data.labels = top;
+    cmpCharts.comp.data.datasets[0].data = top.map(f => mapB[f] || 0);
+    cmpCharts.comp.data.datasets[1].data = top.map(f => mapA[f] || 0);
+    const maxVal = Math.max(...top.map(f => Math.max(mapA[f]||0, mapB[f]||0)));
+    cmpCharts.comp.options.scales.x.max = maxVal * 1.08;
+    const n = top.length;
+    const bp = n <= 3 ? 0.95 : n <= 5 ? 0.92 : 0.88;
+    const cp = n <= 3 ? 0.98 : n <= 5 ? 0.96 : 0.94;
+    cmpCharts.comp.data.datasets.forEach(ds => { ds.barPercentage = bp; ds.categoryPercentage = cp; });
+    cmpCharts.comp.update();
+  }
+
+  // ── Backtesting: 2 lines ──
+  if (cmpCharts.linea) {
+    const btA = dataA ? btToSerie(dataA.bt_portafolio) : null;
+    const btB = dataB ? btToSerie(dataB.bt_portafolio) : null;
+    const labelsA = btA ? btA.labels : [];
+    const labelsB = btB ? btB.labels : [];
+    const allLabels = labelsA.length >= labelsB.length ? labelsA : labelsB;
+    cmpCharts.linea.data.labels = allLabels;
+    cmpCharts.linea.data.datasets[0].data = btA ? btA.values : [];
+    cmpCharts.linea.data.datasets[1].data = btB ? btB.values : [];
+    const allVals = [...(btA ? btA.values : []), ...(btB ? btB.values : [])].filter(v => v != null);
+    if (allVals.length) cmpCharts.linea.options.scales.y.min = Math.floor(Math.min(...allVals) * 0.95);
+    cmpCharts.linea.update('none');
+  }
+
+  // ── Helper: fill paired mini-doughnut ──
+  function fillDonut(chart, labels, values) {
+    if (!chart) return;
+    chart.data.labels = []; chart.data.datasets[0].data = [];
+    if (labels && values) {
+      const sp = sortedPie(labels, values);
+      chart.data.labels = sp.labels;
+      chart.data.datasets[0].data = sp.values;
+      chart.data.datasets[0].backgroundColor = sp.colors;
+    }
+    chart.update();
+  }
+
+  // ── Clase de activos (shared color map + shared legend) ──
+  {
+    // 1. Build unified color map from union of labels (A first, then B extras)
+    const labelsA = dataA?.clase_activos?.labels || [];
+    const labelsB = dataB?.clase_activos?.labels || [];
+    const unionLabels = [];
+    const seen = new Set();
+    [...labelsA, ...labelsB].forEach(l => { if (!seen.has(l)) { seen.add(l); unionLabels.push(l); } });
+    const colorMap = {};
+    unionLabels.forEach((l, i) => { colorMap[l] = PAL[i % PAL.length]; });
+
+    // 2. Fill each donut using the shared color map
+    function fillDonutShared(chart, labels, values) {
+      if (!chart) return;
+      chart.data.labels = []; chart.data.datasets[0].data = [];
+      if (labels && values) {
+        const pairs = labels.map((l,i) => [l, values[i]]).filter(p => p[1] > 0.01);
+        chart.data.labels = pairs.map(p => p[0]);
+        chart.data.datasets[0].data = pairs.map(p => p[1]);
+        chart.data.datasets[0].backgroundColor = pairs.map(p => colorMap[p[0]]);
+      }
+      chart.update();
+    }
+    fillDonutShared(cmpCharts.claseA, labelsA, dataA?.clase_activos?.values);
+    fillDonutShared(cmpCharts.claseB, labelsB, dataB?.clase_activos?.values);
+
+    // 3. Build shared legend
+    const legendDiv = document.getElementById('cmp-clase-legend');
+    if (legendDiv) {
+      legendDiv.innerHTML = '';
+      unionLabels.forEach(lbl => {
+        const item = document.createElement('span');
+        item.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#00205C;font-family:Montserrat,sans-serif;';
+        const dot = document.createElement('span');
+        dot.style.cssText = 'width:10px;height:10px;border-radius:50%;flex-shrink:0;background:'+colorMap[lbl]+';';
+        item.appendChild(dot);
+        item.appendChild(document.createTextNode(lbl));
+        legendDiv.appendChild(item);
+      });
+    }
+  }
+
+  // ── Shared donut helper (consistent colors + legend) ──
+  function fillPairShared(chartA, chartB, labelsA, valuesA, labelsB, valuesB, legendId) {
+    const lA = labelsA || [], lB = labelsB || [], vA = valuesA || [], vB = valuesB || [];
+    const union = []; const seen = new Set();
+    [...lA, ...lB].forEach(l => { if (!seen.has(l)) { seen.add(l); union.push(l); } });
+    const cm = {}; union.forEach((l, i) => { cm[l] = PAL[i % PAL.length]; });
+    function fill(ch, labels, values) {
+      if (!ch) return;
+      ch.data.labels = []; ch.data.datasets[0].data = [];
+      if (labels && values) {
+        const pairs = labels.map((l,i) => [l, values[i]]).filter(p => p[1] > 0.01);
+        ch.data.labels = pairs.map(p => p[0]);
+        ch.data.datasets[0].data = pairs.map(p => p[1]);
+        ch.data.datasets[0].backgroundColor = pairs.map(p => cm[p[0]]);
+      }
+      ch.update();
+    }
+    fill(chartA, lA, vA); fill(chartB, lB, vB);
+    const div = document.getElementById(legendId);
+    if (div) {
+      div.innerHTML = '';
+      union.forEach(lbl => {
+        const item = document.createElement('span');
+        item.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#00205C;font-family:Montserrat,sans-serif;';
+        const dot = document.createElement('span');
+        dot.style.cssText = 'width:10px;height:10px;border-radius:50%;flex-shrink:0;background:'+cm[lbl]+';';
+        item.appendChild(dot); item.appendChild(document.createTextNode(lbl)); div.appendChild(item);
+      });
+    }
+  }
+
+  // ── Fila 3: Tipo de Deuda + Geo + Sectores ──
+  const aHasRV = dataA && dataA.has_rv;
+  const bHasRV = dataB && dataB.has_rv;
+  const anyRV = aHasRV || bHasRV;
+  const pcardTipoDeuda = document.getElementById('cmp-pcard-tipodeuda');
+  const pcardGeo       = document.getElementById('cmp-pcard-geo');
+  const pcardSector    = document.getElementById('cmp-pcard-sector');
+
+  if (!anyRV) {
+    // Sin RV → ocultar fila 3 completa
+    if (pcardTipoDeuda) pcardTipoDeuda.style.display = 'none';
+    if (pcardGeo)       pcardGeo.style.display = 'none';
+    if (pcardSector)    pcardSector.style.display = 'none';
+  } else if (anyDeuda && anyRV) {
+    // Deuda + RV → 3 cards: TipoDeuda(2) + Geo(2) + Sector(2)
+    if (pcardTipoDeuda) { pcardTipoDeuda.style.display = ''; pcardTipoDeuda.style.gridColumn = 'span 2'; }
+    if (pcardGeo)       { pcardGeo.style.display = ''; pcardGeo.style.gridColumn = 'span 2'; }
+    if (pcardSector)    { pcardSector.style.display = ''; pcardSector.style.gridColumn = 'span 2'; }
+    fillPairShared(cmpCharts.tipoDeudaA, cmpCharts.tipoDeudaB, dataA?.supersectores?.labels, dataA?.supersectores?.values, dataB?.supersectores?.labels, dataB?.supersectores?.values, 'cmp-tipodeuda-legend');
+    fillPairShared(cmpCharts.geoA, cmpCharts.geoB, dataA?.geo?.labels, dataA?.geo?.values, dataB?.geo?.labels, dataB?.geo?.values, 'cmp-geo-legend');
+    fillPairShared(cmpCharts.sectorA, cmpCharts.sectorB, dataA?.sectores?.labels, dataA?.sectores?.values, dataB?.sectores?.labels, dataB?.sectores?.values, 'cmp-sector-legend');
+  } else {
+    // Solo RV, sin deuda → Geo(3) + Sector(3)
+    if (pcardTipoDeuda) pcardTipoDeuda.style.display = 'none';
+    if (pcardGeo)       { pcardGeo.style.display = ''; pcardGeo.style.gridColumn = 'span 3'; }
+    if (pcardSector)    { pcardSector.style.display = ''; pcardSector.style.gridColumn = 'span 3'; }
+    fillPairShared(cmpCharts.geoA, cmpCharts.geoB, dataA?.geo?.labels, dataA?.geo?.values, dataB?.geo?.labels, dataB?.geo?.values, 'cmp-geo-legend');
+    fillPairShared(cmpCharts.sectorA, cmpCharts.sectorB, dataA?.sectores?.labels, dataA?.sectores?.values, dataB?.sectores?.labels, dataB?.sectores?.values, 'cmp-sector-legend');
+  }
+}
+
+async function cargarComparativa() {
+  const selA = document.getElementById('cmp-sel-a');
+  const selB = document.getElementById('cmp-sel-b');
+  const valA = selA ? selA.value : 'actual';
+  const valB = selB ? selB.value : 'perfil_3';
+  const bodyA = buildApiBody(valA);
+  const bodyB = buildApiBody(valB);
+  if (!bodyA && !bodyB) {
+    vxToast('No se pudieron construir ambas carteras.<br>Verifica la configuración.');
+    return;
+  }
+  showSpinner(true);
+  try {
+    const fA = bodyA ? fetch('/api/propuesta', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyA) }).then(r => r.json()) : Promise.resolve(null);
+    const fB = bodyB ? fetch('/api/propuesta', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(bodyB) }).then(r => r.json()) : Promise.resolve(null);
+    const [dataA, dataB] = await Promise.all([fA, fB]);
+    showSpinner(false);
+    initCmpCharts();
+    aplicarDatosCmp(
+      dataA && dataA.ok ? dataA : null,
+      dataB && dataB.ok ? dataB : null,
+      valA, valB
+    );
+  } catch(e) {
+    showSpinner(false);
+    vxToast('Error de conexión: ' + e.message, 'err');
+  }
+}
 
 // PDF Export
-document.getElementById('btn-pdf').addEventListener('click',async()=>{
-  const {jsPDF}=window.jspdf;
-  const el=document.getElementById('prop-dash');
-  const tmpStyle=document.createElement('style');
-  tmpStyle.id='pdf-override';
-  tmpStyle.textContent=`
-    #prop-dash {width:1280px!important;min-width:1280px!important;display:grid!important;grid-template-columns:repeat(6,1fr)!important;gap:16px!important;padding:12px 16px!important;}
-    #prop-dash .card-comp,#prop-dash .card-rend,#prop-dash .card-deuda{grid-column:span 1!important;height:306px!important;}
-    #prop-dash .card-back{grid-column:span 3!important;height:306px!important;}
-    #prop-dash .card-pie{grid-column:span 2!important;height:306px!important;}
+document.getElementById('btn-pdf').addEventListener('click', async () => {
+  const {jsPDF} = window.jspdf;
+  const el = document.getElementById('prop-dash');
+
+  const deudaVisible  = document.querySelector('.card-deuda')?.style.display !== 'none';
+  const sectorVisible = document.getElementById('pcard-sector')?.style.display !== 'none';
+  const backSpan  = deudaVisible ? 'span 3' : 'span 4';
+  const pieSpan   = sectorVisible ? 'span 2' : 'span 3';
+
+  const W = 1400;
+  const targetH = Math.round(W * (215.9 / 279.4)); // ≈ 1082px
+  const overhead = 170; // padding + header + rule + gaps + footer
+  const rowH = Math.round((targetH - overhead - 14) / 2); // 2 rows, -14 for gap
+
+  const tmpStyle = document.createElement('style'); tmpStyle.id='pdf-override';
+  tmpStyle.textContent = `
+    #prop-dash{width:${W}px!important;min-width:${W}px!important;display:grid!important;grid-template-columns:repeat(6,1fr)!important;gap:14px!important;padding:12px 16px!important;}
     #prop-dash .prop-dash-title{grid-column:1/-1!important;}
+    #prop-dash .prop-dash-title img{height:75px!important;width:auto!important;min-height:75px!important;}
     #prop-dash .prop-rule-full{grid-column:1/-1!important;}
+    #prop-dash .card-comp,#prop-dash .card-rend{grid-column:span 1!important;height:${rowH}px!important;}
+    #prop-dash .card-deuda{${deudaVisible ? `grid-column:span 1!important;height:${rowH}px!important;` : 'display:none!important;'}}
+    #prop-dash .card-back{grid-column:${backSpan}!important;height:${rowH}px!important;}
+    #prop-dash #pcard-sector{${sectorVisible ? `grid-column:span 2!important;height:${rowH}px!important;` : 'display:none!important;'}}
+    #prop-dash #pcard-clase{grid-column:${pieSpan}!important;height:${rowH}px!important;}
+    #prop-dash #pcard-geo{grid-column:${pieSpan}!important;height:${rowH}px!important;}
   `;
   document.head.appendChild(tmpStyle);
-  ['comp','linea','comp2'].forEach(k=>{ if(charts[k]&&charts[k].resize) charts[k].resize(); });
-  await new Promise(r=>setTimeout(r,250));
-  const cv=await html2canvas(el,{scale:4,useCORS:true,backgroundColor:'#ffffff',logging:false,scrollX:0,scrollY:0,width:1280});
+  Object.values(charts).forEach(c => c?.resize?.());
+  await new Promise(r => setTimeout(r, 350));
+  const cv = await html2canvas(el, {scale:4, useCORS:true, backgroundColor:'#fff', logging:false, scrollX:0, scrollY:0, width:W});
   tmpStyle.remove();
-  ['comp','linea','comp2'].forEach(k=>{ if(charts[k]&&charts[k].resize) charts[k].resize(); });
-  const img=cv.toDataURL('image/png');
-  const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'letter'});
-  const pw=pdf.internal.pageSize.getWidth();
-  const ph=pdf.internal.pageSize.getHeight();
-  pdf.addImage(img,'PNG',0,6,pw,ph-15);
-  pdf.save('PROPUESTA DE INVERSIÓN VALMEX.pdf');
+  Object.values(charts).forEach(c => c?.resize?.());
+
+  const pdf = new jsPDF({orientation:'landscape', unit:'mm', format:'letter'});
+  const pw = pdf.internal.pageSize.getWidth();
+  const ph = pdf.internal.pageSize.getHeight();
+  const mx = 4, mt = 4, mb = 8;
+  const usableW = pw - mx * 2;
+  const imgH = usableW * (cv.height / cv.width);
+  const y = Math.min(mt, ph - imgH - mb);
+  pdf.addImage(cv.toDataURL('image/png'), 'PNG', mx, Math.max(mt, y), usableW, imgH);
+  const contrato = document.getElementById('cfg-contrato')?.value?.trim() || '';
+  const propName = contrato ? `Propuesta de Inversión ${contrato} - VALMEX.pdf` : 'Propuesta de Inversión - VALMEX.pdf';
+  pdf.save(propName);
+});
+
+// PDF Comparativa — landscape, up to 2 pages
+document.getElementById('btn-pdf-cmp').addEventListener('click', async () => {
+  const {jsPDF} = window.jspdf;
+  const el = document.getElementById('cmp-dash');
+
+  const deudaVis = document.getElementById('cmp-card-deuda')?.style.display !== 'none';
+  const sectorVis = document.getElementById('cmp-pcard-sector')?.style.display !== 'none';
+  const tipoDeudaVis = document.getElementById('cmp-pcard-tipodeuda')?.style.display !== 'none';
+  const hasRow3 = sectorVis || tipoDeudaVis;
+
+  const claseSpan = deudaVis ? 'span 2' : 'span 3';
+  const rendSpan  = deudaVis ? 'span 2' : 'span 3';
+  const row3Span  = tipoDeudaVis ? 'span 2' : 'span 3';
+  const geoSpan   = tipoDeudaVis ? 'span 2' : (sectorVis ? 'span 3' : 'span 6');
+
+  // Render width & target height to fill letter landscape exactly (279.4 × 215.9 mm)
+  const W = 1400;
+  const targetH = Math.round(W * (215.9 / 279.4)); // ≈ 1082px
+  // Overhead per page: padding(24) + header(~82) + rule(2) + gaps(~28) + footer(~34) ≈ 170px
+  const overhead = 170;
+  // Page 1: 2 rows → each row gets half the remaining space
+  const p1card = Math.round((targetH - overhead - 14) / 2); // ~449px per row, -14 for gap between rows
+  // Page 2: 1 row fills all remaining space; pies stack vertically
+  const p2h = targetH - overhead; // ~912px — pies go column layout
+
+  const baseCSS = `
+    #cmp-dash{width:${W}px!important;min-width:${W}px!important;display:grid!important;grid-template-columns:repeat(6,1fr)!important;gap:14px!important;padding:12px 16px!important;}
+    #cmp-dash .prop-dash-title{grid-column:1/-1!important;}
+    #cmp-dash .prop-dash-title img{height:75px!important;width:auto!important;min-height:75px!important;}
+    #cmp-dash .prop-rule-full{grid-column:1/-1!important;}
+  `;
+
+  // ── Page 1: Header + Fila 1 + Fila 2 ──
+  const s1 = document.createElement('style'); s1.id='pdf-cmp-p1';
+  s1.textContent = baseCSS + `
+    #cmp-dash .cmp-comp{grid-column:span 2!important;height:${p1card}px!important;}
+    #cmp-dash .cmp-back{grid-column:span 4!important;height:${p1card}px!important;}
+    #cmp-dash .cmp-rend{grid-column:${rendSpan}!important;height:${p1card}px!important;}
+    #cmp-dash .cmp-clase{grid-column:${claseSpan}!important;height:${p1card}px!important;}
+    #cmp-dash .cmp-deuda{${deudaVis ? `grid-column:span 2!important;height:${p1card}px!important;` : 'display:none!important;'}}
+    #cmp-dash .cmp-tipodeuda{display:none!important;}
+    #cmp-dash .cmp-geo{display:none!important;}
+    #cmp-dash .cmp-sector{display:none!important;}
+  `;
+  document.head.appendChild(s1);
+  Object.values(cmpCharts).forEach(c => c?.resize?.());
+  await new Promise(r => setTimeout(r, 350));
+  const cv1 = await html2canvas(el, {scale:4, useCORS:true, backgroundColor:'#fff', logging:false, scrollX:0, scrollY:0, width:W});
+  s1.remove();
+
+  // ── Page 2: Header + Fila 3 (if visible) ──
+  let cv2 = null;
+  if (hasRow3) {
+    const s2 = document.createElement('style'); s2.id='pdf-cmp-p2';
+    s2.textContent = baseCSS + `
+      #cmp-dash .cmp-comp{display:none!important;}
+      #cmp-dash .cmp-back{display:none!important;}
+      #cmp-dash .cmp-rend{display:none!important;}
+      #cmp-dash .cmp-clase{display:none!important;}
+      #cmp-dash .cmp-deuda{display:none!important;}
+      #cmp-dash .cmp-pie-pair{flex-direction:column!important;flex:1 1 auto!important;min-height:0!important;gap:0!important;}
+      #cmp-dash .cmp-tipodeuda>.pb,#cmp-dash .cmp-geo>.pb,#cmp-dash .cmp-sector>.pb{padding:4px 2px 0!important;}
+      #cmp-dash .cmp-pie-half{flex:1!important;min-height:0!important;padding:0!important;display:flex!important;flex-direction:column!important;align-items:center!important;}
+      #cmp-dash .cmp-pie-half canvas{position:relative!important;left:30px!important;top:28px!important;}
+      #cmp-dash .cmp-badge-a,#cmp-dash .cmp-badge-b{font-size:14px!important;padding:5px 20px!important;border-radius:12px!important;flex-shrink:0!important;margin-bottom:0!important;}
+      #cmp-tipodeuda-legend span,#cmp-geo-legend span,#cmp-sector-legend span{font-size:16px!important;}
+      #cmp-tipodeuda-legend,#cmp-geo-legend,#cmp-sector-legend{min-height:90px!important;gap:4px 12px!important;padding:4px 8px!important;align-content:flex-start!important;flex-shrink:0!important;}
+      #cmp-dash .cmp-tipodeuda{${tipoDeudaVis ? `grid-column:span 2!important;height:${p2h}px!important;` : 'display:none!important;'}}
+      #cmp-dash .cmp-geo{grid-column:${geoSpan}!important;height:${p2h}px!important;}
+      #cmp-dash .cmp-sector{${sectorVis ? `grid-column:${row3Span}!important;height:${p2h}px!important;` : 'display:none!important;'}}
+    `;
+    document.head.appendChild(s2);
+    const cmpTitleEl = document.getElementById('cmp-title-main');
+    const origTitle = cmpTitleEl.textContent;
+    const p2contrato = document.getElementById('cfg-contrato')?.value?.trim() || '';
+    cmpTitleEl.textContent = p2contrato ? `Exposición de la estrategia de inversión - ${p2contrato}` : 'Exposición de la estrategia de inversión';
+    const row3Charts=[cmpCharts.tipoDeudaA,cmpCharts.tipoDeudaB,cmpCharts.geoA,cmpCharts.geoB,cmpCharts.sectorA,cmpCharts.sectorB];
+    row3Charts.forEach(c=>{if(c){c.options.cutout='60%';c.update('none');}});
+    Object.values(cmpCharts).forEach(c => c?.resize?.());
+    await new Promise(r => setTimeout(r, 350));
+    cv2 = await html2canvas(el, {scale:4, useCORS:true, backgroundColor:'#fff', logging:false, scrollX:0, scrollY:0, width:W});
+    s2.remove();
+    cmpTitleEl.textContent = origTitle;
+    row3Charts.forEach(c=>{if(c){c.options.cutout='60%';c.update('none');}});
+  }
+
+  // Restore charts
+  Object.values(cmpCharts).forEach(c => c?.resize?.());
+
+  // ── Build PDF — fill page, centred vertically ──
+  const pdf = new jsPDF({orientation:'landscape', unit:'mm', format:'letter'});
+  const pw = pdf.internal.pageSize.getWidth();
+  const ph = pdf.internal.pageSize.getHeight();
+
+  const mx = 4, mt = 4, mb = 8;
+  const usableW = pw - mx * 2;
+  function addPage(canvas) {
+    const imgH = usableW * (canvas.height / canvas.width);
+    const y = Math.min(mt, ph - imgH - mb);
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', mx, Math.max(mt, y), usableW, imgH);
+  }
+
+  addPage(cv1);
+  if (cv2) { pdf.addPage(); addPage(cv2); }
+  const contratoCmp = document.getElementById('cfg-contrato')?.value?.trim() || '';
+  const cmpName = contratoCmp ? `Estrategia de Inversión ${contratoCmp} - VALMEX.pdf` : 'Estrategia de Inversión - VALMEX.pdf';
+  pdf.save(cmpName);
 });
 
 // ══════════════════════════════════════════════════════════════════════════
 // PROPUESTA DINÁMICA — Morningstar
 // ══════════════════════════════════════════════════════════════════════════
+
+// ── Toast / Snackbar notification ──
+function vxToast(msg, type='warn') {
+  // type 'ok' → snackbar auto-dismiss (2.5s)
+  if (type === 'ok') {
+    const snack = document.createElement('div');
+    snack.className = 'vx-snack';
+    snack.innerHTML = `<div class="vx-snack-icon">✓</div><span>${msg}</span>`;
+    document.body.appendChild(snack);
+    requestAnimationFrame(() => snack.classList.add('show'));
+    setTimeout(() => { snack.classList.remove('show'); setTimeout(() => snack.remove(), 250); }, 2500);
+    return;
+  }
+  // type 'warn' | 'err' → modal con botón
+  const icons = { warn:'⚠', err:'✕' };
+  const titles = { warn:'Atención', err:'Error' };
+  const overlay = document.createElement('div');
+  overlay.className = 'vx-toast-overlay';
+  overlay.innerHTML = `
+    <div class="vx-toast">
+      <div class="vx-toast-icon ${type}">${icons[type] || icons.warn}</div>
+      <div class="vx-toast-title">${titles[type] || titles.warn}</div>
+      <div class="vx-toast-msg">${msg}</div>
+      <button class="vx-toast-btn">Entendido</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('show'));
+  const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 200); };
+  overlay.querySelector('.vx-toast-btn').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
+}
+
+function descargarPresentacion(e) {
+  e.preventDefault();
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/PC.pdf', true);
+  xhr.responseType = 'blob';
+  xhr.onload = function() {
+    var blob = xhr.response;
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'PRESENTACION COMERCIAL VALMEX.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  xhr.send();
+}
 
 function showSpinner(show) {
   let sp = document.getElementById('_vx_spinner');
@@ -1639,12 +2558,12 @@ async function cargarPortafolio() {
     const tasaUSDEl = document.getElementById('act-REPO-USD-tasa');
     if (repoMXNMonto > 0 && repoMXNTasa <= 0) {
       if (tasaMXNEl) { tasaMXNEl.style.border = '2px solid #EF4444'; tasaMXNEl.focus(); }
-      alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
+      vxToast('Reporto MXN: falta la tasa neta.<br>Ingresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
       if (sel) sel.value = 'perfil_3'; return;
     } else if (tasaMXNEl) tasaMXNEl.style.border = '';
     if (repoUSDMonto > 0 && repoUSDTasa <= 0) {
       if (tasaUSDEl) { tasaUSDEl.style.border = '2px solid #EF4444'; tasaUSDEl.focus(); }
-      alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
+      vxToast('Reporto USD: falta la tasa neta.<br>Ingresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
       if (sel) sel.value = 'perfil_3'; return;
     } else if (tasaUSDEl) tasaUSDEl.style.border = '';
     total += repoMXNMonto + repoUSDMonto;
@@ -1654,7 +2573,7 @@ async function cargarPortafolio() {
       .map(s => ({ ticker: s.ticker, monto: parseFloat((s.monto||'').replace(/[^0-9.]/g,'')) }));
     const totalAccionesActual = accionesActualPayload.reduce((sum, a) => sum + a.monto, 0);
     total += totalAccionesActual;
-    if (total === 0) { alert('⚠️ Cartera Actual vacía.\nLlena los montos en Configuración → Cartera Actual.'); if (sel) sel.value = 'perfil_3'; return; }
+    if (total === 0) { vxToast('Cartera Actual vacía.<br>Llena los montos en Configuración → Cartera Actual.'); if (sel) sel.value = 'perfil_3'; return; }
     const pcts = {};
     Object.entries(fondos).forEach(([f, v]) => { pcts[f] = (v / total) * 100; });
     body.modo = 'actual'; body.fondos = pcts;
@@ -1680,12 +2599,12 @@ async function cargarPortafolio() {
     const tasaUSDPEl = document.getElementById('prop-REPO-USD-tasa');
     if (repoMXNPct > 0 && repoMXNTasa <= 0) {
       if (tasaMXNPEl) { tasaMXNPEl.style.border = '2px solid #EF4444'; tasaMXNPEl.focus(); }
-      alert('⚠️ Reporto MXN: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
+      vxToast('Reporto MXN: falta la tasa neta.<br>Ingresa la tasa que recibirá el cliente (ej. 8.50) para continuar.');
       if (sel) sel.value = 'perfil_3'; return;
     } else if (tasaMXNPEl) tasaMXNPEl.style.border = '';
     if (repoUSDPct > 0 && repoUSDTasa <= 0) {
       if (tasaUSDPEl) { tasaUSDPEl.style.border = '2px solid #EF4444'; tasaUSDPEl.focus(); }
-      alert('⚠️ Reporto USD: falta la tasa neta.\nIngresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
+      vxToast('Reporto USD: falta la tasa neta.<br>Ingresa la tasa que recibirá el cliente (ej. 4.20) para continuar.');
       if (sel) sel.value = 'perfil_3'; return;
     } else if (tasaUSDPEl) tasaUSDPEl.style.border = '';
     // Acciones & ETFs propuesta
@@ -1694,8 +2613,8 @@ async function cargarPortafolio() {
       .map(s => ({ ticker: s.ticker, pct: parseFloat(s.pct) }));
     const totalAcciones = accionesPropPayload.reduce((s, a) => s + a.pct, 0);
     total += repoMXNPct + repoUSDPct + totalAcciones;
-    if (total === 0) { alert('⚠️ Cartera Propuesta vacía.\nLlena los porcentajes en Configuración → Cartera Propuesta.'); if (sel) sel.value = 'perfil_3'; return; }
-    if (Math.abs(total - 100) > 0.5) { alert(`⚠️ Cartera Propuesta suma ${total.toFixed(2)}%.\nDebe ser 100% para continuar.`); if (sel) sel.value = 'perfil_3'; return; }
+    if (total === 0) { vxToast('Cartera Propuesta vacía.<br>Llena los porcentajes en Configuración → Cartera Propuesta.'); if (sel) sel.value = 'perfil_3'; return; }
+    if (Math.abs(total - 100) > 0.5) { vxToast(`Cartera Propuesta suma ${total.toFixed(2)}%.<br>Debe ser 100% para continuar.`); if (sel) sel.value = 'perfil_3'; return; }
     body.modo = 'propuesta'; body.fondos = fondos;
     if (repoMXNPct > 0) body.repo_mxn = { pct: repoMXNPct, tasa: repoMXNTasa };
     if (repoUSDPct > 0) body.repo_usd = { pct: repoUSDPct, tasa: repoUSDTasa };
@@ -1707,12 +2626,94 @@ async function cargarPortafolio() {
     const resp = await fetch('/api/propuesta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await resp.json();
     showSpinner(false);
-    if (!data.ok) { alert('Error: ' + (data.error || 'respuesta inválida')); return; }
+    if (!data.ok) { vxToast(data.error || 'Respuesta inválida del servidor.', 'err'); return; }
     aplicarDatos(data, valor);
   } catch (e) {
     showSpinner(false);
-    alert('Error de conexión: ' + e.message);
+    vxToast('Error de conexión: ' + e.message, 'err');
   }
+}
+
+// ── Helpers reutilizables (módulo) ──
+function btToSerie(btData) {
+  if (!btData || !btData.length) return null;
+  const base = btData[0].valor;
+  if (base <= 0) return null;
+  return {
+    labels: btData.map(p => {
+      const d = new Date(p.fecha + 'T00:00:00');
+      const m = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      return m[d.getMonth()] + ' ' + d.getFullYear().toString().slice(-2);
+    }),
+    values: btData.map(p => Math.round((p.valor / base) * 100 * 100) / 100)
+  };
+}
+
+function sortedPie(labels, values) {
+  const pairs = labels.map((l, i) => [l, values[i]]).filter(p => p[1] > 0.01);
+  const otros = pairs.filter(p => p[0] === 'Otros');
+  const resto = pairs.filter(p => p[0] !== 'Otros');
+  resto.sort((a, b) => b[1] - a[1]);
+  const sorted = [...resto, ...otros];
+  return {
+    labels: sorted.map(p => p[0]),
+    values: sorted.map(p => p[1]),
+    colors: sorted.map((_, i) => PAL[i]),
+  };
+}
+
+function buildApiBody(valor) {
+  const tipoCliente = document.getElementById('cfg-serie')?.value || 'Serie A';
+  const btIni = document.getElementById('cfg-fecha-ini')?.value || '';
+  const btFin = document.getElementById('cfg-fecha-fin')?.value || '';
+  let body = { tipo_cliente: tipoCliente, bt_fecha_ini: btIni, bt_fecha_fin: btFin };
+  if (valor.startsWith('perfil_')) {
+    body.modo = 'perfil';
+    body.perfil_id = valor.replace('perfil_', '');
+  } else if (valor === 'actual') {
+    const fondos = {}; let total = 0;
+    ALL_FUNDS.forEach(f => {
+      const el = document.getElementById('act-' + f);
+      const v = parseFloat((el?.value || '').replace(/[^0-9.]/g, '')) || 0;
+      if (v > 0) { fondos[f] = v; total += v; }
+    });
+    const rmxn = getRepoActualMonto('MXN'), rusd = getRepoActualMonto('USD');
+    const tmxn = getRepoActualTasa('MXN'),  tusd = getRepoActualTasa('USD');
+    if (rmxn > 0 && tmxn <= 0) return null;
+    if (rusd > 0 && tusd <= 0) return null;
+    total += rmxn + rusd;
+    const ap = _slotsActual.filter(s => s.ticker && s.nombre && parseFloat((s.monto||'').replace(/[^0-9.]/g,'')) > 0)
+      .map(s => ({ ticker: s.ticker, monto: parseFloat((s.monto||'').replace(/[^0-9.]/g,'')) }));
+    total += ap.reduce((s, a) => s + a.monto, 0);
+    if (total === 0) return null;
+    const pcts = {};
+    Object.entries(fondos).forEach(([f, v]) => { pcts[f] = (v / total) * 100; });
+    body.modo = 'actual'; body.fondos = pcts;
+    if (rmxn > 0) body.repo_mxn = { pct: (rmxn / total) * 100, tasa: tmxn };
+    if (rusd > 0) body.repo_usd = { pct: (rusd / total) * 100, tasa: tusd };
+    if (ap.length > 0) body.acciones = ap.map(a => ({ ticker: a.ticker, pct: (a.monto / total) * 100 }));
+  } else {
+    const fondos = {}; let total = 0;
+    ALL_FUNDS.forEach(f => {
+      const el = document.getElementById('prop-' + f);
+      const v = parseFloat((el?.value || '').replace(/[^0-9.%]/g, '')) || 0;
+      if (v > 0) { fondos[f] = v; total += v; }
+    });
+    const rmxn = getRepoPropPct('MXN'), rusd = getRepoPropPct('USD');
+    const tmxn = getRepoPropTasa('MXN'), tusd = getRepoPropTasa('USD');
+    if (rmxn > 0 && tmxn <= 0) return null;
+    if (rusd > 0 && tusd <= 0) return null;
+    const ap = _slotsProp.filter(s => s.ticker && s.nombre && parseFloat(s.pct) > 0)
+      .map(s => ({ ticker: s.ticker, pct: parseFloat(s.pct) }));
+    total += rmxn + rusd + ap.reduce((s, a) => s + a.pct, 0);
+    if (total === 0) return null;
+    if (Math.abs(total - 100) > 0.5) return null;
+    body.modo = 'propuesta'; body.fondos = fondos;
+    if (rmxn > 0) body.repo_mxn = { pct: rmxn, tasa: tmxn };
+    if (rusd > 0) body.repo_usd = { pct: rusd, tasa: tusd };
+    if (ap.length > 0) body.acciones = ap;
+  }
+  return body;
 }
 
 function aplicarDatos(data, valor) {
@@ -1741,30 +2742,29 @@ function aplicarDatos(data, valor) {
 
   // ── Composición ──
   if (charts.comp && data.composicion?.length) {
-    const top8 = data.composicion.slice(0, 8);
+    const FUND_ORDER = ['Reporto MXN','Reporto USD','VXREPO1','VXGUBCP','VLMXETF','VXUDIMP','VXDEUDA','VXGUBLP','VXCOBER','VXTBILL','VLMXDME','VALMXA','VALMX28','VALMX20','VALMXVL','VALMXES','VLMXTEC','VLMXESG','VALMXHC','VXINFRA','Fondos Ciclo de Vida','Acciones',"ETF's"];
+    const sorted = [...data.composicion].sort((a,b) => {
+      const iA = FUND_ORDER.indexOf(a.fondo), iB = FUND_ORDER.indexOf(b.fondo);
+      if (iA !== -1 && iB !== -1) return iA - iB;
+      if (iA !== -1) return -1;
+      if (iB !== -1) return 1;
+      return a.fondo.localeCompare(b.fondo);
+    });
+    const top8 = sorted.slice(0, 8);
     charts.comp.data.labels           = top8.map(f => f.fondo);
     charts.comp.data.datasets[0].data = top8.map(f => f.pct);
+    charts.comp.data.datasets[0].backgroundColor = '#3DA5E0';
     charts.comp.options.scales.x.max  = Math.max(...top8.map(f => f.pct)) * 1.18;
-    charts.comp.update('none');
+    // Barras más gruesas cuando hay pocos fondos
+    const n = top8.length;
+    charts.comp.data.datasets[0].barPercentage    = n <= 3 ? 0.95 : n <= 5 ? 0.88 : 0.82;
+    charts.comp.data.datasets[0].categoryPercentage = n <= 3 ? 0.98 : n <= 5 ? 0.95 : 0.92;
+    charts.comp.update();
+    setTimeout(() => { charts.comp.resize(); charts.comp.update('none'); }, 50);
   }
 
   // ── Backtesting: bt_portafolio como curva principal, bt_repo como secundaria ──
   if (charts.linea) {
-    // Helper: convertir serie [{fecha,valor}] a labels mensuales + valores base 100
-    function btToSerie(btData) {
-      if (!btData || !btData.length) return null;
-      const base = btData[0].valor;
-      if (base <= 0) return null;
-      return {
-        labels: btData.map(p => {
-          const d = new Date(p.fecha + 'T00:00:00');
-          const m = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-          return m[d.getMonth()] + ' ' + d.getFullYear().toString().slice(-2);
-        }),
-        values: btData.map(p => Math.round((p.valor / base) * 100 * 100) / 100)
-      };
-    }
-
     const btPort = btToSerie(data.bt_portafolio);
 
     if (btPort) {
@@ -1790,22 +2790,7 @@ function aplicarDatos(data, valor) {
     }
   }
 
-  // ── Clase de activos — "Reporto" ya viene del backend ──
-  // Helper: ordena labels+values de mayor a menor, filtra < 0.01, asigna PAL
-  function sortedPie(labels, values) {
-    const pairs = labels.map((l, i) => [l, values[i]]).filter(p => p[1] > 0.01);
-    // "Otros" siempre al final
-    const otros = pairs.filter(p => p[0] === 'Otros');
-    const resto = pairs.filter(p => p[0] !== 'Otros');
-    resto.sort((a, b) => b[1] - a[1]);
-    const sorted = [...resto, ...otros];
-    return {
-      labels: sorted.map(p => p[0]),
-      values: sorted.map(p => p[1]),
-      colors: sorted.map((_, i) => PAL[i]),
-    };
-  }
-
+  // ── Clase de activos ──
   if (charts.clase) {
     charts.clase.data.labels = [];
     charts.clase.data.datasets[0].data = [];
@@ -1847,15 +2832,22 @@ function aplicarDatos(data, valor) {
     charts.sector.data.labels = [];
     charts.sector.data.datasets[0].data = [];
     charts.sector.update('none');
+    const pcardClase = document.getElementById('pcard-clase');
+    const pcardGeo   = document.getElementById('pcard-geo');
     if (data.has_rv && data.sectores?.labels?.length) {
       const { labels, values, colors } = sortedPie(data.sectores.labels, data.sectores.values);
       charts.sector.data.labels = labels;
       charts.sector.data.datasets[0].data = values;
       charts.sector.data.datasets[0].backgroundColor = colors;
       if (pcardSector) pcardSector.style.display = '';
+      // 3 pies visibles: cada una span 2
+      if (pcardClase) pcardClase.style.gridColumn = 'span 2';
+      if (pcardGeo)   pcardGeo.style.gridColumn   = 'span 2';
     } else {
-      // Sin RV: ocultar pie sectorial completamente
+      // Sin RV: ocultar pie sectorial, expandir las 2 restantes a span 3
       if (pcardSector) pcardSector.style.display = 'none';
+      if (pcardClase) pcardClase.style.gridColumn = 'span 3';
+      if (pcardGeo)   pcardGeo.style.gridColumn   = 'span 3';
     }
     charts.sector.update();
   }
@@ -1908,21 +2900,52 @@ function aplicarDatos(data, valor) {
     }
   }
 
-  // ── Título ──
-  const propTitle = document.querySelector('.prop-title');
-  if (propTitle) {
+  // ── Título principal + subtítulo ──
+  const propTitleMain = document.getElementById('prop-title-main');
+  const propTitleSub  = document.getElementById('prop-title-sub');
+  if (propTitleMain) {
+    const contrato = document.getElementById('cfg-contrato')?.value?.trim() || '';
+    propTitleMain.textContent = contrato
+      ? `Estrategia de inversión - ${contrato}`
+      : 'Estrategia de inversión';
+  }
+  if (propTitleSub) {
     const labelMap = {
       perfil_0:'Perfil 0 · 100% RF low risk', perfil_1:'Perfil 1 · 100% RF high risk',
       perfil_2:'Perfil 2 · 80% RF / 20% RV',  perfil_3:'Perfil 3 · 60% RF / 40% RV',
       perfil_4:'Perfil 4 · 40% RF / 60% RV',  actual:'Cartera Actual', propuesta:'Cartera Propuesta',
     };
-    const nombre = document.getElementById('cfg-nombre')?.value?.trim() || '';
     const lbl = labelMap[valor] || 'Estrategia Portafolio';
-    propTitle.textContent = nombre ? `${lbl} · ${nombre}` : lbl;
+    propTitleSub.textContent = lbl;
   }
 }
 
 function guardarPropuesta() {
+  // Validar total = 100%
+  let t = 0;
+  ALL_FUNDS.forEach(f => { const el = document.getElementById('prop-'+f); if(el) t += parseFloat(el.value.replace(/[^0-9.%]/g,'')) || 0; });
+  t += getRepoPropPct('MXN') + getRepoPropPct('USD');
+  _slotsProp.forEach(s => { t += parseFloat(s.pct||0) || 0; });
+  if (t === 0) { vxToast('Cartera Propuesta vacía.<br>Ingresa al menos un instrumento.'); return; }
+  if (Math.abs(t - 100) >= 0.01) {
+    vxToast('El total de la propuesta es ' + t.toFixed(2) + '%.<br>Debe sumar 100% para guardar.');
+    return;
+  }
+  // Validar tasas de reporto
+  const mxnPct = getRepoPropPct('MXN'), usdPct = getRepoPropPct('USD');
+  if (mxnPct > 0 && getRepoPropTasa('MXN') <= 0) {
+    const el = document.getElementById('prop-REPO-MXN-tasa');
+    if (el) { el.style.border = '2px solid #EF4444'; el.focus(); }
+    vxToast('Reporto MXN: falta la tasa neta.<br>Ingresa la tasa para continuar.');
+    return;
+  }
+  if (usdPct > 0 && getRepoPropTasa('USD') <= 0) {
+    const el = document.getElementById('prop-REPO-USD-tasa');
+    if (el) { el.style.border = '2px solid #EF4444'; el.focus(); }
+    vxToast('Reporto USD: falta la tasa neta.<br>Ingresa la tasa para continuar.');
+    return;
+  }
+  vxToast('Cartera Propuesta guardada.', 'ok');
   const sel = document.getElementById('prop-selector');
   if (sel) sel.value = 'propuesta';
   cargarPortafolio();

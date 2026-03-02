@@ -12,8 +12,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "valmex-secret-2024")
 
 USERS = {
-    "jvilla": {"password": "valmex",   "nombre": "José Carlos Villa", "iniciales": "JV", "rol": "admin"},
-    "admin":  {"password": "admin123", "nombre": "Administrador",      "iniciales": "AD", "rol": "admin"},
+    "jvilla":  {"password": "valmex",   "nombre": "José Carlos Villa", "iniciales": "JV", "rol": "admin"},
+    "admin":   {"password": "admin123", "nombre": "Administrador",      "iniciales": "AD", "rol": "admin"},
+    "obernal": {"password": "valmex",   "nombre": "Olivia Bernal",      "iniciales": "OB", "rol": "admin"},
 }
 
 PERFILES = {
