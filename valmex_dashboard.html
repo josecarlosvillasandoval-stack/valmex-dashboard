@@ -405,7 +405,7 @@ body{font-family:'Montserrat',sans-serif;background:#FFFFFF;color:#1A2540;}
 
         <!-- Drilldown Deuda — 2 columnas MXN / USD -->
         <div class="pcard card-deuda">
-          <div class="ph">Drilldown Deuda</div>
+          <div class="ph">Detalle Deuda</div>
           <div class="pb" style="padding:8px;">
             <div class="dd-grid">
               <!-- Headers -->
@@ -841,8 +841,8 @@ function calcTotalProp() { calcTotalPropuesta(); }
 const SLOTS_INICIALES = 6;
 const SLOTS_BLOQUE    = 3;
 
-let _slotsActual = Array.from({length: SLOTS_INICIALES}, () => ({ticker:'',nombre:'',tipo:'',monto:'',loading:false,error:''}));
-let _slotsProp   = Array.from({length: SLOTS_INICIALES}, () => ({ticker:'',nombre:'',tipo:'',pct:'',loading:false,error:''}));
+let _slotsActual = Array.from({length: SLOTS_INICIALES}, () => ({ticker:'',nombre:'',tipo:'',monto:'',titulos:'',loading:false,error:''}));
+let _slotsProp   = Array.from({length: SLOTS_INICIALES}, () => ({ticker:'',nombre:'',tipo:'',pct:'',titulos:'',loading:false,error:''}));
 
 // ── Render grid ACTUAL ──
 function renderSlotsActual() {
@@ -859,7 +859,8 @@ function renderSlotsActual() {
       : '';
     const card = document.createElement('div');
     card.className = 'fondo-row actual';
-    card.style.cssText = 'height:auto;min-height:' + (slot.nombre ? '152px' : '112px') + ';overflow:hidden;gap:5px;border-left-color:' + (slot.ticker ? 'var(--sky)' : 'var(--silver)');
+    card.style.cssText = 'height:auto;min-height:' + (slot.nombre ? '186px' : '112px') + ';overflow:hidden;gap:5px;border-left-color:' + (slot.ticker ? 'var(--sky)' : 'var(--silver)');
+    const titFmt = slot.titulos ? parseFloat(slot.titulos).toLocaleString('es-MX') : '';
     card.innerHTML = `
       <input class="fondo-input accion-ticker-inp" type="text"
              placeholder="Ticker (ej. AMZN)"
@@ -873,6 +874,14 @@ function renderSlotsActual() {
         <span class="accion-nombre-slot" title="${slot.nombre}">${slot.nombre}</span>
         <span class="accion-precio-slot">${precioStr}</span>` : ''}
       ${slot.error ? `<span style="font-size:11px;color:#e74c3c;display:block;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>` : ''}
+      <input class="fondo-input" type="text" placeholder="Títulos"
+             value="${titFmt}"
+             ${!slot.nombre || !slot.precio_cierre ? 'disabled style="opacity:0.4;font-size:13px;"' : 'style="font-size:13px;"'}
+             id="act-slot-tit-${i}"
+             oninput="onSlotActualTitulosLive(${i}, this)"
+             onfocus="fmtTitulosFocus(this)"
+             onblur="fmtTitulosBlur(${i}, this, 'act')"
+             autocomplete="off">
       <input class="fondo-input" type="text" placeholder="Monto $"
              value="${slot.monto_fmt || slot.monto || ''}"
              ${!slot.nombre ? 'disabled style="opacity:0.4;font-size:13px;"' : 'style="font-size:13px;"'}
@@ -887,7 +896,7 @@ function renderSlotsActual() {
   const validados = _slotsActual.filter(s => s.nombre).length;
   const totalSlots = _slotsActual.length;
   if (validados > 0 && validados >= totalSlots) {
-    _slotsActual.push(...Array.from({length: SLOTS_BLOQUE}, () => ({ticker:'',nombre:'',tipo:'',monto:'',precio_cierre:null,moneda_precio:'MXN',loading:false,error:''})));
+    _slotsActual.push(...Array.from({length: SLOTS_BLOQUE}, () => ({ticker:'',nombre:'',tipo:'',monto:'',titulos:'',precio_cierre:null,moneda_precio:'MXN',loading:false,error:''})));
     renderSlotsActual();
     return;
   }
@@ -910,7 +919,8 @@ function renderSlotsProp() {
       : '';
     const card = document.createElement('div');
     card.className = 'fondo-row propuesta';
-    card.style.cssText = 'height:auto;min-height:' + (slot.nombre ? '152px' : '112px') + ';overflow:hidden;gap:5px;border-left-color:' + (slot.ticker ? 'var(--sky)' : 'var(--silver)');
+    card.style.cssText = 'height:auto;min-height:' + (slot.nombre ? '186px' : '112px') + ';overflow:hidden;gap:5px;border-left-color:' + (slot.ticker ? 'var(--sky)' : 'var(--silver)');
+    const titFmtP = slot.titulos ? parseFloat(slot.titulos).toLocaleString('es-MX') : '';
     card.innerHTML = `
       <input class="fondo-input accion-ticker-inp" type="text"
              placeholder="Ticker (ej. AMZN)"
@@ -924,6 +934,14 @@ function renderSlotsProp() {
         <span class="accion-nombre-slot" title="${slot.nombre}">${slot.nombre}</span>
         <span class="accion-precio-slot">${precioStr}</span>` : ''}
       ${slot.error ? `<span style="font-size:11px;color:#e74c3c;display:block;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${slot.error}</span>` : ''}
+      <input class="fondo-input" type="text" placeholder="Títulos"
+             value="${titFmtP}"
+             ${!slot.nombre || !slot.precio_cierre ? 'disabled style="opacity:0.4;font-size:13px;"' : 'style="font-size:13px;"'}
+             id="prop-slot-tit-${i}"
+             oninput="onSlotPropTitulosLive(${i}, this)"
+             onfocus="fmtTitulosFocus(this)"
+             onblur="fmtTitulosBlur(${i}, this, 'prop')"
+             autocomplete="off">
       <input class="fondo-input" type="text" placeholder="0.00%"
              value="${slot.pct ? slot.pct+'%' : ''}"
              ${!slot.nombre ? 'disabled style="opacity:0.4;font-size:13px;"' : 'style="font-size:13px;"'}
@@ -938,7 +956,7 @@ function renderSlotsProp() {
   const validados = _slotsProp.filter(s => s.nombre).length;
   const totalSlots = _slotsProp.length;
   if (validados > 0 && validados >= totalSlots) {
-    _slotsProp.push(...Array.from({length: SLOTS_BLOQUE}, () => ({ticker:'',nombre:'',tipo:'',pct:'',precio_cierre:null,moneda_precio:'MXN',loading:false,error:''})));
+    _slotsProp.push(...Array.from({length: SLOTS_BLOQUE}, () => ({ticker:'',nombre:'',tipo:'',pct:'',titulos:'',precio_cierre:null,moneda_precio:'MXN',loading:false,error:''})));
     renderSlotsProp();
     return;
   }
@@ -954,6 +972,7 @@ function commitSlotActual(i, val) {
     _slotsActual[i].nombre = '';
     _slotsActual[i].tipo   = '';
     _slotsActual[i].error  = '';
+    _slotsActual[i].titulos = '';
     renderSlotsActual();
     return;
   }
@@ -974,6 +993,7 @@ function commitSlotProp(i, val) {
     _slotsProp[i].nombre = '';
     _slotsProp[i].tipo   = '';
     _slotsProp[i].error  = '';
+    _slotsProp[i].titulos = '';
     renderSlotsProp();
     return;
   }
@@ -1086,6 +1106,19 @@ function fmtMontoBlur(i, inp, tipo) {
     inp.value = '';
     if (tipo === 'act') _slotsActual[i].monto = '';
   }
+  // Auto-calcular títulos = monto / precio
+  if (tipo === 'act') {
+    const precio = _slotsActual[i].precio_cierre || 0;
+    const titInp = document.getElementById('act-slot-tit-' + i);
+    if (precio > 0 && !isNaN(num) && num > 0) {
+      const tit = num / precio;
+      _slotsActual[i].titulos = tit.toString();
+      if (titInp) titInp.value = tit.toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:2});
+    } else {
+      _slotsActual[i].titulos = '';
+      if (titInp) titInp.value = '';
+    }
+  }
   calcTotalActual();
 }
 function fmtPctFocus(inp) {
@@ -1105,6 +1138,91 @@ function fmtPctBlur(i, inp) {
     inp.value = '';
     _slotsProp[i].pct = '';
   }
+  // Auto-calcular títulos = (pct/100 * contrato) / precio
+  const precio = _slotsProp[i].precio_cierre || 0;
+  const contrato = getMontoContrato();
+  const titInp = document.getElementById('prop-slot-tit-' + i);
+  if (precio > 0 && contrato > 0 && !isNaN(num) && num > 0) {
+    const monto = contrato * num / 100;
+    const tit = monto / precio;
+    _slotsProp[i].titulos = tit.toString();
+    if (titInp) titInp.value = tit.toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:2});
+  } else {
+    _slotsProp[i].titulos = '';
+    if (titInp) titInp.value = '';
+  }
+  calcTotalProp();
+}
+
+// ── Formato visual inputs de títulos ──
+function fmtTitulosFocus(inp) {
+  const raw = inp.value.replace(/[,\s]/g,'');
+  inp.value = raw || '';
+  inp.select();
+}
+function fmtTitulosBlur(i, inp, tipo) {
+  const raw = inp.value.replace(/[^0-9.]/g,'');
+  const num = parseFloat(raw);
+  if (!isNaN(num) && num > 0) {
+    inp.value = num.toLocaleString('es-MX');
+    if (tipo === 'act') _slotsActual[i].titulos = raw;
+    else _slotsProp[i].titulos = raw;
+  } else {
+    inp.value = '';
+    if (tipo === 'act') _slotsActual[i].titulos = '';
+    else _slotsProp[i].titulos = '';
+  }
+}
+
+// ── Handlers títulos live ──
+function onSlotActualTitulosLive(i, inp) {
+  const raw = inp.value.replace(/[^0-9.]/g,'');
+  const parts = raw.split('.');
+  const v = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
+  _slotsActual[i].titulos = v;
+  const tit = parseFloat(v) || 0;
+  const precio = _slotsActual[i].precio_cierre || 0;
+  if (tit > 0 && precio > 0) {
+    const monto = tit * precio;
+    _slotsActual[i].monto = monto.toFixed(2);
+    const montoInp = document.getElementById('act-slot-monto-' + i);
+    if (montoInp) montoInp.value = '$' + monto.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const contrato = getMontoContrato();
+    const pctSpan = document.getElementById('act-slot-pct-' + i);
+    if (pctSpan) pctSpan.textContent = contrato > 0 ? (monto/contrato*100).toFixed(2)+'%' : '0.00%';
+  } else {
+    _slotsActual[i].monto = '';
+    const montoInp = document.getElementById('act-slot-monto-' + i);
+    if (montoInp) montoInp.value = '';
+    const pctSpan = document.getElementById('act-slot-pct-' + i);
+    if (pctSpan) pctSpan.textContent = '0.00%';
+  }
+  calcTotalActual();
+}
+
+function onSlotPropTitulosLive(i, inp) {
+  const raw = inp.value.replace(/[^0-9.]/g,'');
+  const parts = raw.split('.');
+  const v = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
+  _slotsProp[i].titulos = v;
+  const tit = parseFloat(v) || 0;
+  const precio = _slotsProp[i].precio_cierre || 0;
+  const contrato = getMontoContrato();
+  if (tit > 0 && precio > 0 && contrato > 0) {
+    const monto = tit * precio;
+    const pct = (monto / contrato) * 100;
+    _slotsProp[i].pct = pct.toFixed(4);
+    const pctInp = document.getElementById('prop-slot-pct-' + i);
+    if (pctInp) pctInp.value = pct.toFixed(2) + '%';
+    const monSpan = document.getElementById('prop-slot-mon-' + i);
+    if (monSpan) monSpan.textContent = '$' + monto.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+  } else {
+    _slotsProp[i].pct = '';
+    const pctInp = document.getElementById('prop-slot-pct-' + i);
+    if (pctInp) pctInp.value = '';
+    const monSpan = document.getElementById('prop-slot-mon-' + i);
+    if (monSpan) monSpan.textContent = '$0.00';
+  }
   calcTotalProp();
 }
 
@@ -1115,7 +1233,18 @@ function onSlotActualMontoLive(i, inp) {
   const v = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
   // NO modificar inp.value aquí — dejar que el usuario escriba libremente
   _slotsActual[i].monto = v ? v : '';
+  // Auto-calcular títulos = monto / precio_cierre
   const monto = parseFloat(v) || 0;
+  const precio = _slotsActual[i].precio_cierre || 0;
+  const titInp = document.getElementById('act-slot-tit-' + i);
+  if (precio > 0 && monto > 0) {
+    const tit = monto / precio;
+    _slotsActual[i].titulos = tit.toString();
+    if (titInp) titInp.value = tit.toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:2});
+  } else {
+    _slotsActual[i].titulos = '';
+    if (titInp) titInp.value = '';
+  }
   const contrato = getMontoContrato();
   const pctSpan = document.getElementById('act-slot-pct-' + i);
   if (pctSpan) pctSpan.textContent = contrato > 0 && monto > 0
@@ -1129,8 +1258,20 @@ function onSlotPropPctLive(i, inp) {
   const parts = raw.split('.');
   const v = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
   _slotsProp[i].pct = v;
+  // Auto-calcular títulos = (pct/100 * contrato) / precio_cierre
   const pct = parseFloat(v) || 0;
   const contrato = getMontoContrato();
+  const precio = _slotsProp[i].precio_cierre || 0;
+  const titInp = document.getElementById('prop-slot-tit-' + i);
+  if (precio > 0 && pct > 0 && contrato > 0) {
+    const monto = contrato * pct / 100;
+    const tit = monto / precio;
+    _slotsProp[i].titulos = tit.toString();
+    if (titInp) titInp.value = tit.toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:2});
+  } else {
+    _slotsProp[i].titulos = '';
+    if (titInp) titInp.value = '';
+  }
   const monSpan = document.getElementById('prop-slot-mon-' + i);
   if (monSpan) monSpan.textContent = contrato > 0 && pct > 0
     ? '$'+(contrato*pct/100).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})
@@ -1345,7 +1486,7 @@ charts.linea = new Chart(document.getElementById('c-linea'),{
     labels:['2016','2017','2018','2019','2020','2021','2022','2023','2024'],
     datasets:[
       {label:'Propuesta',data:[100,108,112,122,115,140,150,170,200],borderColor:'#00205C',backgroundColor:'rgba(61,165,224,0.08)',fill:true,borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#00205C',pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverRadius:5,tension:.35},
-      {label:'Benchmark',data:[100,106,110,118,112,134,144,162,193],borderColor:'#41BBC9',backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],pointRadius:3,pointBackgroundColor:'#41BBC9',pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverRadius:5,tension:.35}
+      {label:'Referencia',data:[100,106,110,118,112,134,144,162,193],borderColor:'#41BBC9',backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],pointRadius:3,pointBackgroundColor:'#41BBC9',pointBorderColor:'#fff',pointBorderWidth:1.5,pointHoverRadius:5,tension:.35}
     ]
   },
   options:{
@@ -1366,9 +1507,10 @@ charts.linea = new Chart(document.getElementById('c-linea'),{
     const pts = chart.data.datasets.map((ds,i)=>{
       const meta=chart.getDatasetMeta(i);
       const lastPt=meta.data[meta.data.length-1];
+      if (!lastPt) return null;
       return {x:lastPt.x, y:lastPt.y, val:ds.data[ds.data.length-1], color:ds.borderColor};
-    });
-    if(Math.abs(pts[0].y - pts[1].y) < 18){pts[0].y = Math.min(pts[0].y, pts[1].y) - 9;pts[1].y = Math.min(pts[0].y, pts[1].y) + 18;}
+    }).filter(Boolean);
+    if(pts.length >= 2 && Math.abs(pts[0].y - pts[1].y) < 18){pts[0].y = Math.min(pts[0].y, pts[1].y) - 9;pts[1].y = Math.min(pts[0].y, pts[1].y) + 18;}
     pts.forEach(p=>{ctx.fillStyle=p.color;ctx.font='bold 12px Montserrat,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(p.val, p.x+6, p.y);});
     ctx.restore();
   }}]
@@ -1473,7 +1615,9 @@ async function cargarPortafolio() {
   const sel   = document.getElementById('prop-selector');
   const valor = sel ? sel.value : 'perfil_3';
   const tipoCliente = document.getElementById('cfg-serie')?.value || 'Serie A';
-  let body = { tipo_cliente: tipoCliente };
+  const btIni = document.getElementById('cfg-fecha-ini')?.value || '';
+  const btFin = document.getElementById('cfg-fecha-fin')?.value || '';
+  let body = { tipo_cliente: tipoCliente, bt_fecha_ini: btIni, bt_fecha_fin: btFin };
 
   if (valor.startsWith('perfil_')) {
     body.modo = 'perfil';
@@ -1584,6 +1728,17 @@ function aplicarDatos(data, valor) {
     }
   });
 
+  // ── Ocultar/mostrar card deuda según has_deuda ──
+  const cardDeuda = document.querySelector('.card-deuda');
+  const cardBack  = document.querySelector('.card-back');
+  if (data.has_deuda === false) {
+    if (cardDeuda) cardDeuda.style.display = 'none';
+    if (cardBack)  cardBack.style.gridColumn = 'span 4';
+  } else {
+    if (cardDeuda) cardDeuda.style.display = '';
+    if (cardBack)  cardBack.style.gridColumn = 'span 3';
+  }
+
   // ── Composición ──
   if (charts.comp && data.composicion?.length) {
     const top8 = data.composicion.slice(0, 8);
@@ -1593,55 +1748,46 @@ function aplicarDatos(data, valor) {
     charts.comp.update('none');
   }
 
-  // ── Backtesting: agregar curva de reporto si existe ──
-  if (charts.linea && data.bt_repo?.length) {
-    const btRepo = data.bt_repo;
-
-    // Alinear fechas con el eje X existente (años enteros)
-    // Construir serie mensual base 100 desde primer punto disponible
-    // Normalizar a base 100 en la fecha de inicio del gráfico
-    const primeraFecha = btRepo[0].fecha;
-    const primerValor  = btRepo[0].valor;
-
-    // Filtrar solo puntos de enero de cada año para coincidir con el eje
-    const años = charts.linea.data.labels;  // ej. ['2016','2017',...,'2024']
-    const serieRepo = años.map(anio => {
-      // Buscar punto de enero de ese año en bt_repo
-      const pt = btRepo.find(p => p.fecha.startsWith(anio + '-01') || p.fecha.startsWith(anio));
-      if (!pt) return null;
-      // Normalizar a base 100 desde el primer punto del gráfico
-      const primerPtAnio = btRepo.find(p => p.fecha.startsWith(años[0]));
-      const base = primerPtAnio ? primerPtAnio.valor : pt.valor;
-      return Math.round((pt.valor / base) * 100 * 100) / 100;
-    });
-
-    // Verificar si ya existe dataset de reporto
-    const dsExistente = charts.linea.data.datasets.findIndex(ds => ds._esRepo);
-    const dsRepo = {
-      label:           'Reporto directo',
-      data:            serieRepo,
-      borderColor:     '#F59E0B',
-      backgroundColor: 'transparent',
-      borderWidth:     2,
-      borderDash:      [3, 3],
-      pointRadius:     2,
-      pointBackgroundColor: '#F59E0B',
-      pointBorderColor: '#fff',
-      pointBorderWidth: 1.5,
-      tension:         .35,
-      _esRepo:         true,
-    };
-
-    if (dsExistente >= 0) {
-      charts.linea.data.datasets[dsExistente] = dsRepo;
-    } else {
-      charts.linea.data.datasets.push(dsRepo);
+  // ── Backtesting: bt_portafolio como curva principal, bt_repo como secundaria ──
+  if (charts.linea) {
+    // Helper: convertir serie [{fecha,valor}] a labels mensuales + valores base 100
+    function btToSerie(btData) {
+      if (!btData || !btData.length) return null;
+      const base = btData[0].valor;
+      if (base <= 0) return null;
+      return {
+        labels: btData.map(p => {
+          const d = new Date(p.fecha + 'T00:00:00');
+          const m = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+          return m[d.getMonth()] + ' ' + d.getFullYear().toString().slice(-2);
+        }),
+        values: btData.map(p => Math.round((p.valor / base) * 100 * 100) / 100)
+      };
     }
-    charts.linea.update('none');
-  } else if (charts.linea) {
-    // Quitar curva de reporto si no hay datos
-    charts.linea.data.datasets = charts.linea.data.datasets.filter(ds => !ds._esRepo);
-    charts.linea.update('none');
+
+    const btPort = btToSerie(data.bt_portafolio);
+
+    if (btPort) {
+      // Curva única consolidada (fondos + acciones/ETFs + reporto)
+      charts.linea.data.labels = btPort.labels;
+      charts.linea.data.datasets = [charts.linea.data.datasets[0]];
+      charts.linea.data.datasets[0].label = 'Portafolio';
+      charts.linea.data.datasets[0].data  = btPort.values;
+
+      // Ajustar escala Y
+      const allVals = btPort.values.filter(v => v != null);
+      charts.linea.options.scales.y.min = Math.floor(Math.min(...allVals) * 0.95);
+      charts.linea.update('none');
+
+    } else {
+      // Sin datos de backtesting — limpiar
+      charts.linea.data.labels = [];
+      charts.linea.data.datasets[0].data = [];
+      if (charts.linea.data.datasets.length > 1) {
+        charts.linea.data.datasets = [charts.linea.data.datasets[0]];
+      }
+      charts.linea.update('none');
+    }
   }
 
   // ── Clase de activos — "Reporto" ya viene del backend ──

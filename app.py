@@ -34,6 +34,319 @@ FONDOS_DEUDA     = FONDOS_DEUDA_MXN | FONDOS_DEUDA_USD
 FONDOS_RV        = {"VALMXA", "VALMX20", "VALMX28", "VALMXVL", "VALMXES", "VLMXTEC", "VLMXESG", "VALMXHC", "VXINFRA"}
 FONDOS_CICLO     = {"VLMXJUB", "VLMXP24", "VLMXP31", "VLMXP38", "VLMXP45", "VLMXP52", "VLMXP59"}
 
+# ── ETF: nombres simplificados → índice representado ──
+ETF_INDEX_MAP = {
+    "SPY": "S&P 500", "VOO": "S&P 500", "IVV": "S&P 500",
+    "QQQ": "Nasdaq 100", "QQQM": "Nasdaq 100",
+    "DIA": "Dow Jones 30", "DJIA": "Dow Jones 30",
+    "IWM": "Russell 2000", "VTWO": "Russell 2000",
+    "VTI": "US Total Market", "ITOT": "US Total Market",
+    "EWW": "MSCI México", "EWZ": "MSCI Brasil", "EWJ": "MSCI Japón",
+    "EFA": "MSCI EAFE", "EEM": "MSCI Emerging Markets", "VWO": "FTSE Emerging",
+    "IEMG": "MSCI Core EM", "MCHI": "MSCI China",
+    "VEA": "FTSE Developed ex-US", "VXUS": "FTSE All-World ex-US",
+    "GLD": "Oro (Gold)", "SLV": "Plata (Silver)", "IAU": "Oro (Gold)",
+    "USO": "WTI Crudo", "XLE": "Energy Select", "XLF": "Financial Select",
+    "XLK": "Technology Select", "XLV": "Health Care Select",
+    "XLI": "Industrial Select", "XLP": "Consumer Staples Select",
+    "XLY": "Consumer Discretionary Select", "XLU": "Utilities Select",
+    "ARKK": "ARK Innovation", "ARKW": "ARK Next Gen Internet",
+    "TLT": "US Treasury 20+ Yr", "IEF": "US Treasury 7-10 Yr",
+    "SHY": "US Treasury 1-3 Yr", "BND": "US Aggregate Bond",
+    "AGG": "US Aggregate Bond", "LQD": "IG Corporate Bond",
+    "HYG": "High Yield Bond", "JNK": "High Yield Bond",
+    "VNQ": "US REITs", "VNQI": "Intl REITs",
+    "NAFTRAC": "IPC México", "IVVPESO": "S&P 500 (MXN)",
+}
+
+_ETF_BRAND_PREFIXES = [
+    "iShares ", "Vanguard ", "SPDR ", "Invesco ", "WisdomTree ",
+    "ProShares ", "First Trust ", "Schwab ", "Global X ", "VanEck ",
+    "ARK ", "JPMorgan ", "Fidelity ", "Franklin ", "PIMCO ",
+    "BlackRock ", "State Street ", "Dimensional ",
+]
+_ETF_BRAND_SUFFIXES = [
+    " ETF", " Trust", " Fund", " Index Fund", " Portfolio",
+    " Shares", " UCITS", " Acc",
+]
+
+def simplificar_nombre_etf(ticker: str, nombre: str) -> str:
+    clean = ticker.replace(".MX", "").upper()
+    if clean in ETF_INDEX_MAP:
+        return ETF_INDEX_MAP[clean]
+    result = nombre
+    for prefix in _ETF_BRAND_PREFIXES:
+        if result.startswith(prefix):
+            result = result[len(prefix):]
+    for suffix in _ETF_BRAND_SUFFIXES:
+        if result.endswith(suffix):
+            result = result[:-len(suffix)]
+    return result.strip() or nombre
+
+# ── ETF: exposición geográfica — fuentes reales por proveedor ──
+# Regiones canónicas en INGLÉS Morningstar (RE-RegionalExposure):
+# United States, Canada, Latin America, Eurozone, Europe - ex Euro,
+# United Kingdom, Japan, Australasia, Asia - Developed, Asia - Emerging,
+# Europe - Emerging, Africa, Middle East
+
+# iShares: product-id/slug para descargar CSV de holdings con Location
+ISHARES_PRODUCTS = {
+    "ACWI": "239600/ishares-msci-acwi-etf",
+    "IVV":  "239726/ishares-core-sp-500-etf",
+    "EEM":  "239637/ishares-msci-emerging-markets-etf",
+    "EFA":  "239623/ishares-msci-eafe-etf",
+    "IEFA": "244049/ishares-core-msci-eafe-etf",
+    "IEMG": "244050/ishares-core-msci-emerging-markets-etf",
+    "EWW":  "239676/ishares-msci-mexico-etf",
+    "EWZ":  "239612/ishares-msci-brazil-etf",
+    "EWJ":  "239665/ishares-msci-japan-etf",
+    "EWG":  "239649/ishares-msci-germany-etf",
+    "EWU":  "239690/ishares-msci-united-kingdom-etf",
+    "EWA":  "239607/ishares-msci-australia-etf",
+    "EWC":  "239615/ishares-msci-canada-etf",
+    "EWT":  "239688/ishares-msci-taiwan-etf",
+    "EWY":  "239681/ishares-msci-south-korea-etf",
+    "FXI":  "239536/ishares-china-large-cap-etf",
+    "MCHI": "239619/ishares-msci-china-etf",
+    "INDA": "239659/ishares-msci-india-etf",
+    "IWM":  "239710/ishares-russell-2000-etf",
+    "URTH": "239750/ishares-msci-world-etf",
+}
+
+# Vanguard: tickers con endpoint /allocation que devuelve regiones
+VANGUARD_TICKERS = {"VOO", "VTI", "VT", "VEA", "VXUS", "VWO", "VIG", "VUG", "VTV", "SCHD"}
+
+# Mapeo Vanguard regiones → Morningstar regiones
+VANGUARD_REGION_MAP = {
+    "north america":     "United States",   # mayormente US
+    "europe":            "Eurozone",
+    "pacific":           "Japan",           # Japón + Asia Pac desarrollado
+    "emerging markets":  "Asia - Emerging",
+    "middle east":       "Middle East",
+    "latin america":     "Latin America",
+    "united kingdom":    "United Kingdom",
+    "other":             "Otros",
+}
+
+# Mapeo iShares Location → Morningstar región (complementa COUNTRY_TO_REGION)
+ISHARES_LOCATION_MAP = {
+    "korea (south)": "Asia - Developed",
+    "korea": "Asia - Developed",
+    "cayman islands": "Asia - Emerging",
+    "bermuda": "United States",
+    "jersey": "Europe - ex Euro",
+    "guernsey": "Europe - ex Euro",
+    "isle of man": "Europe - ex Euro",
+    "macau": "Asia - Emerging",
+    "curacao": "Latin America",
+    "puerto rico": "United States",
+    "virgin islands": "United States",
+    "panama": "Latin America",
+    "cyprus": "Eurozone",
+    "estonia": "Eurozone",
+    "latvia": "Eurozone",
+    "lithuania": "Eurozone",
+    "slovakia": "Eurozone",
+    "slovenia": "Eurozone",
+    "malta": "Eurozone",
+    "croatia": "Eurozone",
+    "romania": "Europe - Emerging",
+    "kenya": "Africa",
+    "morocco": "Africa",
+    "mauritius": "Africa",
+    "pakistan": "Asia - Emerging",
+    "bangladesh": "Asia - Emerging",
+    "sri lanka": "Asia - Emerging",
+    "kuwait": "Middle East",
+    "bahrain": "Middle East",
+    "oman": "Middle East",
+    "jordan": "Middle East",
+    "iceland": "Europe - ex Euro",
+}
+
+# Mapeo iShares Sector → español (nombres del CSV de holdings)
+ISHARES_SECTOR_MAP = {
+    "information technology": "Tecnología",
+    "financials":             "Financiero",
+    "industrials":            "Industriales",
+    "consumer discretionary": "Consumo Discrecional",
+    "health care":            "Salud",
+    "communication":          "Comunicaciones",
+    "consumer staples":       "Consumo Básico",
+    "materials":              "Materiales",
+    "energy":                 "Energía",
+    "utilities":              "Utilidades",
+    "real estate":            "Bienes Raíces",
+    "cash and/or derivatives": None,  # excluir del drilldown
+}
+
+# Fallback estático para commodities y ETFs sin holdings
+ETF_GEO_STATIC = {
+    "GLD":     {"Global": 100.0},
+    "SLV":     {"Global": 100.0},
+    "IAU":     {"Global": 100.0},
+    "NAFTRAC": {"Latin America": 100.0},
+    "IVVPESO": {"United States": 100.0},
+}
+
+# Cache de geo+sec por ticker de ETF (evita re-fetches dentro de la sesión)
+_ETF_DATA_CACHE = {}  # ticker → {"geo": dict, "sec": dict}
+
+def _fetch_ishares_data(ticker: str) -> tuple:
+    """Descarga CSV de iShares y extrae geo (Location) y sectores (Sector).
+    Retorna (geo_dict, sec_dict) con regiones Morningstar y sectores en español."""
+    import csv
+    slug = ISHARES_PRODUCTS.get(ticker)
+    if not slug:
+        return {}, {}
+    url = f"https://www.ishares.com/us/products/{slug}/1467271812596.ajax?tab=holdings&fileType=csv"
+    try:
+        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+        if r.status_code != 200:
+            return {}, {}
+    except Exception:
+        return {}, {}
+    lines = r.text.strip().split("\n")
+    header_idx = None
+    for i, line in enumerate(lines[:15]):
+        if "Weight" in line and ("Location" in line or "Sector" in line):
+            header_idx = i
+            break
+    if header_idx is None:
+        return {}, {}
+    reader = csv.DictReader(lines[header_idx:])
+    geo = {}
+    sec = {}
+    for row in reader:
+        try:
+            raw_w = row.get("Weight (%)")
+            if raw_w is None:
+                continue
+            w = float(str(raw_w).replace(",", ""))
+        except (ValueError, TypeError):
+            continue
+        if w <= 0:
+            continue
+        # Geografía
+        loc = (row.get("Location") or "").strip()
+        if loc:
+            loc_lower = loc.lower()
+            region = (COUNTRY_TO_REGION.get(loc_lower)
+                      or ISHARES_LOCATION_MAP.get(loc_lower)
+                      or "Otros")
+            geo[region] = geo.get(region, 0) + w
+        # Sectores
+        raw_sec = (row.get("Sector") or "").strip()
+        if raw_sec:
+            sec_label = ISHARES_SECTOR_MAP.get(raw_sec.lower())
+            if sec_label is None:  # None = excluir (cash/derivatives)
+                continue
+            if not sec_label:
+                sec_label = raw_sec
+            sec[sec_label] = sec.get(sec_label, 0) + w
+    return geo, sec
+
+def _fetch_vanguard_geo(ticker: str) -> dict:
+    """Usa API de Vanguard /allocation para obtener regiones."""
+    url = f"https://investor.vanguard.com/investment-products/etfs/profile/api/{ticker}/allocation"
+    try:
+        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        if r.status_code != 200:
+            return {}
+        data = r.json()
+        regions = data.get("region", {}).get("region", [])
+        if not regions:
+            return {}
+    except Exception:
+        return {}
+    geo = {}
+    for reg in regions:
+        name = reg.get("name", "").strip().lower()
+        try:
+            pct = float(reg.get("percent", "0"))
+        except (ValueError, TypeError):
+            continue
+        if pct <= 0:
+            continue
+        region = VANGUARD_REGION_MAP.get(name, "Otros")
+        geo[region] = geo.get(region, 0) + pct
+    return geo
+
+def _fetch_holdings_geo(ticker: str) -> dict:
+    """Fallback: usa top holdings de Yahoo Finance y busca país de cada uno."""
+    import yfinance as yf
+    try:
+        t = yf.Ticker(ticker)
+        fd = t.funds_data
+        th = fd.top_holdings
+        if th is None or th.empty:
+            return {}
+    except Exception:
+        return {}
+
+    geo = {}
+    total_w = 0.0
+    for symbol, row in th.iterrows():
+        w = float(row.get("Holding Percent", 0))
+        if w <= 0:
+            continue
+        try:
+            info_h = yf.Ticker(symbol).info
+            country_h = (info_h.get("country") or "").strip().lower()
+        except Exception:
+            country_h = ""
+        region = (COUNTRY_TO_REGION.get(country_h)
+                  or ISHARES_LOCATION_MAP.get(country_h)
+                  or "Otros")
+        geo[region] = geo.get(region, 0) + w * 100
+        total_w += w
+
+    # Escalar proporcionalmente a 100%
+    if total_w > 0 and geo:
+        scale = 100.0 / (total_w * 100)
+        geo = {k: round(v * scale, 2) for k, v in geo.items()}
+    return geo
+
+def get_etf_data(ticker: str) -> dict:
+    """Obtiene exposición geográfica y sectorial real de un ETF.
+    Retorna {"geo": dict, "sec": dict}.
+    Cascada:
+      1. iShares CSV (geo + sec exactos)
+      2. Vanguard API (geo por región, sec de Yahoo)
+      3. Fallback estático (commodities)
+      4. Yahoo Finance top holdings (geo escalada)
+    """
+    clean_tk = ticker.replace(".MX", "").upper()
+
+    # Cache
+    if clean_tk in _ETF_DATA_CACHE:
+        c = _ETF_DATA_CACHE[clean_tk]
+        return {"geo": dict(c["geo"]), "sec": dict(c["sec"])}
+
+    geo = {}
+    sec = {}
+
+    # 1. iShares CSV (datos exactos de geo + sectores)
+    if clean_tk in ISHARES_PRODUCTS:
+        geo, sec = _fetch_ishares_data(clean_tk)
+
+    # 2. Vanguard API (solo regiones; sectores vendrán de Yahoo)
+    if not geo and clean_tk in VANGUARD_TICKERS:
+        geo = _fetch_vanguard_geo(clean_tk)
+
+    # 3. Fallback estático (commodities, NAFTRAC, etc.)
+    if not geo and clean_tk in ETF_GEO_STATIC:
+        geo = dict(ETF_GEO_STATIC[clean_tk])
+
+    # 4. Yahoo Finance top holdings (geo escalada proporcional)
+    if not geo:
+        geo = _fetch_holdings_geo(ticker)
+
+    result = {"geo": geo, "sec": sec}
+    if geo or sec:
+        _ETF_DATA_CACHE[clean_tk] = result
+    return result
+
 CREDIT_SCALE = ["AAA", "AA+", "AA", "AA-", "A+", "A", "A-", "BBB+", "BBB", "BBB-", "BB+", "BB", "BB-", "B+", "B", "B-", "<B", "NR"]
 CREDIT_SCORE = {r: i for i, r in enumerate(CREDIT_SCALE)}
 
@@ -248,7 +561,7 @@ def get_accion_db(emisora_serie: str) -> dict | None:
         return _db_cache[key]
 
     hoy = date.today()
-    ini = (hoy - timedelta(days=3 * 365 + 10)).isoformat()
+    ini = "2000-01-01"
     fin = hoy.isoformat()
 
     # 1. Historial de precios
@@ -319,6 +632,35 @@ def get_accion_db(emisora_serie: str) -> dict | None:
     em_info  = catalogo.get(key, {})
     nombre   = em_info.get("nombre", key)
     tipo     = em_info.get("tipo",   "Acción")
+    if tipo == "ETF":
+        nombre = simplificar_nombre_etf(key, nombre)
+
+    # Geo + Sectores: cascada real (iShares → Vanguard → estático → Yahoo)
+    geo_db = {}
+    sec_db = {}
+    if tipo == "ETF":
+        etf_d = get_etf_data(key)
+        geo_db = etf_d.get("geo", {})
+        sec_db = etf_d.get("sec", {})
+    if not geo_db:
+        geo_db = {"Latin America": 100.0}
+
+    # ── Backtesting: serie mensual base 100 ──
+    historico_bt = []
+    try:
+        df = pd.DataFrame(precios, columns=["fecha", "precio"])
+        df["fecha"] = pd.to_datetime(df["fecha"])
+        df = df.set_index("fecha").sort_index()
+        monthly = df["precio"].resample("MS").first().dropna()
+        if len(monthly) > 1:
+            base = float(monthly.iloc[0])
+            for dt, px in monthly.items():
+                historico_bt.append({
+                    "fecha": dt.strftime("%Y-%m-%d"),
+                    "valor": round(float(px) / base * 100, 4)
+                })
+    except Exception:
+        pass
 
     result = {
         "ticker":        key,
@@ -335,8 +677,9 @@ def get_accion_db(emisora_serie: str) -> dict | None:
         "r1y":           rend_anual(p_1y, 1),
         "r2y":           rend_anual(p_2y, 2),
         "r3y":           rend_anual(p_3y, 3),
-        "sectores":      {},
-        "geo":           {"México": 100.0},
+        "sectores":      sec_db,
+        "geo":           geo_db,
+        "historico":     historico_bt,
     }
 
     _db_cache[key]    = result
@@ -367,14 +710,44 @@ GEO_TRANSLATE_YF = {
 }
 
 SEC_TRANSLATE_YF = {
+    # Keys con espacios (info.sector de YF)
     "technology": "Tecnología", "financial services": "Financiero",
     "healthcare": "Salud", "consumer cyclical": "Consumo Discrecional",
     "industrials": "Industriales", "communication services": "Comunicaciones",
     "consumer defensive": "Consumo Básico", "energy": "Energía",
     "basic materials": "Materiales", "real estate": "Bienes Raíces",
     "utilities": "Utilidades",
+    # Keys con underscores (funds_data.sector_weightings de YF)
+    "financial_services": "Financiero", "consumer_cyclical": "Consumo Discrecional",
+    "communication_services": "Comunicaciones", "consumer_defensive": "Consumo Básico",
+    "basic_materials": "Materiales", "realestate": "Bienes Raíces",
 }
 
+# País → Región Morningstar EN INGLÉS (mismas keys que RE-RegionalExposure)
+COUNTRY_TO_REGION = {
+    "united states": "United States", "canada": "Canada",
+    "mexico": "Latin America", "brazil": "Latin America", "chile": "Latin America",
+    "colombia": "Latin America", "peru": "Latin America", "argentina": "Latin America",
+    "united kingdom": "United Kingdom",
+    "germany": "Eurozone", "france": "Eurozone", "netherlands": "Eurozone",
+    "spain": "Eurozone", "italy": "Eurozone", "belgium": "Eurozone",
+    "austria": "Eurozone", "finland": "Eurozone", "ireland": "Eurozone",
+    "portugal": "Eurozone", "greece": "Eurozone", "luxembourg": "Eurozone",
+    "switzerland": "Europe - ex Euro", "sweden": "Europe - ex Euro",
+    "norway": "Europe - ex Euro", "denmark": "Europe - ex Euro",
+    "poland": "Europe - Emerging", "czech republic": "Europe - Emerging",
+    "hungary": "Europe - Emerging", "turkey": "Europe - Emerging", "russia": "Europe - Emerging",
+    "japan": "Japan",
+    "australia": "Australasia", "new zealand": "Australasia",
+    "hong kong": "Asia - Developed", "singapore": "Asia - Developed",
+    "south korea": "Asia - Developed", "taiwan": "Asia - Developed",
+    "china": "Asia - Emerging", "india": "Asia - Emerging",
+    "indonesia": "Asia - Emerging", "thailand": "Asia - Emerging",
+    "malaysia": "Asia - Emerging", "philippines": "Asia - Emerging", "vietnam": "Asia - Emerging",
+    "saudi arabia": "Middle East", "israel": "Middle East",
+    "united arab emirates": "Middle East", "qatar": "Middle East",
+    "south africa": "Africa", "nigeria": "Africa", "egypt": "Africa",
+}
 
 
 # ── Cookie cache para Yahoo Finance ──
@@ -457,9 +830,7 @@ def get_accion_yf(ticker: str) -> dict | None:
         })
         _ensure_yf_cookie(sess)
         t    = yf.Ticker(ticker, session=sess)
-        hist = t.history(period="3y", auto_adjust=True)
-        if hist.empty:
-            hist = t.history(period="1y", auto_adjust=True)
+        hist = t.history(start="2000-01-01", auto_adjust=False)
     except Exception as e:
         print(f"[YF] {ticker} intento-sesión falló: {e}")
 
@@ -467,16 +838,14 @@ def get_accion_yf(ticker: str) -> dict | None:
     if hist is None or hist.empty:
         try:
             t    = yf.Ticker(ticker)
-            hist = t.history(period="3y", auto_adjust=True)
-            if hist.empty:
-                hist = t.history(period="1y", auto_adjust=True)
+            hist = t.history(start="2000-01-01", auto_adjust=False)
         except Exception as e:
             print(f"[YF] {ticker} intento-nativo falló: {e}")
 
     # ── Intento 3: yf.download (más estable en servidores cloud) ──
     if hist is None or hist.empty:
         try:
-            hist = yf.download(ticker, period="1y", auto_adjust=True,
+            hist = yf.download(ticker, start="2000-01-01", auto_adjust=False,
                                progress=False, threads=False)
             # yf.download retorna MultiIndex si solo es un ticker en algunas versiones
             if isinstance(hist.columns, pd.MultiIndex):
@@ -494,12 +863,36 @@ def get_accion_yf(ticker: str) -> dict | None:
             info = t.info or {}
         except Exception:
             info = {}
+        # fast_info como respaldo para precio de mercado
+        try:
+            fi = t.fast_info
+            if fi:
+                if not info.get("regularMarketPrice") and hasattr(fi, "last_price"):
+                    info["regularMarketPrice"] = fi.last_price
+                if not info.get("previousClose") and hasattr(fi, "previous_close"):
+                    info["previousClose"] = fi.previous_close
+        except Exception:
+            pass
 
     try:
         today  = datetime.now().date()
         prices = hist["Close"].dropna()
         if prices.empty:
             return None
+
+        # ── Limpiar serie bimodal (SIC .MX mezcla precios USD y MXN) ──
+        # Detectar por daily returns >+100% (imposibles en mercado real)
+        if len(prices) > 20:
+            daily_ret = prices.pct_change().dropna()
+            extreme_jumps = (daily_ret.abs() > 1.0).sum()  # >±100% diario
+            if extreme_jumps > 3:
+                median_price = prices.median()
+                last_price = float(prices.iloc[-1])
+                if last_price > median_price:
+                    prices = prices[prices > median_price * 0.3]
+                else:
+                    prices = prices[prices < median_price * 3]
+
         idx = prices.index
 
         def precio_en(d: date):
@@ -510,7 +903,11 @@ def get_accion_yf(ticker: str) -> dict | None:
         if p_hoy is None:
             return None
 
-        precio_cierre = round(float(prices.iloc[-1]), 2)
+        # Usar regularMarketPrice para todo (más preciso que history para SIC)
+        raw_price = info.get("regularMarketPrice") or info.get("currentPrice")
+        if raw_price and float(raw_price) > 0:
+            p_hoy = float(raw_price)
+        precio_cierre = round(p_hoy, 2)
 
         p_mtd = precio_en(date(today.year, today.month, 1))
         p_3m  = precio_en(today - timedelta(days=91))
@@ -534,23 +931,32 @@ def get_accion_yf(ticker: str) -> dict | None:
         sector_en  = (info.get("sector") or "").strip().lower()
         sector     = SEC_TRANSLATE_YF.get(sector_en, info.get("sector") or "")
         pais_en    = (info.get("country") or "").strip().lower()
-        pais       = GEO_TRANSLATE_YF.get(pais_en, info.get("country") or "México")
+        pais       = COUNTRY_TO_REGION.get(pais_en, info.get("country") or "Latin America")
         moneda     = "MXN" if ticker.endswith(".MX") else "USD"
         nombre     = info.get("shortName") or info.get("longName") or ticker
+
+        if quote_type == "ETF":
+            nombre = simplificar_nombre_etf(ticker, nombre)
 
         sectores_etf = {}
         geo_etf      = {}
 
         if quote_type == "ETF":
-            try:
-                holdings = t.funds_data if t else None
-                if holdings and hasattr(holdings, "sector_weightings"):
-                    for s, v in (holdings.sector_weightings or {}).items():
-                        lbl = SEC_TRANSLATE_YF.get(s.lower(), s)
-                        if v > 0:
-                            sectores_etf[lbl] = round(v * 100, 2)
-            except Exception:
-                pass
+            # Geo + Sectores: cascada proveedor (iShares/Vanguard) → estático → Yahoo
+            etf_data = get_etf_data(ticker)
+            geo_etf = etf_data.get("geo", {})
+            sectores_etf = etf_data.get("sec", {})
+            # Sectores fallback: Yahoo Finance sector_weightings
+            if not sectores_etf:
+                try:
+                    holdings = t.funds_data if t else None
+                    if holdings and hasattr(holdings, "sector_weightings"):
+                        for s, v in (holdings.sector_weightings or {}).items():
+                            lbl = SEC_TRANSLATE_YF.get(s.lower(), s)
+                            if v > 0:
+                                sectores_etf[lbl] = round(v * 100, 2)
+                except Exception:
+                    pass
             if not sectores_etf and sector:
                 sectores_etf[sector] = 100.0
             if not geo_etf and pais:
@@ -559,7 +965,22 @@ def get_accion_yf(ticker: str) -> dict | None:
             if sector:
                 sectores_etf[sector] = 100.0
             if pais:
-                geo_etf[pais] = 100.0
+                region = COUNTRY_TO_REGION.get(pais_en, pais)
+                geo_etf[region] = 100.0
+
+        # ── Backtesting: serie mensual base 100 ──
+        historico_bt = []
+        try:
+            monthly = prices.resample('MS').first().dropna()
+            if len(monthly) > 1:
+                base = float(monthly.iloc[0])
+                for dt, px in monthly.items():
+                    historico_bt.append({
+                        "fecha": dt.strftime("%Y-%m-%d"),
+                        "valor": round(float(px) / base * 100, 4)
+                    })
+        except Exception:
+            pass
 
         result = {
             "ticker":        ticker,
@@ -578,6 +999,7 @@ def get_accion_yf(ticker: str) -> dict | None:
             "r3y":           rend_anual(p_3y, 3),
             "sectores":      sectores_etf,
             "geo":           geo_etf,
+            "historico":     historico_bt,
         }
 
         _accion_cache[ticker]    = result
@@ -593,22 +1015,24 @@ def get_accion_yf(ticker: str) -> dict | None:
 def get_accion(ticker: str) -> dict | None:
     """
     Fuente unificada para acciones/ETFs.
-    Prioridad: DataBursatil (BMV local + SIC en MXN) → Yahoo Finance SIC (.MX) → Yahoo Finance global.
-    El usuario solo necesita datos del SIC (en MXN), nunca NYSE directo en USD.
+    Prioridad: Yahoo Finance SIC (.MX) → DataBursatil (BMV local + SIC en MXN).
+    YF primero para que precio actual (regularMarketPrice) e histórico sean consistentes.
     """
     db_key = ticker.upper().replace(".MX", "")
+    # Normalizar caracteres especiales BMV (ñ/Ñ → & para Yahoo Finance)
+    db_key = db_key.replace("Ñ", "&").replace("ñ", "&")
 
-    # 1. DataBursatil — cubre BMV local y SIC (ambos en MXN)
-    if DB_TOKEN:
-        data = get_accion_db(db_key)
-        if data:
-            return data
-
-    # 2. Yahoo Finance SIC — ticker con .MX (MXN)
+    # 1. Yahoo Finance SIC — ticker con .MX (MXN), precio más preciso
     mx_ticker = db_key + ".MX"
     data = get_accion_yf(mx_ticker)
     if data:
         return data
+
+    # 2. DataBursatil — fallback para emisoras que YF no tenga
+    if DB_TOKEN:
+        data = get_accion_db(db_key)
+        if data:
+            return data
 
     # 3. Último recurso: Yahoo Finance global (solo si los anteriores fallaron)
     if ticker.upper() != mx_ticker:
@@ -636,18 +1060,20 @@ def resolve_serie(fondo, tipo_cliente):
 
 def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
                         repo_mxn: dict = None, repo_usd: dict = None,
-                        acciones: list = None) -> dict:
+                        acciones: list = None,
+                        bt_fecha_ini: str = None, bt_fecha_fin: str = None) -> dict:
     universe = load_ms_universe()
 
     r1m = r3m = r6m = ytd = r1y = r2y = r3y = 0.0
     stock_t = bond_t = cash_t = 0.0
+    accion_t = etf_t = 0.0
     geo_acc = {}; sec_acc = {}; supersec_acc = {}
     lista = []
 
     dur_mxn_num = ytm_mxn_num = bond_mxn_denom = 0.0
     dur_usd_num = ytm_usd_num = bond_usd_denom = 0.0
     cred_mxn = {}; cred_usd = {}
-    bt_repo: dict = {}
+    bt_components = []  # {"weight": float, "series": {fecha: valor_base100}, "is_repo": bool}
 
     for fondo, pct in fondos_pct.items():
         if pct <= 0:
@@ -753,7 +1179,9 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
             "fondo": fondo, "serie": serie, "pct": round(pct, 2),
             "r1m": round(safe_float(d.get("TTR-Return1Mth")), 2),
             "r3m": round(safe_float(d.get("TTR-Return3Mth")), 2),
+            "ytd": round(safe_float(d.get("TTR-ReturnYTD")),  2),
             "r1y": round(safe_float(d.get("TTR-Return1Yr")),  2),
+            "r2y": round(safe_float(d.get("TTR-Return2Yr")),  2),
             "r3y": round(safe_float(d.get("TTR-Return3Yr")),  2),
         })
 
@@ -773,9 +1201,9 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
         r1m += rend["r1m"] * w; r3m += rend["r3m"] * w
         r6m += rend["r6m"] * w; ytd += rend["ytd"] * w
         r1y += rend["r1y"] * w; r2y += rend["r2y"] * w; r3y += rend["r3y"] * w
-        for pt in rend.get("backtesting", []):
-            f = pt["fecha"]
-            bt_repo[f] = bt_repo.get(f, 0.0) + pt["valor"] * w
+        repo_bt_series = {pt["fecha"]: pt["valor"] for pt in rend.get("backtesting", [])}
+        if repo_bt_series:
+            bt_components.append({"weight": w, "series": repo_bt_series, "is_repo": True})
         cash_t += 100.0 * w
         if es_usd:
             dur_usd_num += 0.0 * w; ytm_usd_num += tasa * w; bond_usd_denom += w
@@ -786,7 +1214,9 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
         supersec_acc["Reporto"] = supersec_acc.get("Reporto", 0) + 100 * w
         lista.append({"fondo": label_corto, "serie": "—", "pct": round(pct, 2),
                       "r1m": round(rend["r1m"], 2), "r3m": round(rend["r3m"], 2),
-                      "r1y": round(rend["r1y"], 2), "r3y": round(rend["r3y"], 2)})
+                      "ytd": round(rend["ytd"], 2),
+                      "r1y": round(rend["r1y"], 2), "r2y": round(rend["r2y"], 2),
+                      "r3y": round(rend["r3y"], 2)})
 
     # ── Acciones & ETFs (Yahoo Finance) ──
     for acc in (acciones or []):
@@ -805,12 +1235,18 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
         r1y += (yfd.get("r1y") or 0) * w
         r2y += (yfd.get("r2y") or 0) * w
         r3y += (yfd.get("r3y") or 0) * w
-        stock_t += 100 * w
+        if yfd.get("tipo") == "ETF":
+            etf_t += 100 * w
+        else:
+            accion_t += 100 * w
 
+        display_tk = yfd.get("ticker", ticker).replace(".MX", "")
         lista.append({
-            "fondo": ticker, "serie": yfd.get("tipo", "Acción"), "pct": round(pct, 2),
+            "fondo": display_tk, "serie": yfd.get("tipo", "Acción"), "pct": round(pct, 2),
             "r1m": round(yfd.get("r1m") or 0, 2), "r3m": round(yfd.get("r3m") or 0, 2),
-            "r1y": round(yfd.get("r1y") or 0, 2), "r3y": round(yfd.get("r3y") or 0, 2),
+            "ytd": round(yfd.get("ytd") or 0, 2),
+            "r1y": round(yfd.get("r1y") or 0, 2), "r2y": round(yfd.get("r2y") or 0, 2),
+            "r3y": round(yfd.get("r3y") or 0, 2),
         })
 
         # Sectores
@@ -826,6 +1262,11 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
                 geo_acc[g] = geo_acc.get(g, 0) + v * w
         elif yfd.get("pais"):
             geo_acc[yfd["pais"]] = geo_acc.get(yfd["pais"], 0) + 100 * w
+
+        # Backtesting: serie individual del componente
+        acc_bt_series = {pt["fecha"]: pt["valor"] for pt in yfd.get("historico", [])}
+        if acc_bt_series:
+            bt_components.append({"weight": w, "series": acc_bt_series, "is_repo": False})
 
     def filter_pct(d, min_pct=1.0, translate=None):
         t = sum(d.values()) or 1
@@ -854,6 +1295,75 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
     has_mxn = bond_mxn_denom > 0
     has_usd = bond_usd_denom > 0
 
+    # ── Combinar backtesting dinámico ──
+    # Cada componente entra cuando alcanza su inception. Pesos se re-normalizan
+    # entre componentes activos. Todo arranca base 100.
+    bt_portafolio = {}
+    bt_repo_filtered = {}
+
+    if bt_components:
+        # Todas las fechas únicas de todos los componentes
+        all_dates = sorted(set(d for c in bt_components for d in c["series"]))
+
+        # Aplicar rango: inicio = max(fecha_config, primer dato disponible)
+        f_ini = bt_fecha_ini or all_dates[0]
+        f_fin = bt_fecha_fin or all_dates[-1]
+        all_dates = [d for d in all_dates if d <= f_fin]
+        # Si fecha_ini es anterior al primer dato, ajustar al inception
+        if f_ini < all_dates[0]:
+            f_ini = all_dates[0]
+        all_dates = [d for d in all_dates if d >= f_ini]
+
+        if all_dates:
+            port_value = 100.0
+            repo_value = 100.0
+            comp_prev = {}   # j → valor base-100 en el período anterior
+            has_any_repo = any(c["is_repo"] for c in bt_components)
+
+            for i, fecha in enumerate(all_dates):
+                # Actualizar valores conocidos (forward-fill implícito: comp_prev retiene último)
+                comp_now = {}
+                for j, comp in enumerate(bt_components):
+                    if fecha in comp["series"]:
+                        comp_now[j] = comp["series"][fecha]
+                    elif j in comp_prev:
+                        comp_now[j] = comp_prev[j]  # forward-fill
+
+                if i == 0:
+                    bt_portafolio[fecha] = 100.0
+                    if has_any_repo:
+                        bt_repo_filtered[fecha] = 100.0
+                    comp_prev = comp_now
+                    continue
+
+                # Retornos: solo de componentes activos en AMBOS períodos
+                returns_all  = []
+                returns_repo = []
+                for j in comp_now:
+                    if j in comp_prev and comp_prev[j] > 0:
+                        ret = (comp_now[j] / comp_prev[j]) - 1
+                        returns_all.append((j, ret))
+                        if bt_components[j]["is_repo"]:
+                            returns_repo.append((j, ret))
+
+                # Portafolio holístico: pesos re-normalizados entre activos
+                if returns_all:
+                    total_w = sum(bt_components[j]["weight"] for j, _ in returns_all)
+                    if total_w > 0:
+                        w_ret = sum((bt_components[j]["weight"] / total_w) * r for j, r in returns_all)
+                        port_value *= (1 + w_ret)
+                bt_portafolio[fecha] = round(port_value, 4)
+
+                # Línea de solo repos (referencia)
+                if returns_repo and has_any_repo:
+                    total_rw = sum(bt_components[j]["weight"] for j, _ in returns_repo)
+                    if total_rw > 0:
+                        rw_ret = sum((bt_components[j]["weight"] / total_rw) * r for j, r in returns_repo)
+                        repo_value *= (1 + rw_ret)
+                    bt_repo_filtered[fecha] = round(repo_value, 4)
+
+                comp_prev = comp_now
+
     return {
         "ok": True,
         "rendimientos": {
@@ -861,19 +1371,36 @@ def calcular_portafolio(fondos_pct: dict, tipo_cliente: str,
             "ytd":round(ytd,2),"r1y":round(r1y,2),
             "r2y":round(r2y,2),"r3y":round(r3y,2),
         },
-        "clase_activos": {
-            "labels":["Deuda","Renta Variable","Reporto"],
-            "values":[round(bond_t,2), round(stock_t,2), round(cash_t,2)],
-        },
+        "clase_activos": (lambda: {
+            "labels": [l for l, v in [
+                ("Deuda", round(bond_t, 2)),
+                ("Renta Variable", round(stock_t, 2)),
+                ("Acciones", round(accion_t, 2)),
+                ("ETF", round(etf_t, 2)),
+                ("Reporto", round(cash_t, 2)),
+            ] if v > 0],
+            "values": [v for _, v in [
+                ("Deuda", round(bond_t, 2)),
+                ("Renta Variable", round(stock_t, 2)),
+                ("Acciones", round(accion_t, 2)),
+                ("ETF", round(etf_t, 2)),
+                ("Reporto", round(cash_t, 2)),
+            ] if v > 0],
+        })(),
         "composicion": sorted(lista, key=lambda x: -x["pct"]),
         "geo":           filter_pct(geo_acc, translate=GEO_TRANSLATE),
         "sectores":      filter_pct(sec_acc),
         "supersectores": filter_pct(supersec_acc),
-        "has_rv":        stock_t > 0,
+        "has_rv":        stock_t + accion_t + etf_t > 0,
+        "has_deuda":     has_mxn or has_usd,
         "bt_repo":       sorted(
-            [{"fecha": f, "valor": round(v, 4)} for f, v in bt_repo.items()],
+            [{"fecha": f, "valor": round(v, 4)} for f, v in bt_repo_filtered.items()],
             key=lambda x: x["fecha"]
-        ) if bt_repo else [],
+        ) if bt_repo_filtered else [],
+        "bt_portafolio": sorted(
+            [{"fecha": f, "valor": round(v, 4)} for f, v in bt_portafolio.items()],
+            key=lambda x: x["fecha"]
+        ) if bt_portafolio else [],
         "deuda": {
             "has_mxn":  has_mxn,
             "dur_mxn":  round(dur_mxn_num / bond_mxn_denom, 2) if has_mxn else 0,
@@ -946,6 +1473,8 @@ def api_accion_validate():
         return jsonify({"ok": False, "error": "Ticker vacío"}), 400
 
     db_key    = ticker.replace(".MX", "")
+    # Normalizar caracteres especiales BMV (ñ/Ñ → & para Yahoo Finance)
+    db_key    = db_key.replace("Ñ", "&").replace("ñ", "&")
     mx_ticker = db_key + ".MX"
 
     # 1. DataBursatil — BMV local y SIC (precios en MXN)
@@ -994,15 +1523,17 @@ def api_propuesta():
     return jsonify(calcular_portafolio(fondos_pct, tipo_cliente,
                                         repo_mxn=body.get("repo_mxn"),
                                         repo_usd=body.get("repo_usd"),
-                                        acciones=body.get("acciones", [])))
+                                        acciones=body.get("acciones", []),
+                                        bt_fecha_ini=body.get("bt_fecha_ini"),
+                                        bt_fecha_fin=body.get("bt_fecha_fin")))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MACRO
 # ─────────────────────────────────────────────────────────────────────────────
-BANXICO_TOKEN = os.environ.get("BANXICO_TOKEN", "")
+BANXICO_TOKEN = os.environ.get("BANXICO_TOKEN", "592b06934a31710cba9e9a6efebec12c1fe432f5459fc87e7f473380fa0a1d3a")
 BANXICO_BASE  = "https://www.banxico.org.mx/SieAPIRest/service/v1/series"
-FRED_API_KEY  = os.environ.get("FRED_API_KEY", "")
+FRED_API_KEY  = os.environ.get("FRED_API_KEY", "1a6dadbec2267dd21b3ad5d6447ed711")
 FRED_BASE     = "https://api.stlouisfed.org/fred/series/observations"
 
 SERIE_TIIE28  = "SF43783"
@@ -1052,20 +1583,35 @@ def _get_datos_hist(es_usd):
         return _hist_cache[cache_key]
     hoy = date.today(); ini = "2000-01-01"; fin = hoy.isoformat()
     if es_usd:
-        datos = []
-        for serie in [SERIE_USD_REPO, "DFF"]:
+        # Combinar DFF (Fed Funds, desde 2000) + SOFR (desde 2018-04) para historia completa
+        datos_dff  = []
+        datos_sofr = []
+        for serie in ["DFF", SERIE_USD_REPO]:
             try:
                 params = {"series_id": serie, "observation_start": ini, "observation_end": fin,
                           "api_key": FRED_API_KEY, "file_type": "json"}
                 r = requests.get(FRED_BASE, params=params, timeout=15)
                 r.raise_for_status()
                 obs = [o for o in r.json().get("observations", []) if o["value"] != "."]
-                datos = [{"fecha": _parse_fecha(o["date"]), "valor": float(o["value"])} for o in obs]
-                if len(datos) > 100:
-                    print(f"[FRED] {serie}: {len(datos)} registros OK")
-                    break
+                parsed = [{"fecha": _parse_fecha(o["date"]), "valor": float(o["value"])} for o in obs]
+                parsed = [d for d in parsed if d["fecha"] is not None]
+                if serie == "DFF":
+                    datos_dff = parsed
+                    print(f"[FRED] DFF: {len(parsed)} registros OK")
+                else:
+                    datos_sofr = parsed
+                    print(f"[FRED] SOFR: {len(parsed)} registros OK")
             except Exception as e:
                 print(f"[FRED {serie} ERROR] {e}")
+        # SOFR desde su inicio (2018-04), DFF para antes
+        if datos_sofr:
+            sofr_start = datos_sofr[0]["fecha"]
+            datos = [d for d in datos_dff if d["fecha"] < sofr_start] + datos_sofr
+            print(f"[HIST USD] Combinado: DFF hasta {sofr_start} + SOFR desde {sofr_start}")
+        elif datos_dff:
+            datos = datos_dff
+        else:
+            datos = []
     else:
         raw   = _banxico_serie_rango(SERIE_FONDEO, ini, fin)
         datos = [{"fecha": _parse_fecha(d["fecha"]), "valor": d["valor"]} for d in raw if _parse_fecha(d["fecha"])]
